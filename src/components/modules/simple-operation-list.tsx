@@ -14,6 +14,7 @@ import {
   DetailSection,
 } from "@/components/shared/detail-drawer";
 import { AmountCell, ClientCell, DateCell } from "@/components/shared/cells";
+import { MaskedField } from "@/components/shared/masked-field";
 import { TextInput } from "@/components/ui/field";
 import {
   formatAmount,
@@ -54,11 +55,18 @@ export function SimpleOperationList({
   amountLabel,
   registerHref,
   useData,
+  showIban = false,
 }: {
   title: string;
   amountLabel: string;
   registerHref: string;
   useData: (params: QueryParams) => ListQuery;
+  /**
+   * Withdrawals are settled against the account's IBAN, so the register shows
+   * it beside the account number. Deposits are taken over the counter and do
+   * not need it, so the column is opt-in rather than always present.
+   */
+  showIban?: boolean;
 }) {
   const t = useTranslations("fields");
   const tc = useTranslations("common");
@@ -100,6 +108,26 @@ export function SimpleOperationList({
       sortKey: "accountNumber",
       cell: (row) => <span className="numeric text-sm">{row.accountNumber}</span>,
     },
+    ...(showIban
+      ? [
+          {
+            key: "iban",
+            header: t("iban"),
+            // Masked in place with an audited reveal — the same control used
+            // for a beneficiary IBAN in External Transfer.
+            cell: (row: SimpleOperation) => (
+              <MaskedField
+                value={row.accountIban}
+                fieldName={t("iban")}
+                subjectType={row.type}
+                subjectId={row.id}
+                format="iban"
+                className="text-sm"
+              />
+            ),
+          } satisfies Column<SimpleOperation>,
+        ]
+      : []),
     {
       key: "amount",
       header: amountLabel,
@@ -201,6 +229,18 @@ export function SimpleOperationList({
                   label={t("accountNumber")}
                   value={row.accountNumber}
                   numeric
+                />
+                <DetailRow
+                  label={t("iban")}
+                  value={
+                    <MaskedField
+                      value={row.accountIban}
+                      fieldName={t("iban")}
+                      subjectType={row.type}
+                      subjectId={row.id}
+                      format="iban"
+                    />
+                  }
                 />
               </DetailSection>
 

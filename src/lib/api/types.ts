@@ -97,6 +97,12 @@ export type Client = {
 export type Account = {
   id: Id;
   number: string;
+  /**
+   * Nullable: older accounts predate IBAN assignment, and a backend that does
+   * not publish the field at all leaves it absent. Every surface renders it
+   * masked with an explicit reveal, exactly like a beneficiary IBAN.
+   */
+  iban: string | null;
   clientId: Id;
   clientName: string;
   clientPhone: string;
@@ -129,6 +135,8 @@ export type OperationBase = {
   clientPhone: string;
   accountId: Id;
   accountNumber: string;
+  /** IBAN of the debited/credited account — see `Account.iban`. */
+  accountIban: string | null;
   amount: number;
   currency: string;
   fee: Fee | null;

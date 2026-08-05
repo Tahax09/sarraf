@@ -26,13 +26,23 @@ export default function ExternalTransferPage() {
       useData={useExternalTransfers}
       beneficiaryHeader={tf("bankName")}
       renderBeneficiaryCell={(row) => (
-        <span className="flex flex-col">
-          <span className="truncate text-sm text-fg">
+        <span className="flex min-w-0 flex-col">
+          <bdi className="truncate text-sm text-fg">
             {row.beneficiary.bankName}
-          </span>
-          <span className="text-xs text-fg-muted">
+          </bdi>
+          <bdi className="truncate text-xs text-fg-muted">
             {countryName(row.beneficiary.countryCode)} · {row.beneficiary.name}
-          </span>
+          </bdi>
+          {/* The IBAN is what the transfer is actually settled against, so it
+              belongs in the row — masked, with the same audited reveal. */}
+          <MaskedField
+            value={row.beneficiary.iban}
+            fieldName={tf("iban")}
+            subjectType="externalTransfer"
+            subjectId={row.id}
+            format="iban"
+            className="text-xs"
+          />
         </span>
       )}
       renderBeneficiaryDetail={(row) => (

@@ -9,6 +9,7 @@ import { DataTable, type Column } from "@/components/shared/data-table";
 import { FilterBar } from "@/components/shared/filter-bar";
 import { DetailRow, DetailSection } from "@/components/shared/detail-drawer";
 import { ClientCell } from "@/components/shared/cells";
+import { MaskedField } from "@/components/shared/masked-field";
 import { useAccounts, useBranches, useCurrencies } from "@/lib/api/hooks";
 import { useLabels } from "@/lib/labels";
 import { formatAmount, formatCount, formatPhone, isolate } from "@/lib/format";
@@ -86,6 +87,22 @@ export default function AccountsPage() {
       cell: (row) => <ClientCell name={row.clientName} phone={row.clientPhone} />,
     },
     {
+      key: "iban",
+      header: tf("iban"),
+      // Same treatment as a beneficiary IBAN in External Transfer: masked in
+      // place, revealed one row at a time, and the reveal is audit-logged.
+      cell: (row) => (
+        <MaskedField
+          value={row.iban}
+          fieldName={tf("iban")}
+          subjectType="account"
+          subjectId={row.id}
+          format="iban"
+          className="text-sm"
+        />
+      ),
+    },
+    {
       key: "type",
       header: tf("accountType"),
       cell: (row) => labels.accountType(row.type),
@@ -161,6 +178,18 @@ export default function AccountsPage() {
                   label={tf("accountNumber")}
                   value={row.number}
                   numeric
+                />
+                <DetailRow
+                  label={tf("iban")}
+                  value={
+                    <MaskedField
+                      value={row.iban}
+                      fieldName={tf("iban")}
+                      subjectType="account"
+                      subjectId={row.id}
+                      format="iban"
+                    />
+                  }
                 />
                 <DetailRow
                   label={tf("accountType")}

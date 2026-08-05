@@ -121,6 +121,23 @@ export const clients: Client[] = Array.from({ length: 46 }, (_, i) => ({
   createdAt: isoAgo(intBetween(30, 800)),
 }));
 
+/**
+ * Libyan IBAN: `LY` + two check digits + 21 digits (bank, branch, account).
+ * The check digits are computed rather than invented, so a revealed fixture
+ * IBAN passes the same `isValidIban` the transfer forms use.
+ */
+function libyanIban(bank: number, branch: number, account: number): string {
+  const body = `${String(bank).padStart(3, "0")}${String(branch).padStart(
+    3,
+    "0",
+  )}${String(account).padStart(15, "0")}`;
+  // ISO 13616: move the country code and placeholder to the end, L=21, Y=34.
+  const rearranged = `${body}213400`;
+  let remainder = 0;
+  for (const digit of rearranged) remainder = (remainder * 10 + Number(digit)) % 97;
+  return `LY${String(98 - remainder).padStart(2, "0")}${body}`;
+}
+
 export const accounts: Account[] = clients.flatMap((client, ci) =>
   Array.from({ length: client.accountsCount }, (_, ai) => {
     const branch = branches[(ci + ai) % branches.length];
@@ -128,6 +145,11 @@ export const accounts: Account[] = clients.flatMap((client, ci) =>
     return {
       id: `acc_${ci}_${ai}`,
       number: String(100000 + ci * 10 + ai),
+      // Every fifth account has none, so the "not available" path stays visible.
+      iban:
+        ci % 5 === 4
+          ? null
+          : libyanIban(2 + (ci % 7), 1 + ((ci + ai) % 40), 100000 + ci * 10 + ai),
       clientId: client.id,
       clientName: client.name,
       clientPhone: client.phone,
@@ -155,6 +177,7 @@ function baseOp(i: number, type: string) {
     clientPhone: account.clientPhone,
     accountId: account.id,
     accountNumber: account.number,
+    accountIban: account.iban,
     amount,
     currency: account.currency,
     // Zero-fee operations carry `null`, so fee columns can be hidden entirely.

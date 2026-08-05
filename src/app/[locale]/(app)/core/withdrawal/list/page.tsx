@@ -12,6 +12,7 @@ export default function WithdrawalListPage() {
       amountLabel={t("amountLabel")}
       registerHref="/core/withdrawal/register"
       useData={useWithdrawals}
+      showIban
     />
   );
 }
