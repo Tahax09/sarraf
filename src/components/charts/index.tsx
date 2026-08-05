@@ -16,12 +16,12 @@ import type * as Impl from "./charts";
  * way; the placeholder below reserves the chart's exact height, so nothing
  * moves when it lands.
  *
- * `ChartLegendSwatch` and `SERIES_COLORS` come from `./palette` instead: they
- * are a coloured square and a list of CSS variables, and routing them through
- * the lazy boundary would pull the library back in for no reason.
+ * `SERIES_COLORS` comes from `./palette` instead: it is a list of CSS
+ * variables, and routing it through the lazy boundary would pull the library
+ * back in for no reason.
  */
 
-export { ChartLegendSwatch, SERIES_COLORS } from "./palette";
+export { SERIES_COLORS } from "./palette";
 
 /** Reserves the finished chart's footprint so the card does not jump. */
 function ChartPlaceholder({ height = 240 }: { height?: number }) {
