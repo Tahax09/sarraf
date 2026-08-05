@@ -93,7 +93,11 @@
     "goBack": "Back",
     "goForward": "Forward",
     "closeDialog": "Close dialog or menu",
-    "save": "Save"
+    "save": "Save",
+    "quickDeposit": "New deposit",
+    "quickWithdrawal": "New withdrawal",
+    "quickFundTransfer": "New fund transfer",
+    "quickExchange": "New exchange"
   },
   "notifications": {
     "title": "Notifications",

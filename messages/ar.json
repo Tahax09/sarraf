@@ -93,7 +93,11 @@
     "goBack": "رجوع",
     "goForward": "تقدّم",
     "closeDialog": "إغلاق الحوار أو القائمة",
-    "save": "حفظ"
+    "save": "حفظ",
+    "quickDeposit": "إيداع جديد",
+    "quickWithdrawal": "سحب جديد",
+    "quickFundTransfer": "تحويل أموال جديد",
+    "quickExchange": "عملية صرف جديدة"
   },
   "notifications": {
     "title": "الإشعارات",

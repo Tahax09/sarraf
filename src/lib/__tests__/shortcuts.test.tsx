@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   ShortcutProvider,
@@ -93,6 +93,15 @@ describe("shortcuts", () => {
     renderProbe({ onFire, keys: "?" });
 
     await user.keyboard("{Shift>}?{/Shift}");
+    expect(onFire).toHaveBeenCalledTimes(1);
+  });
+
+  it("matches an Alt+digit chord through the character macOS produces", () => {
+    const onFire = jest.fn();
+    renderProbe({ onFire, keys: "alt+1" });
+
+    // ⌥1 arrives as "¡" on a Mac; the physical key is what the chord means.
+    fireEvent.keyDown(document, { key: "¡", code: "Digit1", altKey: true });
     expect(onFire).toHaveBeenCalledTimes(1);
   });
 

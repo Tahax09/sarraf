@@ -76,6 +76,22 @@ function eventChord(event: KeyboardEvent): string {
 }
 
 /**
+ * The same event described by its physical digit key rather than the character
+ * it produced. macOS resolves Option+1 to "¡" (and Option+2 to "™", …), so a
+ * digit chord would never match on the character alone.
+ */
+function digitChord(event: KeyboardEvent): string | null {
+  const digit = /^Digit(\d)$/.exec(event.code);
+  if (!digit) return null;
+  const parts: string[] = [];
+  if (event.metaKey || event.ctrlKey) parts.push("mod");
+  if (event.altKey) parts.push("alt");
+  if (event.shiftKey) parts.push("shift");
+  parts.push(digit[1]);
+  return parts.join("+");
+}
+
+/**
  * `?` needs Shift on most layouts, and `/` does not. Comparing the produced
  * character rather than the physical key keeps both working without a table of
  * keyboard layouts.
@@ -84,6 +100,7 @@ function chordMatches(chord: string, event: KeyboardEvent): boolean {
   const normalised = chord.toLowerCase();
   const actual = eventChord(event).toLowerCase();
   if (actual === normalised) return true;
+  if (digitChord(event) === normalised) return true;
   // Retry ignoring Shift for printable characters that require it.
   return (
     event.key.length === 1 &&
