@@ -1,0 +1,220 @@
+@import "tailwindcss";
+
+/*
+ * Theme is driven by `data-theme` on <html>, written server-side from a cookie
+ * so the first paint already matches the user's choice (no flash).
+ */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/*
+ * Brand. These three are the only invented colors in the app — every accent,
+ * success, surface and chart token below is a tint or shade of one of them (or
+ * a functional red/amber, which the brand deliberately does not cover).
+ * They match the logo artwork in `src/logo/` byte for byte.
+ */
+:root {
+  --brand-blue: #0056f5;
+  --brand-green: #04bf66;
+  --brand-dark: #1c1e1c;
+}
+
+:root,
+[data-theme="light"] {
+  /* Backgrounds are flat. No gradients anywhere in this app. */
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f6f7f6;
+  --color-border: #e3e5e3;
+  --color-border-strong: #c9ccc9;
+
+  /* Text is the brand near-black, lightened for secondary levels. */
+  --color-fg: var(--brand-dark);
+  --color-fg-muted: #5f635f;
+  --color-fg-subtle: #8b8f8b;
+
+  /* Brand blue, flat — never a gradient. */
+  --color-accent: var(--brand-blue);
+  --color-accent-hover: #0044c4;
+  --color-accent-fg: #ffffff;
+  --color-accent-soft: #e6eefe;
+
+  /* Brand green, shaded to clear AA as text on white. */
+  --color-success: #03803f;
+  --color-success-strong: var(--brand-green);
+  --color-success-soft: #e6f9ef;
+  --color-danger: #c62828;
+  --color-danger-soft: #fdecec;
+  --color-warning: #b45309;
+  --color-warning-soft: #fdf2e3;
+  --color-info: var(--brand-blue);
+  --color-info-soft: #e6eefe;
+
+  /* Chart series — brand green in, functional red out, brand blue exchange. */
+  --color-chart-deposit: var(--brand-green);
+  --color-chart-withdrawal: #c62828;
+  --color-chart-exchange: var(--brand-blue);
+  --color-chart-4: #7e22ce;
+  --color-chart-5: #b45309;
+  --color-chart-6: #0e7490;
+  --color-chart-grid: #e8eae8;
+
+  --color-focus: var(--brand-blue);
+  --color-overlay: rgb(28 30 28 / 0.45);
+
+  --shadow-card: 0 1px 2px 0 rgb(16 24 40 / 0.05);
+  --shadow-pop: 0 8px 24px -4px rgb(16 24 40 / 0.12);
+}
+
+[data-theme="dark"] {
+  /* Base is the brand near-black; surfaces step up from it, same hue. */
+  --color-bg: var(--brand-dark);
+  --color-surface: #232622;
+  --color-surface-muted: #2a2d29;
+  --color-border: #383b37;
+  --color-border-strong: #4c504b;
+
+  --color-fg: #f2f4f2;
+  --color-fg-muted: #a8aca8;
+  --color-fg-subtle: #7d817d;
+
+  /* Brand blue lifted until it clears AA on the near-black base. */
+  --color-accent: #4d88ff;
+  --color-accent-hover: #7aa6ff;
+  --color-accent-fg: #0a1120;
+  --color-accent-soft: #10224a;
+
+  --color-success: var(--brand-green);
+  --color-success-strong: #35d98a;
+  --color-success-soft: #0b2c1b;
+  --color-danger: #ff6b6b;
+  --color-danger-soft: #2b1213;
+  --color-warning: #f5b544;
+  --color-warning-soft: #2b1f0c;
+  --color-info: #4d88ff;
+  --color-info-soft: #10224a;
+
+  --color-chart-deposit: var(--brand-green);
+  --color-chart-withdrawal: #ff6b6b;
+  --color-chart-exchange: #4d88ff;
+  --color-chart-4: #c084fc;
+  --color-chart-5: #f5b544;
+  --color-chart-6: #22d3ee;
+  --color-chart-grid: #383b37;
+
+  --color-focus: #4d88ff;
+  --color-overlay: rgb(0 0 0 / 0.7);
+
+  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.6);
+  --shadow-pop: 0 8px 24px -4px rgb(0 0 0 / 0.8);
+}
+
+@theme inline {
+  --color-bg: var(--color-bg);
+  --color-surface: var(--color-surface);
+  --color-surface-muted: var(--color-surface-muted);
+  --color-border: var(--color-border);
+  --color-border-strong: var(--color-border-strong);
+
+  --color-fg: var(--color-fg);
+  --color-fg-muted: var(--color-fg-muted);
+  --color-fg-subtle: var(--color-fg-subtle);
+
+  --color-accent: var(--color-accent);
+  --color-accent-hover: var(--color-accent-hover);
+  --color-accent-fg: var(--color-accent-fg);
+  --color-accent-soft: var(--color-accent-soft);
+
+  --color-success: var(--color-success);
+  --color-success-strong: var(--color-success-strong);
+  --color-success-soft: var(--color-success-soft);
+  --color-danger: var(--color-danger);
+  --color-danger-soft: var(--color-danger-soft);
+  --color-warning: var(--color-warning);
+  --color-warning-soft: var(--color-warning-soft);
+  --color-info: var(--color-info);
+  --color-info-soft: var(--color-info-soft);
+
+  /* Raw brand, for the places that must be the brand color in both themes. */
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-green: var(--brand-green);
+  --color-brand-dark: var(--brand-dark);
+
+  --color-chart-deposit: var(--color-chart-deposit);
+  --color-chart-withdrawal: var(--color-chart-withdrawal);
+  --color-chart-exchange: var(--color-chart-exchange);
+  --color-chart-4: var(--color-chart-4);
+  --color-chart-5: var(--color-chart-5);
+  --color-chart-6: var(--color-chart-6);
+  --color-chart-grid: var(--color-chart-grid);
+
+  --font-sans: var(--font-app-sans);
+  --font-mono: var(--font-app-mono);
+
+  --radius-card: 0.75rem;
+}
+
+html {
+  background-color: var(--color-bg);
+  color: var(--color-fg);
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-app-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Numbers, money, dates, IBANs and IDs stay LTR even inside an RTL layout. */
+.numeric {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Icons whose meaning is directional (chevrons, arrows) mirror under RTL. */
+[dir="rtl"] .rtl-flip {
+  transform: scaleX(-1);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/*
+ * Print / "Export PDF": the browser's own print-to-PDF is the export path, so
+ * the chrome (sidebar, header, filter controls) drops out and only the report
+ * content is laid out on paper.
+ */
+@media print {
+  [data-print-hide],
+  .print\:hidden {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+}
