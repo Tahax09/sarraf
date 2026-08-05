@@ -12,14 +12,27 @@ import { DataTable, type Column } from "@/components/shared/data-table";
 import { DetailRow, DetailSection } from "@/components/shared/detail-drawer";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ExpiryIndicator } from "@/components/shared/expiry-indicator";
-import { AmountCell, ClientCell, DateCell } from "@/components/shared/cells";
+import {
+  AmountCell,
+  ClientCell,
+  DateCell,
+  StatusCell,
+} from "@/components/shared/cells";
 import {
   useApproveOperation,
   useCancelOperation,
   useOperationRules,
 } from "@/lib/api/hooks";
 import { useLabels } from "@/lib/labels";
-import { formatAmount, formatCount, formatDateTime, formatPhone } from "@/lib/format";
+import {
+  formatAmount,
+  formatCount,
+  formatDateTime,
+  formatPhone,
+  isolate,
+} from "@/lib/format";
+import { useTableQuery } from "@/lib/use-table-query";
+import type { QueryParams } from "@/lib/api/client";
 import type {
   Beneficiary,
   OperationBase,
@@ -61,7 +74,7 @@ export function ApprovalQueue<T extends QueueOperation>({
   amountLabel: string;
   registerHref: string;
   kind: "authorized-withdrawals" | "external-transfers";
-  useData: (params: { status: QueueTab; pageSize: number }) => {
+  useData: (params: QueryParams) => {
     data?: Paged<T>;
     isLoading: boolean;
     isError: boolean;
@@ -74,10 +87,7 @@ export function ApprovalQueue<T extends QueueOperation>({
   approveBody: (row: T) => string;
   cancelTitle: string;
 }) {
-  const t = useTranslations("fields");
   const tc = useTranslations("common");
-  const tStats = useTranslations("stats");
-  const tAuth = useTranslations("authorizedWithdrawal");
   const labels = useLabels();
 
   const rules = useOperationRules();
@@ -86,12 +96,10 @@ export function ApprovalQueue<T extends QueueOperation>({
       ? rules.data?.authorizedWithdrawalExpiryHours
       : rules.data?.externalTransferExpiryHours;
 
-  const [confirming, setConfirming] = useState<
-    { row: T; action: "approve" | "cancel" } | null
-  >(null);
-
-  const approve = useApproveOperation(kind);
-  const cancel = useCancelOperation(kind);
+  const [confirming, setConfirming] = useState<{
+    row: T;
+    action: "approve" | "cancel";
+  } | null>(null);
 
   return (
     <div className="space-y-4">
@@ -124,94 +132,84 @@ export function ApprovalQueue<T extends QueueOperation>({
             renderBeneficiaryCell={renderBeneficiaryCell}
             renderBeneficiaryDetail={renderBeneficiaryDetail}
             onAction={(row, action) => setConfirming({ row, action })}
-            labels={{
-              client: t("client"),
-              amount: amountLabel,
-              date: t("date"),
-              expiry: t("expiresAt"),
-              actions: tc("actions"),
-              approve: tc("approve"),
-              cancel: tc("cancel"),
-              count: tStats("count"),
-              total: tStats("total"),
-              details: tc("details"),
-              entryId: t("entryId"),
-              reference: t("reference"),
-              branch: t("branch"),
-              createdAt: t("createdAt"),
-              clientName: t("clientName"),
-              phone: t("phone"),
-              accountNumber: t("accountNumber"),
-              status: t("status"),
-              fee: t("fee"),
-              feeType: t("feeType"),
-              cancelledReason: tAuth("cancelReason"),
-            }}
           />
         )}
       </StatusTabbedList>
 
-      <ConfirmDialog
-        open={confirming !== null}
+      <QueueConfirmDialog
+        kind={kind}
+        pending={confirming}
         onClose={() => setConfirming(null)}
-        tone={confirming?.action === "cancel" ? "danger" : "success"}
-        loading={approve.isPending || cancel.isPending}
-        title={confirming?.action === "cancel" ? cancelTitle : approveTitle}
-        body={
-          confirming
-            ? confirming.action === "cancel"
-              ? tAuth("cancelBody")
-              : approveBody(confirming.row)
-            : null
-        }
-        confirmLabel={
-          confirming?.action === "cancel" ? tc("cancel") : tc("approve")
-        }
-        // Cancelling releases held funds — capture why, and make it deliberate.
-        requireTyped={confirming?.action === "cancel"}
-        reason={
-          confirming?.action === "cancel"
-            ? { label: tAuth("cancelReason"), required: true }
-            : undefined
-        }
-        onConfirm={async ({ reason }) => {
-          if (!confirming) return;
-          if (confirming.action === "approve") {
-            await approve.mutateAsync(confirming.row.id);
-          } else {
-            await cancel.mutateAsync({ id: confirming.row.id, reason });
-          }
-          setConfirming(null);
-        }}
+        approveTitle={approveTitle}
+        approveBody={approveBody}
+        cancelTitle={cancelTitle}
       />
     </div>
   );
 }
 
-type QueueLabels = Record<
-  | "client"
-  | "amount"
-  | "date"
-  | "expiry"
-  | "actions"
-  | "approve"
-  | "cancel"
-  | "count"
-  | "total"
-  | "details"
-  | "entryId"
-  | "reference"
-  | "branch"
-  | "createdAt"
-  | "clientName"
-  | "phone"
-  | "accountNumber"
-  | "status"
-  | "fee"
-  | "feeType"
-  | "cancelledReason",
-  string
->;
+/**
+ * The approve/cancel confirmation, and the two mutations behind it.
+ *
+ * It owns them rather than taking them as props so that the pending state of a
+ * request lives next to the button that shows it, and the queue above stays a
+ * layout: header, tabs, dialog.
+ */
+function QueueConfirmDialog<T extends QueueOperation>({
+  kind,
+  pending,
+  onClose,
+  approveTitle,
+  approveBody,
+  cancelTitle,
+}: {
+  kind: "authorized-withdrawals" | "external-transfers";
+  pending: { row: T; action: "approve" | "cancel" } | null;
+  onClose: () => void;
+  approveTitle: string;
+  approveBody: (row: T) => string;
+  cancelTitle: string;
+}) {
+  const tc = useTranslations("common");
+  const tAuth = useTranslations("authorizedWithdrawal");
+  const approve = useApproveOperation(kind);
+  const cancel = useCancelOperation(kind);
+  const cancelling = pending?.action === "cancel";
+
+  return (
+    <ConfirmDialog
+      open={pending !== null}
+      onClose={onClose}
+      tone={cancelling ? "danger" : "success"}
+      loading={approve.isPending || cancel.isPending}
+      title={cancelling ? cancelTitle : approveTitle}
+      body={
+        pending
+          ? cancelling
+            ? tAuth("cancelBody")
+            : approveBody(pending.row)
+          : null
+      }
+      confirmLabel={cancelling ? tc("cancel") : tc("approve")}
+      // Cancelling releases held funds — capture why, and make it deliberate.
+      requireTyped={cancelling}
+      reason={
+        cancelling
+          ? { label: tAuth("cancelReason"), required: true }
+          : undefined
+      }
+      onConfirm={async ({ reason }) => {
+        if (!pending) return;
+        if (pending.action === "approve") {
+          await approve.mutateAsync(pending.row.id);
+        } else {
+          await cancel.mutateAsync({ id: pending.row.id, reason });
+        }
+        onClose();
+      }}
+    />
+  );
+}
 
 function QueueTable<T extends QueueOperation>({
   status,
@@ -223,12 +221,11 @@ function QueueTable<T extends QueueOperation>({
   renderBeneficiaryCell,
   renderBeneficiaryDetail,
   onAction,
-  labels,
 }: {
   status: QueueTab;
   title: string;
   amountLabel: string;
-  useData: (params: { status: QueueTab; pageSize: number }) => {
+  useData: (params: QueryParams) => {
     data?: Paged<T>;
     isLoading: boolean;
     isError: boolean;
@@ -239,14 +236,26 @@ function QueueTable<T extends QueueOperation>({
   renderBeneficiaryCell: (row: T) => ReactNode;
   renderBeneficiaryDetail: (row: T) => ReactNode;
   onAction: (row: T, action: "approve" | "cancel") => void;
-  labels: QueueLabels;
 }) {
+  const t = useTranslations("fields");
+  const tc = useTranslations("common");
+  const tStats = useTranslations("stats");
+  const tAuth = useTranslations("authorizedWithdrawal");
   const enumLabels = useLabels();
-  const query = useData({ status, pageSize: 100 });
+  // The tab is a server-side filter, so switching it returns to page 1 and the
+  // count below is the queue's real depth, not the number of rows fetched.
+  const table = useTableQuery({
+    filters: { status },
+    sort: { key: "createdAt", direction: "desc" },
+    searchable: false,
+  });
+  const query = useData(table.params);
   const rows = useMemo(() => query.data?.items ?? [], [query.data]);
+  const total = query.data?.total ?? 0;
   const anyFee = rows.some((row) => row.fee && row.fee.amount > 0);
   const pending = status === "reserve";
 
+  // Sums cover the rows on screen only — see the note in SimpleOperationList.
   const totals = useMemo(() => {
     const map = new Map<string, number>();
     for (const row of rows) {
@@ -258,9 +267,12 @@ function QueueTable<T extends QueueOperation>({
   const columns: Column<T>[] = [
     {
       key: "client",
-      header: labels.client,
+      header: t("client"),
       primary: true,
-      cell: (row) => <ClientCell name={row.clientName} phone={row.clientPhone} />,
+      sortKey: "clientName",
+      cell: (row) => (
+        <ClientCell name={row.clientName} phone={row.clientPhone} />
+      ),
     },
     {
       key: "beneficiary",
@@ -269,8 +281,9 @@ function QueueTable<T extends QueueOperation>({
     },
     {
       key: "amount",
-      header: labels.amount,
+      header: amountLabel,
       align: "end",
+      sortKey: "amount",
       cell: (row) => (
         <AmountCell
           amount={row.amount}
@@ -281,7 +294,7 @@ function QueueTable<T extends QueueOperation>({
     },
     {
       key: "expiry",
-      header: labels.expiry,
+      header: t("expiresAt"),
       // Only the reserve queue is racing a clock.
       hidden: !pending,
       cell: (row) => (
@@ -290,12 +303,13 @@ function QueueTable<T extends QueueOperation>({
     },
     {
       key: "date",
-      header: labels.date,
+      header: t("date"),
+      sortKey: "createdAt",
       cell: (row) => <DateCell value={row.createdAt} />,
     },
     {
       key: "actions",
-      header: labels.actions,
+      header: tc("actions"),
       hidden: !pending,
       align: "end",
       cell: (row) => (
@@ -309,7 +323,7 @@ function QueueTable<T extends QueueOperation>({
             }}
           >
             <Check className="size-4" aria-hidden />
-            {labels.approve}
+            {tc("approve")}
           </Button>
           <Button
             size="sm"
@@ -320,7 +334,7 @@ function QueueTable<T extends QueueOperation>({
             }}
           >
             <X className="size-4" aria-hidden />
-            {labels.cancel}
+            {tc("cancel")}
           </Button>
         </span>
       ),
@@ -332,14 +346,14 @@ function QueueTable<T extends QueueOperation>({
       <HeaderStatBar
         stats={[
           {
-            label: labels.count,
-            value: formatCount(query.data?.total ?? 0),
+            label: tStats("count"),
+            value: formatCount(total),
             numeric: true,
             tone: pending ? "warning" : "default",
           },
-          ...totals.map(([currency, total]) => ({
-            label: `${labels.total} — ${currency}`,
-            value: formatAmount(total, currency),
+          ...totals.map(([currency, sum]) => ({
+            label: `${tStats("pageTotal")} — ${isolate(currency)}`,
+            value: formatAmount(sum, currency),
             numeric: true,
           })),
         ]}
@@ -353,46 +367,55 @@ function QueueTable<T extends QueueOperation>({
         error={query.isError}
         onRetry={() => query.refetch()}
         caption={`${title} — ${enumLabels.status(status)}`}
+        pagination={{
+          page: table.page,
+          pageSize: table.pageSize,
+          total,
+          onPageChange: table.setPage,
+          onPageSizeChange: table.setPageSize,
+        }}
+        sort={table.sort}
+        onSortChange={table.setSort}
         detailTitle={(row) => row.clientName}
         renderDetail={(row) => (
           <>
-            <DetailSection title={labels.details}>
-              <DetailRow label={labels.entryId} value={row.id} numeric />
-              <DetailRow label={labels.reference} value={row.reference} numeric />
+            <DetailSection title={tc("details")}>
+              <DetailRow label={t("entryId")} value={row.id} numeric />
+              <DetailRow label={t("reference")} value={row.reference} numeric />
               <DetailRow
-                label={labels.status}
-                value={enumLabels.status(row.status)}
+                label={t("status")}
+                value={<StatusCell status={row.status} />}
               />
-              <DetailRow label={labels.branch} value={row.branchName} />
+              <DetailRow label={t("branch")} value={row.branchName} />
               <DetailRow
-                label={labels.createdAt}
+                label={t("createdAt")}
                 value={formatDateTime(row.createdAt)}
                 numeric
               />
               {row.expiresAt ? (
                 <DetailRow
-                  label={labels.expiry}
+                  label={t("expiresAt")}
                   value={formatDateTime(row.expiresAt)}
                   numeric
                 />
               ) : null}
               {row.cancelledReason ? (
                 <DetailRow
-                  label={labels.cancelledReason}
+                  label={tAuth("cancelReason")}
                   value={row.cancelledReason}
                 />
               ) : null}
             </DetailSection>
 
-            <DetailSection title={labels.client}>
-              <DetailRow label={labels.clientName} value={row.clientName} />
+            <DetailSection title={t("client")}>
+              <DetailRow label={t("clientName")} value={row.clientName} />
               <DetailRow
-                label={labels.phone}
+                label={t("phone")}
                 value={formatPhone(row.clientPhone)}
                 numeric
               />
               <DetailRow
-                label={labels.accountNumber}
+                label={t("accountNumber")}
                 value={row.accountNumber}
                 numeric
               />
@@ -402,18 +425,18 @@ function QueueTable<T extends QueueOperation>({
 
             <DetailSection title={amountLabel}>
               <DetailRow
-                label={labels.amount}
+                label={amountLabel}
                 value={formatAmount(row.amount, row.currency)}
                 numeric
               />
               {row.fee && row.fee.amount > 0 ? (
                 <>
                   <DetailRow
-                    label={labels.feeType}
+                    label={t("feeType")}
                     value={enumLabels.feeType(row.fee.type)}
                   />
                   <DetailRow
-                    label={labels.fee}
+                    label={t("fee")}
                     value={formatAmount(row.fee.amount, row.fee.currency)}
                     numeric
                   />

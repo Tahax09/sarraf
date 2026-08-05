@@ -1,17 +1,13 @@
 "use client";
 
-import {
-  useId,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import { useId, useMemo, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
+import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCount } from "@/lib/format";
 import { EmptyState, ErrorState, TableSkeleton } from "@/components/ui/states";
+import { PAGE_SIZES, nextSort } from "@/lib/use-table-query";
+import type { SortState } from "@/lib/api/types";
 import { DetailDrawer } from "./detail-drawer";
 
 export type Column<T> = {
@@ -27,6 +23,25 @@ export type Column<T> = {
   cellClassName?: string;
   /** Omit from the mobile card body (e.g. the actions column, rendered apart). */
   hideOnCard?: boolean;
+  /**
+   * Field the backend orders by. Present means the header is a sort control;
+   * defaults to `key` when set to `true`.
+   */
+  sortKey?: string | true;
+};
+
+/**
+ * Server-side paging. Supplying this hands the table the authoritative record
+ * count and puts the caller in charge of fetching — the table then renders the
+ * rows it was given and never slices them.
+ */
+export type ServerPagination = {
+  page: number;
+  pageSize: number;
+  /** Every matching record, not just the ones on this page. */
+  total: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
 };
 
 export type DataTableProps<T> = {
@@ -44,23 +59,25 @@ export type DataTableProps<T> = {
   detailTitle?: (row: T) => ReactNode;
   /** Row-level actions, rendered in a trailing cell and on the mobile card. */
   renderActions?: (row: T) => ReactNode;
-  /** Off for embedded preview tables (dashboard, reports) that show a fixed few. */
+  /**
+   * Client-side paging over a complete, small set (settings registers that
+   * arrive whole). Ignored when `pagination` is supplied, and off for embedded
+   * preview tables that show a fixed few.
+   */
   paginate?: boolean;
-  /** Initial rows per page; the reader switches between `pageSizeOptions`. */
+  /** Server-side paging. Takes precedence over `paginate`. */
+  pagination?: ServerPagination;
+  /** Initial rows per page in client mode; the reader picks from the options. */
   pageSize?: number;
   pageSizeOptions?: number[];
   /** Leading row-number column. On whenever the table paginates. */
   numbered?: boolean;
-  /**
-   * Escape hatch for a long `paginate={false}` table: renders only the rows in
-   * view. A paginated table never mounts more than one page, so it needs none.
-   */
-  virtualize?: boolean;
-  rowHeight?: number;
+  sort?: SortState;
+  onSortChange?: (sort: SortState) => void;
   caption?: string;
 };
 
-const DEFAULT_PAGE_SIZES = [10, 20, 25, 50];
+const DEFAULT_PAGE_SIZES = [...PAGE_SIZES];
 
 /**
  * Page control. The label is always on the button (never on the glyph alone),
@@ -88,6 +105,7 @@ function PageButton({
       aria-current={current ? "page" : undefined}
       className={cn(
         "min-w-8 rounded-md border px-2 py-1 text-xs transition-colors",
+        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
         "disabled:cursor-not-allowed disabled:opacity-40",
         current
           ? "border-accent bg-accent text-accent-fg"
@@ -114,6 +132,38 @@ function pageWindow(page: number, count: number): (number | "gap")[] {
   return pages;
 }
 
+/** Column header that doubles as a sort control. */
+function SortableHeader({
+  active,
+  direction,
+  label,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  direction: "asc" | "desc";
+  label: string;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  const Icon = !active ? ChevronsUpDown : direction === "asc" ? ArrowUp : ArrowDown;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className={cn(
+        "inline-flex items-center gap-1 rounded-sm text-xs font-medium",
+        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+        active ? "text-fg" : "text-fg-muted hover:text-fg",
+      )}
+    >
+      {children}
+      <Icon className="size-3.5 shrink-0" aria-hidden />
+    </button>
+  );
+}
+
 export function DataTable<T>({
   columns,
   rows,
@@ -128,50 +178,63 @@ export function DataTable<T>({
   detailTitle,
   renderActions,
   paginate = true,
+  pagination,
   pageSize: initialPageSize = DEFAULT_PAGE_SIZES[0],
   pageSizeOptions = DEFAULT_PAGE_SIZES,
-  numbered = paginate,
-  virtualize = false,
-  rowHeight = 52,
+  numbered,
+  sort = null,
+  onSortChange,
   caption,
 }: DataTableProps<T>) {
   const t = useTranslations("common");
   const tt = useTranslations("table");
   const [selected, setSelected] = useState<T | null>(null);
-  const [pageSize, setPageSize] = useState(initialPageSize);
+  const [clientPageSize, setClientPageSize] = useState(initialPageSize);
   const [requestedPage, setRequestedPage] = useState(1);
   const [seenTotal, setSeenTotal] = useState(rows.length);
   const pageSizeId = useId();
-  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const server = pagination ?? null;
+  const paging = server !== null || paginate;
+  const showNumbers = numbered ?? paging;
 
   const visibleColumns = useMemo(
     () => columns.filter((c) => !c.hidden),
     [columns],
   );
 
-  const virtualizer = useVirtualizer({
-    count: rows.length,
-    getScrollElement: () => scrollRef.current,
-    estimateSize: () => rowHeight,
-    overscan: 12,
-    enabled: virtualize && !paginate,
-  });
-
-  // A filter or a tab change replaces the row set: go back to the first page
-  // rather than stranding the reader on a page that no longer exists.
-  if (seenTotal !== rows.length) {
+  // In client mode a filter or tab change replaces the row set: go back to the
+  // first page rather than stranding the reader on one that no longer exists.
+  // Server mode owns its own page number, so it is left alone.
+  if (server === null && seenTotal !== rows.length) {
     setSeenTotal(rows.length);
     setRequestedPage(1);
   }
 
-  const pageCount = paginate ? Math.max(1, Math.ceil(rows.length / pageSize)) : 1;
-  const page = Math.min(requestedPage, pageCount);
-  const offset = paginate ? (page - 1) * pageSize : 0;
-  const pageRows = paginate ? rows.slice(offset, offset + pageSize) : rows;
+  const total = server ? server.total : rows.length;
+  const pageSize = server ? server.pageSize : clientPageSize;
+  const pageCount = paging ? Math.max(1, Math.ceil(total / pageSize)) : 1;
+  const page = server ? server.page : Math.min(requestedPage, pageCount);
+  const offset = paging ? (page - 1) * pageSize : 0;
+  // The server already sent exactly one page; only client mode slices.
+  const pageRows = server || !paginate ? rows : rows.slice(offset, offset + pageSize);
+
+  const goToPage = (next: number) => {
+    if (server) server.onPageChange(next);
+    else setRequestedPage(next);
+  };
+
+  const changePageSize = (next: number) => {
+    if (server) server.onPageSizeChange(next);
+    else {
+      setClientPageSize(next);
+      setRequestedPage(1);
+    }
+  };
 
   if (loading) return <TableSkeleton />;
   if (error) return <ErrorState onRetry={onRetry} />;
-  if (rows.length === 0) {
+  if (total === 0) {
     return (
       <EmptyState
         title={emptyTitle ?? t("empty")}
@@ -182,24 +245,30 @@ export function DataTable<T>({
   }
 
   const openable = Boolean(renderDetail);
-  const virtualRows =
-    virtualize && !paginate ? virtualizer.getVirtualItems() : null;
+  const sortableColumn = (col: Column<T>) =>
+    col.sortKey === true ? col.key : col.sortKey;
+
+  const rangeLabel = tt("range", {
+    from: formatCount(offset + 1),
+    to: formatCount(offset + pageRows.length),
+    total: formatCount(total),
+  });
 
   return (
     <>
+      {/* One announcement covers both layouts: which records are on screen, and
+          how many exist in total. */}
+      <p aria-live="polite" className="sr-only">
+        {rangeLabel}
+      </p>
+
       {/* Desktop / tablet: real table. */}
-      <div
-        ref={scrollRef}
-        className={cn(
-          "hidden md:block",
-          virtualize ? "max-h-[70vh] overflow-auto" : "overflow-x-auto",
-        )}
-      >
+      <div className="hidden overflow-x-auto md:block">
         <table className="w-full border-collapse text-sm">
           {caption ? <caption className="sr-only">{caption}</caption> : null}
           <thead className="sticky top-0 z-10 bg-surface-muted">
             <tr>
-              {numbered ? (
+              {showNumbers ? (
                 <th
                   scope="col"
                   className="w-12 border-b border-border px-3 py-2.5 text-start text-xs font-medium text-fg-muted"
@@ -207,19 +276,47 @@ export function DataTable<T>({
                   {tt("rowNumber")}
                 </th>
               ) : null}
-              {visibleColumns.map((col) => (
-                <th
-                  key={col.key}
-                  scope="col"
-                  className={cn(
-                    "border-b border-border px-3 py-2.5 text-xs font-medium text-fg-muted",
-                    col.align === "end" ? "text-end" : "text-start",
-                    col.headerClassName,
-                  )}
-                >
-                  {col.header}
-                </th>
-              ))}
+              {visibleColumns.map((col) => {
+                const sortKey = sortableColumn(col);
+                const active = Boolean(sortKey) && sort?.key === sortKey;
+                return (
+                  <th
+                    key={col.key}
+                    scope="col"
+                    aria-sort={
+                      !sortKey
+                        ? undefined
+                        : active
+                          ? sort?.direction === "asc"
+                            ? "ascending"
+                            : "descending"
+                          : "none"
+                    }
+                    className={cn(
+                      "border-b border-border px-3 py-2.5 text-xs font-medium text-fg-muted",
+                      col.align === "end" ? "text-end" : "text-start",
+                      col.headerClassName,
+                    )}
+                  >
+                    {sortKey && onSortChange ? (
+                      <SortableHeader
+                        active={active}
+                        direction={sort?.direction ?? "asc"}
+                        label={
+                          active && sort?.direction === "asc"
+                            ? tt("sortDesc")
+                            : tt("sortAsc")
+                        }
+                        onClick={() => onSortChange(nextSort(sort, sortKey))}
+                      >
+                        {col.header}
+                      </SortableHeader>
+                    ) : (
+                      col.header
+                    )}
+                  </th>
+                );
+              })}
               {renderActions ? (
                 <th
                   scope="col"
@@ -230,90 +327,56 @@ export function DataTable<T>({
               ) : null}
             </tr>
           </thead>
-          <tbody
-            style={
-              virtualRows
-                ? { height: virtualizer.getTotalSize(), position: "relative" }
-                : undefined
-            }
-          >
-            {(virtualRows ?? pageRows.map((_, index) => ({ index, start: 0, key: index }))).map(
-              (virtualRow) => {
-                const row = (virtualRows ? rows : pageRows)[virtualRow.index];
-                return (
-                  <tr
-                    key={getRowId(row)}
+          <tbody>
+            {pageRows.map((row, index) => (
+              <tr
+                key={getRowId(row)}
+                className={cn(
+                  "border-b border-border last:border-0",
+                  openable && "cursor-pointer hover:bg-surface-muted",
+                )}
+                onClick={openable ? () => setSelected(row) : undefined}
+                onKeyDown={
+                  openable
+                    ? (event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          setSelected(row);
+                        }
+                      }
+                    : undefined
+                }
+                tabIndex={openable ? 0 : undefined}
+                aria-label={openable ? t("expandRow") : undefined}
+              >
+                {showNumbers ? (
+                  <td className="numeric px-3 py-3 align-middle text-xs text-fg-subtle">
+                    {/* Continues across pages: page 2 starts at 11. */}
+                    {formatCount(offset + index + 1)}
+                  </td>
+                ) : null}
+                {visibleColumns.map((col) => (
+                  <td
+                    key={col.key}
                     className={cn(
-                      "border-b border-border last:border-0",
-                      openable && "cursor-pointer hover:bg-surface-muted",
+                      "px-3 py-3 align-middle text-fg",
+                      col.align === "end" ? "text-end" : "text-start",
+                      col.cellClassName,
                     )}
-                    style={
-                      virtualRows
-                        ? {
-                            position: "absolute",
-                            insetInlineStart: 0,
-                            width: "100%",
-                            display: "flex",
-                            transform: `translateY(${virtualRow.start}px)`,
-                            height: rowHeight,
-                          }
-                        : undefined
-                    }
-                    onClick={
-                      openable ? () => setSelected(row) : undefined
-                    }
-                    onKeyDown={
-                      openable
-                        ? (event) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                              event.preventDefault();
-                              setSelected(row);
-                            }
-                          }
-                        : undefined
-                    }
-                    tabIndex={openable ? 0 : undefined}
-                    aria-label={openable ? t("expandRow") : undefined}
                   >
-                    {numbered ? (
-                      <td
-                        className={cn(
-                          "numeric px-3 py-3 align-middle text-xs text-fg-subtle",
-                          virtualRows && "flex-1",
-                        )}
-                      >
-                        {/* Continues across pages: page 2 starts at 16. */}
-                        {formatCount(offset + virtualRow.index + 1)}
-                      </td>
-                    ) : null}
-                    {visibleColumns.map((col) => (
-                      <td
-                        key={col.key}
-                        className={cn(
-                          "px-3 py-3 align-middle text-fg",
-                          virtualRows && "flex-1",
-                          col.align === "end" ? "text-end" : "text-start",
-                          col.cellClassName,
-                        )}
-                      >
-                        {col.cell(row)}
-                      </td>
-                    ))}
-                    {renderActions ? (
-                      <td
-                        className={cn(
-                          "px-3 py-2 text-end",
-                          virtualRows && "flex-1",
-                        )}
-                        onClick={(event) => event.stopPropagation()}
-                      >
-                        {renderActions(row)}
-                      </td>
-                    ) : null}
-                  </tr>
-                );
-              },
-            )}
+                    {col.cell(row)}
+                  </td>
+                ))}
+                {renderActions ? (
+                  <td
+                    className="px-3 py-2 text-end"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    {renderActions(row)}
+                  </td>
+                ) : null}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -328,7 +391,7 @@ export function DataTable<T>({
             <li key={getRowId(row)} className="p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex min-w-0 items-baseline gap-2 text-sm font-medium text-fg">
-                  {numbered ? (
+                  {showNumbers ? (
                     <span className="numeric shrink-0 text-xs font-normal text-fg-subtle">
                       {formatCount(offset + index + 1)}
                     </span>
@@ -361,25 +424,22 @@ export function DataTable<T>({
         })}
       </ul>
 
-      {paginate && rows.length > pageSizeOptions[0] ? (
+      {/* The pager appears whenever more records exist than the smallest page
+          size — in server mode that is judged on `total`, so a second page can
+          never hide behind a full first one. */}
+      {paging && total > pageSizeOptions[0] ? (
         <nav
           aria-label={tt("pagination")}
           className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-3 py-3"
         >
           <div className="flex items-center gap-2">
-            <label
-              htmlFor={pageSizeId}
-              className="text-xs text-fg-muted"
-            >
+            <label htmlFor={pageSizeId} className="text-xs text-fg-muted">
               {tt("rowsPerPage")}
             </label>
             <select
               id={pageSizeId}
               value={pageSize}
-              onChange={(event) => {
-                setPageSize(Number(event.target.value));
-                setRequestedPage(1);
-              }}
+              onChange={(event) => changePageSize(Number(event.target.value))}
               className="numeric rounded-md border border-border bg-surface px-2 py-1 text-xs text-fg"
             >
               {pageSizeOptions.map((option) => (
@@ -388,20 +448,14 @@ export function DataTable<T>({
                 </option>
               ))}
             </select>
-            <span className="numeric text-xs text-fg-subtle">
-              {tt("range", {
-                from: formatCount(offset + 1),
-                to: formatCount(offset + pageRows.length),
-                total: formatCount(rows.length),
-              })}
-            </span>
+            <span className="numeric text-xs text-fg-subtle">{rangeLabel}</span>
           </div>
 
           <div className="flex items-center gap-1">
             <PageButton
               label={t("previous")}
               disabled={page === 1}
-              onClick={() => setRequestedPage(page - 1)}
+              onClick={() => goToPage(page - 1)}
             >
               <span aria-hidden>‹</span>
             </PageButton>
@@ -419,7 +473,7 @@ export function DataTable<T>({
                   key={entry}
                   label={tt("page", { page: formatCount(entry) })}
                   current={entry === page}
-                  onClick={() => setRequestedPage(entry)}
+                  onClick={() => goToPage(entry)}
                 >
                   <span className="numeric">{formatCount(entry)}</span>
                 </PageButton>
@@ -428,7 +482,7 @@ export function DataTable<T>({
             <PageButton
               label={t("next")}
               disabled={page === pageCount}
-              onClick={() => setRequestedPage(page + 1)}
+              onClick={() => goToPage(page + 1)}
             >
               <span aria-hidden>›</span>
             </PageButton>
@@ -440,9 +494,7 @@ export function DataTable<T>({
         <DetailDrawer
           open={selected !== null}
           onClose={() => setSelected(null)}
-          title={
-            selected && detailTitle ? detailTitle(selected) : t("details")
-          }
+          title={selected && detailTitle ? detailTitle(selected) : t("details")}
         >
           {selected ? renderDetail(selected) : null}
         </DetailDrawer>

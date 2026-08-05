@@ -22,6 +22,7 @@ import {
   formatAmount,
   formatIban,
   formatPhone,
+  isolate,
   isValidIban,
   isValidPhone,
 } from "@/lib/format";
@@ -146,9 +147,8 @@ export function ExternalTransferForm() {
                 error={fieldState.error?.message}
                 hint={
                   account
-                    ? `${t("availableBalance")}: ${formatAmount(
-                        account.balance,
-                        account.currency,
+                    ? `${t("availableBalance")}: ${isolate(
+                        formatAmount(account.balance, account.currency),
                       )}`
                     : undefined
                 }

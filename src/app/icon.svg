@@ -1,0 +1,14 @@
+<!--
+  The Saraf mark on its own — the same artwork as the plate in src/logo/LogoHC.svg,
+  cropped to its 32×32 box. The wordmark is dropped deliberately: at tab size it
+  is unreadable, and the plate carries the brand colours by itself.
+
+  One file for both themes. The plate is brand dark with the blue and green
+  arrows on top, which holds its contrast against a light and a dark tab strip
+  alike, so there is no theme-conditional favicon to keep in sync.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="41.9839 0 32 32" width="32" height="32" fill="none">
+  <path d="M68.1649 0H47.8029C44.5891 0 41.9839 2.60524 41.9839 5.81897V26.181C41.9839 29.3948 44.5891 32 47.8029 32H68.1649C71.3786 32 73.9839 29.3948 73.9839 26.181V5.81897C73.9839 2.60524 71.3786 0 68.1649 0Z" fill="#1C1E1C"/>
+  <path d="M63.6399 19.3908H53.3775C50.6003 19.3908 48.1692 17.3333 47.9089 14.5693C47.6109 11.3966 50.1089 8.71829 53.2205 8.71829H56.7668L52.6708 4.62233C53.7614 3.53182 55.5294 3.53182 56.62 4.62233L63.5076 11.51H53.3092C52.0165 11.51 50.862 12.4362 50.6977 13.7187C50.4985 15.2701 51.7068 16.5976 53.2205 16.5976H63.6399V19.3893V19.3908Z" fill="#0056F5"/>
+  <path d="M59.3491 27.3776L52.4614 20.4899H62.6599C63.9525 20.4899 65.107 19.5637 65.2713 18.2813C65.4705 16.7298 64.2622 15.4023 62.7486 15.4023H52.3291V12.6106H62.5915C65.3687 12.6106 67.7998 14.668 68.0601 17.4321C68.3582 20.6048 65.8602 23.2831 62.7486 23.2831H59.2022L63.2982 27.379C62.2077 28.4696 60.4396 28.4696 59.3491 27.379V27.3776Z" fill="#04BF66"/>
+</svg>

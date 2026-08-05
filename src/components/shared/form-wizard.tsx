@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardFooter } from "@/components/ui/card";
+import { useSaveShortcut } from "@/lib/shortcuts";
 import { cn } from "@/lib/utils";
 
 export type WizardStep = {
@@ -41,6 +42,12 @@ export function FormWizard({
     if (step.validate && !(await step.validate())) return;
     setIndex((i) => Math.min(i + 1, steps.length - 1));
   }
+
+  // Ctrl/Cmd+S submits, but only from the last step — that is the only place
+  // the form is complete, and a chord that half-saves a money movement would be
+  // worse than no chord. Disabled while a submit is in flight so a held key
+  // cannot fire the same mutation twice.
+  useSaveShortcut(onSubmit, { disabled: !isLast || submitting });
 
   return (
     <div className="grid gap-4 lg:grid-cols-[16rem_1fr]">

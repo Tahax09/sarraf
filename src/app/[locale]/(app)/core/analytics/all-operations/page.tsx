@@ -5,15 +5,16 @@ import { useTranslations } from "next-intl";
 import { FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
-import { SelectInput, TextInput } from "@/components/ui/field";
-import { Skeleton } from "@/components/ui/states";
 import { PageHeader } from "@/components/shared/page-header";
 import { HeaderStatBar } from "@/components/shared/header-stat-bar";
 import { DataTable, type Column } from "@/components/shared/data-table";
+import { FilterBar } from "@/components/shared/filter-bar";
 import { DetailRow, DetailSection } from "@/components/shared/detail-drawer";
 import { CategoryBarChart, CompositionDonut } from "@/components/charts";
 import { useAllOperations, useBranches } from "@/lib/api/hooks";
 import { useLabels } from "@/lib/labels";
+import { useTableQuery } from "@/lib/use-table-query";
+import { useFilters, type FilterDef } from "@/lib/filters";
 import { downloadCsv } from "@/lib/export";
 import { formatAmount, formatCount, formatDateTime } from "@/lib/format";
 import type { LedgerEntry, OperationType } from "@/lib/api/types";
@@ -28,9 +29,20 @@ const OPERATION_TYPES: OperationType[] = [
 ];
 
 /**
- * §6.7 — the full ledger (thousands of rows). Virtualized, with the operation
- * type mix as a donut over the loaded page and every enum passed through the
- * label dictionary (§7 item 2).
+ * How many of the most recent matching entries the two charts summarise.
+ *
+ * The backend exposes no aggregate endpoint for the ledger, so a mix or a
+ * volume figure has to be computed from rows this page actually holds. Rather
+ * than let that quietly become "whatever page you are on", the charts read a
+ * fixed, bounded sample and both cards state that scope in their subtitle.
+ */
+const CHART_SAMPLE_SIZE = 200;
+
+/**
+ * §6.7 — the full ledger. The table is paged, ordered and searched by the
+ * server, so the record count is the backend's `total` and no row is ever
+ * silently dropped. The two charts above it summarise a bounded, explicitly
+ * labelled sample; every enum passes through the label dictionary (§7 item 2).
  */
 export default function AllOperationsPage() {
   const t = useTranslations("analytics");
@@ -39,34 +51,73 @@ export default function AllOperationsPage() {
   const tStats = useTranslations("stats");
   const labels = useLabels();
 
-  const [filters, setFilters] = useState({ type: "", branchId: "", q: "" });
-  // The ledger is fetched wide and paged client-side by the table.
-  const query = useAllOperations({ ...filters, pageSize: 500 });
   const branches = useBranches();
+  const filterDefs: FilterDef[] = [
+    {
+      key: "type",
+      type: "select",
+      label: tf("type"),
+      options: OPERATION_TYPES.map((type) => ({
+        value: type,
+        label: labels.operationType(type),
+      })),
+    },
+    {
+      key: "branchId",
+      type: "select",
+      label: tf("branch"),
+      options: (branches.data ?? []).map((branch) => ({
+        value: branch.id,
+        label: branch.name,
+      })),
+    },
+    { key: "date", type: "dateRange", label: tf("date") },
+    { key: "amount", type: "amountRange", label: tf("amount") },
+  ];
+  const filters = useFilters(filterDefs, { persistKey: "all-operations" });
+
+  const table = useTableQuery({
+    filters: filters.params,
+    sort: { key: "createdAt", direction: "desc" },
+  });
+  const query = useAllOperations(table.params);
   const rows = useMemo(() => query.data?.items ?? [], [query.data]);
+  const total = query.data?.total ?? 0;
+
+  // Chart scope: same filters and search term, first page, sample-sized. Kept
+  // apart from `table.params` so paging or re-ordering the table never moves
+  // the charts underneath the reader.
+  const sample = useAllOperations({
+    ...table.params,
+    page: 1,
+    pageSize: CHART_SAMPLE_SIZE,
+    sort: undefined,
+  });
+  const sampleRows = useMemo(() => sample.data?.items ?? [], [sample.data]);
+  const chartScope = t("chartScope", { count: formatCount(sampleRows.length) });
 
   const mix = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const row of rows) {
+    for (const row of sampleRows) {
       counts.set(row.type, (counts.get(row.type) ?? 0) + 1);
     }
     return [...counts.entries()].map(([type, count]) => ({
       type: labels.operationType(type),
       count,
     }));
-  }, [rows, labels]);
+  }, [sampleRows, labels]);
 
-  // Currencies present in the loaded rows, busiest first — the volume chart can
-  // only add up amounts that share a currency, so it charts one at a time.
+  // Currencies present in the sample, busiest first — the volume chart can only
+  // add up amounts that share a currency, so it charts one at a time.
   const mixCurrencies = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const row of rows) {
+    for (const row of sampleRows) {
       counts.set(row.currency, (counts.get(row.currency) ?? 0) + 1);
     }
     return [...counts.entries()]
       .sort((a, b) => b[1] - a[1])
       .map(([currency]) => currency);
-  }, [rows]);
+  }, [sampleRows]);
 
   const [mixCurrency, setMixCurrency] = useState("");
   const volumeCurrency =
@@ -76,7 +127,7 @@ export default function AllOperationsPage() {
 
   const volume = useMemo(() => {
     const totals = new Map<string, number>();
-    for (const row of rows) {
+    for (const row of sampleRows) {
       if (row.currency !== volumeCurrency) continue;
       totals.set(row.type, (totals.get(row.type) ?? 0) + row.amount);
     }
@@ -84,19 +135,22 @@ export default function AllOperationsPage() {
       type: labels.operationType(type),
       amount,
     }));
-  }, [rows, labels, volumeCurrency]);
+  }, [sampleRows, labels, volumeCurrency]);
 
   // §7 item 9: the fee column exists only when some row actually carries a fee.
-  const anyFee = rows.some((row) => (row.feeAmount ?? 0) > 0);
+  // Read from the sample, not the current page, so the column does not appear
+  // and disappear as the reader pages through the ledger.
+  const anyFee = sampleRows.some((row) => (row.feeAmount ?? 0) > 0);
 
   const columns: Column<LedgerEntry>[] = [
     {
       key: "client",
       header: tf("client"),
       primary: true,
+      sortKey: "clientName",
       cell: (row) => (
         <span className="flex min-w-0 flex-col">
-          <span className="truncate text-sm">{row.clientName}</span>
+          <bdi className="truncate text-sm">{row.clientName}</bdi>
           <span className="numeric text-xs text-fg-muted">
             {row.accountNumber}
           </span>
@@ -124,6 +178,7 @@ export default function AllOperationsPage() {
       key: "amount",
       header: tf("amount"),
       align: "end",
+      sortKey: "amount",
       cell: (row) => (
         <span className="numeric text-sm font-medium">
           {formatAmount(row.amount, row.currency)}
@@ -148,6 +203,7 @@ export default function AllOperationsPage() {
       key: "createdAt",
       header: tf("date"),
       align: "end",
+      sortKey: "createdAt",
       cell: (row) => (
         <span className="numeric text-xs text-fg-muted">
           {formatDateTime(row.createdAt)}
@@ -156,7 +212,10 @@ export default function AllOperationsPage() {
     },
   ];
 
-  const anyFilter = Object.values(filters).some((value) => value !== "");
+  // The pager only ever holds one page in memory, so the export covers the page
+  // on screen. A whole-ledger export needs a backend export endpoint.
+  const firstRow = total === 0 ? 0 : (table.page - 1) * table.pageSize + 1;
+  const lastRow = firstRow === 0 ? 0 : firstRow + rows.length - 1;
 
   return (
     <div className="space-y-4">
@@ -195,7 +254,7 @@ export default function AllOperationsPage() {
             }
           >
             <FileDown className="size-4" aria-hidden />
-            {tc("exportExcel")}
+            {tc("exportPage")}
           </Button>
         }
       />
@@ -204,14 +263,14 @@ export default function AllOperationsPage() {
         stats={[
           {
             label: tStats("count"),
-            value: formatCount(query.data?.total ?? 0),
+            value: formatCount(total),
             numeric: true,
           },
           {
             label: tc("showing", {
-              from: rows.length === 0 ? 0 : 1,
-              to: rows.length,
-              total: query.data?.total ?? 0,
+              from: firstRow,
+              to: lastRow,
+              total,
             }),
             value: formatCount(rows.length),
             numeric: true,
@@ -221,26 +280,26 @@ export default function AllOperationsPage() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
-          <CardHeader title={t("operationTypeMix")} />
+          <CardHeader title={t("operationTypeMix")} description={chartScope} />
           <CardBody>
-            {query.isLoading ? (
-              <Skeleton className="h-56 w-full" />
-            ) : (
-              <CompositionDonut
-                data={mix as unknown as Record<string, unknown>[]}
-                nameKey="type"
-                valueKey="count"
-                // Side legend: the labels are long enough that a legend under
-                // the ring squeezes the ring flat.
-                legend="side"
-              />
-            )}
+            <CompositionDonut
+              data={mix as unknown as Record<string, unknown>[]}
+              nameKey="type"
+              valueKey="count"
+              // Side legend: the labels are long enough that a legend under
+              // the ring squeezes the ring flat.
+              legend="side"
+              loading={sample.isLoading}
+              error={sample.isError}
+              onRetry={() => sample.refetch()}
+            />
           </CardBody>
         </Card>
 
         <Card>
           <CardHeader
             title={t("operationVolumeByType")}
+            description={chartScope}
             action={
               mixCurrencies.length > 1 ? (
                 // A bare select: the card title already says what it picks.
@@ -260,75 +319,31 @@ export default function AllOperationsPage() {
             }
           />
           <CardBody>
-            {query.isLoading ? (
-              <Skeleton className="h-56 w-full" />
-            ) : (
-              <CategoryBarChart
-                data={volume as unknown as Record<string, unknown>[]}
-                xKey="type"
-                series={[
-                  {
-                    key: "amount",
-                    label: t("volumeIn", { currency: volumeCurrency }),
-                    color: "var(--color-chart-exchange)",
-                  },
-                ]}
-              />
-            )}
+            <CategoryBarChart
+              data={volume as unknown as Record<string, unknown>[]}
+              xKey="type"
+              series={[
+                {
+                  key: "amount",
+                  label: t("volumeIn", { currency: volumeCurrency }),
+                  color: "var(--color-chart-exchange)",
+                },
+              ]}
+              loading={sample.isLoading}
+              error={sample.isError}
+              onRetry={() => sample.refetch()}
+            />
           </CardBody>
         </Card>
       </div>
 
       <Card>
-        <div className="grid gap-3 border-b border-border p-3 sm:grid-cols-3">
-          <SelectInput
-            label={tf("type")}
-            value={filters.type}
-            onChange={(event) =>
-              setFilters((prev) => ({ ...prev, type: event.target.value }))
-            }
-          >
-            <option value="">{tc("all")}</option>
-            {OPERATION_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {labels.operationType(type)}
-              </option>
-            ))}
-          </SelectInput>
-          <SelectInput
-            label={tf("branch")}
-            value={filters.branchId}
-            onChange={(event) =>
-              setFilters((prev) => ({ ...prev, branchId: event.target.value }))
-            }
-          >
-            <option value="">{tc("all")}</option>
-            {(branches.data ?? []).map((branch) => (
-              <option key={branch.id} value={branch.id}>
-                {branch.name}
-              </option>
-            ))}
-          </SelectInput>
-          <TextInput
-            label={tc("search")}
-            placeholder={tc("searchPlaceholder")}
-            value={filters.q}
-            onChange={(event) =>
-              setFilters((prev) => ({ ...prev, q: event.target.value }))
-            }
-          />
-          {anyFilter ? (
-            <div className="sm:col-span-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setFilters({ type: "", branchId: "", q: "" })}
-              >
-                {tc("clearFilters")}
-              </Button>
-            </div>
-          ) : null}
-        </div>
+        <FilterBar
+          defs={filterDefs}
+          state={filters}
+          search={table.search}
+          onSearchChange={table.setSearch}
+        />
 
         <DataTable
           columns={columns}
@@ -338,6 +353,15 @@ export default function AllOperationsPage() {
           error={query.isError}
           onRetry={() => query.refetch()}
           caption={t("allOperationsTitle")}
+          pagination={{
+            page: table.page,
+            pageSize: table.pageSize,
+            total,
+            onPageChange: table.setPage,
+            onPageSizeChange: table.setPageSize,
+          }}
+          sort={table.sort}
+          onSortChange={table.setSort}
           detailTitle={(row) => row.clientName}
           renderDetail={(row) => (
             <DetailSection title={tf("reference")}>

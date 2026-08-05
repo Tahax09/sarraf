@@ -72,13 +72,25 @@ describe("countries register (Round 2 §6)", () => {
   });
 
   it("blocks removal of a country an external transfer names", async () => {
+    const user = userEvent.setup();
     renderWithProviders(<CountriesPage />);
+    await user.type(screen.getByLabelText(message("common.search")), "Tunisia");
     const table = within(await screen.findByRole("table"));
     const tunisia = (await table.findByText("Tunisia")).closest("tr")!;
 
+    await user.click(
+      within(tunisia).getByRole("button", { name: message("common.delete") }),
+    );
+
+    // The usage question is asked about this one country, so the answer only
+    // arrives once the dialog is open.
+    const dialog = within(screen.getByRole("dialog"));
+    expect(await dialog.findByRole("alert")).toHaveTextContent(
+      message("countries.deleteBlocked"),
+    );
     await waitFor(() => {
       expect(
-        within(tunisia).getByRole("button", { name: message("common.delete") }),
+        dialog.getByRole("button", { name: message("common.delete") }),
       ).toBeDisabled();
     });
   });

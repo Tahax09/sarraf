@@ -27,7 +27,6 @@ import { CONTINENTS, type Continent, type Country } from "@/lib/api/types";
 
 export default function CountriesPage() {
   const t = useTranslations("countries");
-  const tf = useTranslations("fields");
   const tc = useTranslations("common");
   const tStats = useTranslations("stats");
   const tv = useTranslations("validation");
@@ -36,24 +35,12 @@ export default function CountriesPage() {
   const query = useCountries();
   const create = useCreateCountry();
   const update = useUpdateCountry();
-  const remove = useDeleteCountry();
-  // Countries named by a transfer cannot be removed; the guard is server-side
-  // too, this only keeps the reader from walking into a 409.
-  const transfers = useExternalTransfers({ pageSize: 500 });
 
   const [editing, setEditing] = useState<Country | null>(null);
   const [adding, setAdding] = useState(false);
   const [deleting, setDeleting] = useState<Country | null>(null);
   const [search, setSearch] = useState("");
   const [continent, setContinent] = useState("");
-
-  const usedCodes = useMemo(
-    () =>
-      new Set(
-        (transfers.data?.items ?? []).map((o) => o.beneficiary.countryCode),
-      ),
-    [transfers.data],
-  );
 
   const rows = useMemo(() => {
     const all = query.data ?? [];
@@ -129,7 +116,7 @@ export default function CountriesPage() {
       cell: (row) => (
         <span className="flex items-center gap-2">
           <span aria-hidden>{countryFlag(row.code)}</span>
-          {row.name}
+          <bdi>{row.name}</bdi>
         </span>
       ),
     },
@@ -178,8 +165,6 @@ export default function CountriesPage() {
           <Button
             size="sm"
             variant="secondary"
-            disabled={usedCodes.has(row.code)}
-            title={usedCodes.has(row.code) ? t("deleteBlocked") : undefined}
             onClick={(event) => {
               event.stopPropagation();
               setDeleting(row);
@@ -339,21 +324,59 @@ export default function CountriesPage() {
         </form>
       </Dialog>
 
-      <ConfirmDialog
-        open={deleting !== null}
-        onClose={() => setDeleting(null)}
-        tone="danger"
-        requireTyped
-        loading={remove.isPending}
-        title={t("deleteTitle")}
-        body={t("deleteBody", { name: deleting?.name ?? "" })}
-        confirmLabel={tc("delete")}
-        onConfirm={async () => {
-          if (!deleting) return;
-          await remove.mutateAsync(deleting.code);
-          setDeleting(null);
-        }}
-      />
+      {deleting ? (
+        <DeleteCountryDialog
+          country={deleting}
+          onClose={() => setDeleting(null)}
+        />
+      ) : null}
     </div>
+  );
+}
+
+/**
+ * Delete confirmation for one country.
+ *
+ * A country named by an external transfer cannot be removed. The guard is
+ * server-side too; asking here — scoped to the one country, one `total`-only
+ * request — keeps the reader from walking into a 409. The page used to prefetch
+ * hundreds of transfers for the same answer, which missed any transfer past the
+ * prefetch window.
+ */
+function DeleteCountryDialog({
+  country,
+  onClose,
+}: {
+  country: Country;
+  onClose: () => void;
+}) {
+  const t = useTranslations("countries");
+  const tc = useTranslations("common");
+  const remove = useDeleteCountry();
+  const usage = useExternalTransfers({
+    countryCode: country.code,
+    pageSize: 1,
+  });
+  // The check is advisory: the typed confirmation is the real gate and the
+  // server refuses an in-use country regardless, so an unsettled check never
+  // holds the dialog hostage.
+  const inUse = (usage.data?.total ?? 0) > 0;
+
+  return (
+    <ConfirmDialog
+      open
+      onClose={onClose}
+      tone="danger"
+      requireTyped
+      loading={remove.isPending}
+      title={t("deleteTitle")}
+      body={t("deleteBody", { name: country.name })}
+      confirmLabel={tc("delete")}
+      blocked={inUse ? t("deleteBlocked") : undefined}
+      onConfirm={async () => {
+        await remove.mutateAsync(country.code);
+        onClose();
+      }}
+    />
   );
 }

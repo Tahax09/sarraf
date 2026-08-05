@@ -1,18 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { Card } from "@/components/ui/card";
-import { SelectInput, TextInput } from "@/components/ui/field";
-import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
 import { HeaderStatBar } from "@/components/shared/header-stat-bar";
 import { DataTable, type Column } from "@/components/shared/data-table";
+import { FilterBar } from "@/components/shared/filter-bar";
 import { DetailRow, DetailSection } from "@/components/shared/detail-drawer";
 import { ClientCell } from "@/components/shared/cells";
 import { useAccounts, useBranches, useCurrencies } from "@/lib/api/hooks";
 import { useLabels } from "@/lib/labels";
-import { formatAmount, formatCount, formatPhone } from "@/lib/format";
+import { formatAmount, formatCount, formatPhone, isolate } from "@/lib/format";
+import { useTableQuery } from "@/lib/use-table-query";
+import { useFilters, type FilterDef } from "@/lib/filters";
 import type { Account } from "@/lib/api/types";
 
 export default function AccountsPage() {
@@ -22,17 +23,46 @@ export default function AccountsPage() {
   const tStats = useTranslations("stats");
   const labels = useLabels();
 
-  const [filters, setFilters] = useState({
-    q: "",
-    currency: "",
-    branchId: "",
-  });
-
-  const query = useAccounts({ ...filters, pageSize: 200 });
   const currencies = useCurrencies();
   const branches = useBranches();
-  const rows = useMemo(() => query.data?.items ?? [], [query.data]);
 
+  const filterDefs: FilterDef[] = [
+    {
+      key: "currency",
+      type: "select",
+      label: tf("currency"),
+      options: (currencies.data ?? []).map((currency) => ({
+        value: currency.alphabeticCode,
+        label: `${isolate(currency.alphabeticCode)} — ${currency.name}`,
+      })),
+    },
+    {
+      key: "branchId",
+      type: "select",
+      label: tf("branch"),
+      options: (branches.data ?? []).map((branch) => ({
+        value: branch.id,
+        label: branch.name,
+      })),
+    },
+  ];
+  // Currency and branch are the operator's working context, worth keeping for
+  // the session; the account-number search is not persisted.
+  const filters = useFilters(filterDefs, { persistKey: "accounts" });
+
+  // The account number search is the table's own search box; the two selects
+  // are filters. Either one changing sends the reader back to page 1.
+  const table = useTableQuery({
+    filters: filters.params,
+    sort: { key: "number", direction: "asc" },
+  });
+  const query = useAccounts(table.params);
+  const rows = useMemo(() => query.data?.items ?? [], [query.data]);
+  const total = query.data?.total ?? 0;
+
+  // Balances add up the rows on screen, not the whole register — the label says
+  // so, because an operator reading a page sum as a register sum would be
+  // reading the wrong number.
   const totals = useMemo(() => {
     const map = new Map<string, number>();
     for (const row of rows) {
@@ -46,11 +76,13 @@ export default function AccountsPage() {
       key: "number",
       header: tf("accountNumber"),
       primary: true,
+      sortKey: "number",
       cell: (row) => <span className="numeric text-sm">{row.number}</span>,
     },
     {
       key: "client",
       header: tf("client"),
+      sortKey: "clientName",
       cell: (row) => <ClientCell name={row.clientName} phone={row.clientPhone} />,
     },
     {
@@ -67,6 +99,7 @@ export default function AccountsPage() {
       key: "balance",
       header: tf("balance"),
       align: "end",
+      sortKey: "balance",
       cell: (row) => (
         <span className="numeric text-sm font-medium text-fg">
           {formatAmount(row.balance, row.currency)}
@@ -74,8 +107,6 @@ export default function AccountsPage() {
       ),
     },
   ];
-
-  const anyFilter = Object.values(filters).some((value) => value !== "");
 
   return (
     <div className="space-y-4">
@@ -85,67 +116,24 @@ export default function AccountsPage() {
         stats={[
           {
             label: tStats("count"),
-            value: formatCount(query.data?.total ?? 0),
+            value: formatCount(total),
             numeric: true,
           },
-          ...totals.map(([currency, total]) => ({
-            label: `${tStats("total")} — ${currency}`,
-            value: formatAmount(total, currency),
+          ...totals.map(([currency, sum]) => ({
+            label: `${tStats("pageTotal")} — ${isolate(currency)}`,
+            value: formatAmount(sum, currency),
             numeric: true,
           })),
         ]}
       />
 
       <Card>
-        <div className="grid gap-3 border-b border-border p-3 sm:grid-cols-3">
-          <TextInput
-            label={tc("search")}
-            placeholder={tc("searchPlaceholder")}
-            value={filters.q}
-            onChange={(event) =>
-              setFilters((prev) => ({ ...prev, q: event.target.value }))
-            }
-          />
-          <SelectInput
-            label={tf("currency")}
-            value={filters.currency}
-            onChange={(event) =>
-              setFilters((prev) => ({ ...prev, currency: event.target.value }))
-            }
-          >
-            <option value="">{tc("all")}</option>
-            {(currencies.data ?? []).map((currency) => (
-              <option key={currency.id} value={currency.alphabeticCode}>
-                {currency.alphabeticCode} — {currency.name}
-              </option>
-            ))}
-          </SelectInput>
-          <SelectInput
-            label={tf("branch")}
-            value={filters.branchId}
-            onChange={(event) =>
-              setFilters((prev) => ({ ...prev, branchId: event.target.value }))
-            }
-          >
-            <option value="">{tc("all")}</option>
-            {(branches.data ?? []).map((branch) => (
-              <option key={branch.id} value={branch.id}>
-                {branch.name}
-              </option>
-            ))}
-          </SelectInput>
-          {anyFilter ? (
-            <div className="sm:col-span-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setFilters({ q: "", currency: "", branchId: "" })}
-              >
-                {tc("clearFilters")}
-              </Button>
-            </div>
-          ) : null}
-        </div>
+        <FilterBar
+          defs={filterDefs}
+          state={filters}
+          search={table.search}
+          onSearchChange={table.setSearch}
+        />
 
         <DataTable
           columns={columns}
@@ -155,6 +143,15 @@ export default function AccountsPage() {
           error={query.isError}
           onRetry={() => query.refetch()}
           caption={t("title")}
+          pagination={{
+            page: table.page,
+            pageSize: table.pageSize,
+            total,
+            onPageChange: table.setPage,
+            onPageSizeChange: table.setPageSize,
+          }}
+          sort={table.sort}
+          onSortChange={table.setSort}
           detailTitle={(row) => row.number}
           renderDetail={(row) => (
             <>

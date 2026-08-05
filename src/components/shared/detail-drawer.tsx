@@ -77,7 +77,13 @@ export function DetailRow({
           numeric && "numeric",
         )}
       >
-        {value}
+        {/*
+         * Every value here is record data — an amount, an IBAN, a reference, a
+         * client name — read against an Arabic label. `<bdi>` gives each one its
+         * own direction without moving the column: the isolation is on the
+         * inline content, so the row keeps aligning to the page's end edge.
+         */}
+        <bdi>{value}</bdi>
       </dd>
     </div>
   );

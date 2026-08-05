@@ -9,12 +9,34 @@
 
 export type Id = string;
 
+/**
+ * One page of a server-side result set. `total` counts every matching record,
+ * not the length of `items` — the pager and the record count both read it, so a
+ * truncated response can never masquerade as a complete one.
+ */
 export type Paged<T> = {
   items: T[];
   total: number;
   page: number;
   pageSize: number;
 };
+
+export type SortDirection = "asc" | "desc";
+
+/** `null` means "server default order". */
+export type SortState = { key: string; direction: SortDirection } | null;
+
+/** Wire format for the `sort` query parameter: `createdAt:desc`. */
+export function serializeSort(sort: SortState): string | undefined {
+  return sort ? `${sort.key}:${sort.direction}` : undefined;
+}
+
+export function parseSort(value: unknown): SortState {
+  if (typeof value !== "string" || !value) return null;
+  const [key, direction] = value.split(":");
+  if (!key) return null;
+  return { key, direction: direction === "asc" ? "asc" : "desc" };
+}
 
 export type Money = {
   amount: number;

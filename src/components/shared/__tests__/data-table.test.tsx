@@ -151,6 +151,177 @@ describe("DataTable", () => {
     expect(screen.getByText(message("common.empty"))).toBeInTheDocument();
   });
 
+  it("reports the backend's total, not the size of the page it was given", () => {
+    renderWithProviders(
+      <DataTable
+        columns={columns(false)}
+        rows={rows}
+        getRowId={(row) => row.id}
+        caption="t"
+        pagination={{
+          page: 1,
+          pageSize: 2,
+          total: 137,
+          onPageChange: jest.fn(),
+          onPageSizeChange: jest.fn(),
+        }}
+      />,
+    );
+
+    expect(
+      screen.getAllByText(
+        message("table.range", { from: "1", to: "2", total: "137" }),
+      ).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("renders exactly the page the server returned, without re-slicing it", () => {
+    renderWithProviders(
+      <DataTable
+        columns={columns(false)}
+        rows={rows}
+        getRowId={(row) => row.id}
+        caption="t"
+        pagination={{
+          page: 3,
+          pageSize: 10,
+          total: 137,
+          onPageChange: jest.fn(),
+          onPageSizeChange: jest.fn(),
+        }}
+      />,
+    );
+
+    const body = within(screen.getByRole("table")).getAllByRole("row").slice(1);
+    expect(body).toHaveLength(2);
+    // Numbering continues from the server's offset rather than restarting.
+    expect(within(body[0]).getByText("21")).toBeInTheDocument();
+  });
+
+  it("hands paging back to the caller instead of paging in memory", async () => {
+    const user = userEvent.setup();
+    const onPageChange = jest.fn();
+    const onPageSizeChange = jest.fn();
+    renderWithProviders(
+      <DataTable
+        columns={columns(false)}
+        rows={rows}
+        getRowId={(row) => row.id}
+        caption="t"
+        pagination={{
+          page: 1,
+          pageSize: 10,
+          total: 137,
+          onPageChange,
+          onPageSizeChange,
+        }}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: message("table.page", { page: "2" }) }),
+    );
+    expect(onPageChange).toHaveBeenCalledWith(2);
+
+    await user.selectOptions(
+      screen.getByLabelText(message("table.rowsPerPage")),
+      "25",
+    );
+    expect(onPageSizeChange).toHaveBeenCalledWith(25);
+  });
+
+  it("announces the visible range to assistive technology", () => {
+    renderWithProviders(
+      <DataTable
+        columns={columns(false)}
+        rows={rows}
+        getRowId={(row) => row.id}
+        caption="t"
+        pagination={{
+          page: 2,
+          pageSize: 2,
+          total: 9,
+          onPageChange: jest.fn(),
+          onPageSizeChange: jest.fn(),
+        }}
+      />,
+    );
+
+    const live = document.querySelector('[aria-live="polite"]');
+    expect(live).toHaveTextContent(
+      message("table.range", { from: "3", to: "4", total: "9" }),
+    );
+  });
+
+  it("marks a sortable column and cycles it through the server's orderings", async () => {
+    const user = userEvent.setup();
+    const onSortChange = jest.fn();
+    const sortable: Column<Row>[] = [
+      { key: "name", header: "الاسم", primary: true, cell: (row) => row.name },
+      {
+        key: "amount",
+        header: "المبلغ",
+        sortKey: true,
+        cell: (row) => row.amount,
+      },
+    ];
+
+    const { rerender } = renderWithProviders(
+      <DataTable
+        columns={sortable}
+        rows={rows}
+        getRowId={(row) => row.id}
+        caption="t"
+        sort={null}
+        onSortChange={onSortChange}
+      />,
+    );
+
+    const header = () => screen.getByRole("columnheader", { name: /المبلغ/ });
+    expect(header()).toHaveAttribute("aria-sort", "none");
+
+    await user.click(within(header()).getByRole("button"));
+    expect(onSortChange).toHaveBeenLastCalledWith({
+      key: "amount",
+      direction: "asc",
+    });
+
+    rerender(
+      <DataTable
+        columns={sortable}
+        rows={rows}
+        getRowId={(row) => row.id}
+        caption="t"
+        sort={{ key: "amount", direction: "asc" }}
+        onSortChange={onSortChange}
+      />,
+    );
+    expect(header()).toHaveAttribute("aria-sort", "ascending");
+
+    await user.click(within(header()).getByRole("button"));
+    expect(onSortChange).toHaveBeenLastCalledWith({
+      key: "amount",
+      direction: "desc",
+    });
+  });
+
+  it("leaves columns with no sort key inert", () => {
+    renderWithProviders(
+      <DataTable
+        columns={columns(false)}
+        rows={rows}
+        getRowId={(row) => row.id}
+        caption="t"
+        sort={null}
+        onSortChange={jest.fn()}
+      />,
+    );
+
+    const header = screen.getByRole("columnheader", { name: "الاسم" });
+    expect(header).not.toHaveAttribute("aria-sort");
+    expect(within(header).queryByRole("button")).not.toBeInTheDocument();
+  });
+
   it("offers a retry path on failure", async () => {
     const user = userEvent.setup();
     const onRetry = jest.fn();

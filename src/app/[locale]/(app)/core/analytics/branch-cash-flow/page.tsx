@@ -4,7 +4,6 @@ import { useTranslations } from "next-intl";
 import { FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/states";
 import { PageHeader } from "@/components/shared/page-header";
 import { HeaderStatBar } from "@/components/shared/header-stat-bar";
 import { DataTable, type Column } from "@/components/shared/data-table";
@@ -151,26 +150,25 @@ export default function BranchCashFlowPage() {
       <Card>
         <CardHeader title={t("branchComparison")} />
         <CardBody>
-          {query.isLoading ? (
-            <Skeleton className="h-56 w-full" />
-          ) : (
-            <CategoryBarChart
-              data={rows as unknown as Record<string, unknown>[]}
-              xKey="branchName"
-              series={[
-                {
-                  key: "deposits",
-                  label: tDashboard("trendDeposits"),
-                  color: "var(--color-chart-deposit)",
-                },
-                {
-                  key: "withdrawals",
-                  label: tDashboard("trendWithdrawals"),
-                  color: "var(--color-chart-withdrawal)",
-                },
-              ]}
-            />
-          )}
+          <CategoryBarChart
+            data={rows as unknown as Record<string, unknown>[]}
+            xKey="branchName"
+            series={[
+              {
+                key: "deposits",
+                label: tDashboard("trendDeposits"),
+                color: "var(--color-chart-deposit)",
+              },
+              {
+                key: "withdrawals",
+                label: tDashboard("trendWithdrawals"),
+                color: "var(--color-chart-withdrawal)",
+              },
+            ]}
+            loading={query.isLoading}
+            error={query.isError}
+            onRetry={() => query.refetch()}
+          />
         </CardBody>
         <DataTable
           columns={columns}

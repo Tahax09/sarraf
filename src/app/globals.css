@@ -199,6 +199,54 @@ body {
 }
 
 /*
+ * Accessibility Center. The attributes are written server-side from the
+ * SARAF_A11Y cookie, so a reader who needs these never sees a frame of the
+ * default. `data-motion="system"` deliberately styles nothing — the OS media
+ * query above already covers it.
+ */
+[data-motion="reduced"] *,
+[data-motion="reduced"] *::before,
+[data-motion="reduced"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/*
+ * Text size scales the root, so every rem-based size, gap and radius scales
+ * with it and the layout stays proportional instead of overflowing.
+ */
+[data-text="large"] {
+  font-size: 112.5%;
+}
+
+[data-text="larger"] {
+  font-size: 125%;
+}
+
+/*
+ * High contrast raises the muted foregrounds and borders rather than inverting
+ * anything: the palette keeps its meaning (green in, red out) while secondary
+ * text stops relying on a contrast ratio that only just clears AA.
+ */
+[data-contrast="high"] {
+  --color-fg-muted: var(--color-fg);
+  --color-fg-subtle: var(--color-fg);
+  --color-border: var(--color-border-strong);
+  --color-focus: var(--color-fg);
+}
+
+[data-contrast="high"] :focus-visible {
+  outline-width: 3px;
+}
+
+/* Inline links inside prose, where colour alone was the only cue. */
+[data-contrast="high"] .link {
+  text-decoration: underline;
+}
+
+/*
  * Print / "Export PDF": the browser's own print-to-PDF is the export path, so
  * the chrome (sidebar, header, filter controls) drops out and only the report
  * content is laid out on paper.

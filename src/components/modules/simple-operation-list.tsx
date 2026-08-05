@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { Plus } from "lucide-react";
 import { Link } from "@/i18n/navigation";
@@ -15,8 +15,16 @@ import {
 } from "@/components/shared/detail-drawer";
 import { AmountCell, ClientCell, DateCell } from "@/components/shared/cells";
 import { TextInput } from "@/components/ui/field";
-import { formatAmount, formatCount, formatDateTime, formatPhone } from "@/lib/format";
+import {
+  formatAmount,
+  formatCount,
+  formatDateTime,
+  formatPhone,
+  isolate,
+} from "@/lib/format";
 import { useLabels } from "@/lib/labels";
+import { useTableQuery } from "@/lib/use-table-query";
+import type { QueryParams } from "@/lib/api/client";
 import type {
   DepositOperation,
   Paged,
@@ -36,6 +44,10 @@ type ListQuery = {
 /**
  * List shell shared by Withdrawal and Deposit: same columns, same drawer, only
  * the amount label and register route differ.
+ *
+ * Paging, ordering and search are the server's job — the page asks for one page
+ * at a time and reports the backend's `total`, so the register can never show a
+ * truncated set as if it were complete.
  */
 export function SimpleOperationList({
   title,
@@ -46,20 +58,26 @@ export function SimpleOperationList({
   title: string;
   amountLabel: string;
   registerHref: string;
-  useData: (params: { q: string; pageSize: number }) => ListQuery;
+  useData: (params: QueryParams) => ListQuery;
 }) {
   const t = useTranslations("fields");
   const tc = useTranslations("common");
   const tStats = useTranslations("stats");
   const labels = useLabels();
-  const [q, setQ] = useState("");
 
-  const query = useData({ q, pageSize: 100 });
+  const table = useTableQuery({
+    sort: { key: "createdAt", direction: "desc" },
+  });
+  const query = useData(table.params);
   const rows = useMemo(() => query.data?.items ?? [], [query.data]);
+  const total = query.data?.total ?? 0;
 
   // Fee column only exists when at least one row actually carries a fee.
   const anyFee = rows.some((row) => row.fee && row.fee.amount > 0);
 
+  // Sums cover the rows on screen. The backend returns no aggregate over the
+  // whole result set, so the label says "page total" rather than implying a
+  // register-wide figure that would be wrong.
   const totalsByCurrency = useMemo(() => {
     const map = new Map<string, number>();
     for (const row of rows) {
@@ -73,17 +91,20 @@ export function SimpleOperationList({
       key: "client",
       header: t("client"),
       primary: true,
+      sortKey: "clientName",
       cell: (row) => <ClientCell name={row.clientName} phone={row.clientPhone} />,
     },
     {
       key: "account",
       header: t("accountNumber"),
+      sortKey: "accountNumber",
       cell: (row) => <span className="numeric text-sm">{row.accountNumber}</span>,
     },
     {
       key: "amount",
       header: amountLabel,
       align: "end",
+      sortKey: "amount",
       cell: (row) => (
         <AmountCell
           amount={row.amount}
@@ -95,6 +116,7 @@ export function SimpleOperationList({
     {
       key: "date",
       header: t("date"),
+      sortKey: "createdAt",
       cell: (row) => <DateCell value={row.createdAt} />,
     },
   ];
@@ -115,12 +137,12 @@ export function SimpleOperationList({
         stats={[
           {
             label: tStats("count"),
-            value: formatCount(query.data?.total ?? 0),
+            value: formatCount(total),
             numeric: true,
           },
-          ...totalsByCurrency.map(([currency, total]) => ({
-            label: `${tStats("total")} — ${currency}`,
-            value: formatAmount(total, currency),
+          ...totalsByCurrency.map(([currency, sum]) => ({
+            label: `${tStats("pageTotal")} — ${isolate(currency)}`,
+            value: formatAmount(sum, currency),
             numeric: true,
           })),
         ]}
@@ -131,8 +153,8 @@ export function SimpleOperationList({
           <TextInput
             label={tc("search")}
             placeholder={tc("searchPlaceholder")}
-            value={q}
-            onChange={(event) => setQ(event.target.value)}
+            value={table.search}
+            onChange={(event) => table.setSearch(event.target.value)}
           />
         </div>
         <DataTable
@@ -143,6 +165,15 @@ export function SimpleOperationList({
           error={query.isError}
           onRetry={() => query.refetch()}
           caption={title}
+          pagination={{
+            page: table.page,
+            pageSize: table.pageSize,
+            total,
+            onPageChange: table.setPage,
+            onPageSizeChange: table.setPageSize,
+          }}
+          sort={table.sort}
+          onSortChange={table.setSort}
           detailTitle={(row) => row.clientName}
           renderDetail={(row) => (
             <>

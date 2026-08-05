@@ -1,4 +1,5 @@
 import { ApiError, type QueryParams } from "@/lib/api/client";
+import { parseSort } from "@/lib/api/types";
 import type {
   AnyOperation,
   AuthorizedWithdrawalOperation,
@@ -51,13 +52,40 @@ function resolveBranchName(body: unknown, fallback: string): string {
   return state.branches.find((b) => b.id === id)?.name ?? fallback;
 }
 
+/**
+ * Stands in for the backend's `ORDER BY`. Strings compare with the Arabic
+ * collator so the fixture ordering matches what an operator would expect from
+ * the real service.
+ */
+function sortItems<T>(items: T[], params?: QueryParams): T[] {
+  const sort = parseSort(params?.sort);
+  if (!sort) return items;
+  const collator = new Intl.Collator("ar");
+  return [...items].sort((a, b) => {
+    const left = (a as Record<string, unknown>)[sort.key];
+    const right = (b as Record<string, unknown>)[sort.key];
+    let comparison: number;
+    if (typeof left === "number" && typeof right === "number") {
+      comparison = left - right;
+    } else {
+      comparison = collator.compare(String(left ?? ""), String(right ?? ""));
+    }
+    return sort.direction === "asc" ? comparison : -comparison;
+  });
+}
+
+/**
+ * Slices one page out of the matching set. `total` stays the full count, which
+ * is what the pager and the record counter read.
+ */
 function paginate<T>(items: T[], params?: QueryParams): Paged<T> {
+  const ordered = sortItems(items, params);
   const page = Number(params?.page ?? 1);
   const pageSize = Number(params?.pageSize ?? 25);
   const start = (page - 1) * pageSize;
   return {
-    items: items.slice(start, start + pageSize),
-    total: items.length,
+    items: ordered.slice(start, start + pageSize),
+    total: ordered.length,
     page,
     pageSize,
   };
@@ -120,7 +148,11 @@ export async function fixtureFetch<T>(
 
   // ---- mutations -------------------------------------------------------
   if (method !== "GET") {
-    if (p === "/audit/ui-events") return undefined as T;
+    // Audit sinks accept and discard: reveal events and boundary crashes are
+    // recorded by the backend, and fixture mode only has to not break.
+    if (p === "/audit/ui-events" || p === "/audit/ui-errors") {
+      return undefined as T;
+    }
     if (p.endsWith("/approve")) {
       const id = p.split("/").at(-2)!;
       const target =
@@ -372,6 +404,7 @@ export async function fixtureFetch<T>(
         (a) =>
           matches(a.clientName, params?.name) &&
           matches(a.number, params?.q) &&
+          (!params?.clientId || a.clientId === params.clientId) &&
           (!params?.currency || a.currency === params.currency) &&
           (!params?.branchId || a.branchId === params.branchId) &&
           (!params?.type || a.type === params.type),
@@ -402,6 +435,10 @@ export async function fixtureFetch<T>(
             params,
           ) as ExternalTransferOperation[],
           params,
+        ).filter(
+          (transfer) =>
+            !params?.countryCode ||
+            transfer.beneficiary.countryCode === params.countryCode,
         ),
         params,
       ) as T;
@@ -446,6 +483,9 @@ export async function fixtureFetch<T>(
         (l) =>
           (!params?.level || l.level === params.level) &&
           (!params?.tag || l.tags.includes(String(params.tag))) &&
+          // Inclusive ISO day bounds — see docs/API_CONTRACT.md.
+          (!params?.dateFrom || l.createdAt.slice(0, 10) >= String(params.dateFrom)) &&
+          (!params?.dateTo || l.createdAt.slice(0, 10) <= String(params.dateTo)) &&
           matches(l.title + l.message, params?.q),
       );
       return paginate(filtered, params) as T;
@@ -522,6 +562,10 @@ export async function fixtureFetch<T>(
     case "/analytics/branch-flow":
       return branchFlow as T;
     case "/analytics/all-operations": {
+      // Range parameters follow the contract in docs/API_CONTRACT.md:
+      // `dateFrom`/`dateTo` are inclusive ISO dates, `amountMin`/`amountMax`
+      // inclusive numbers in the row's own currency.
+      const day = (value: string) => value.slice(0, 10);
       const filtered = db.ledger.filter(
         (l) =>
           (!params?.type || l.type === params.type) &&
@@ -529,6 +573,14 @@ export async function fixtureFetch<T>(
           (!params?.branchId ||
             l.branchName ===
               state.branches.find((b) => b.id === params.branchId)?.name) &&
+          (!params?.dateFrom || day(l.createdAt) >= String(params.dateFrom)) &&
+          (!params?.dateTo || day(l.createdAt) <= String(params.dateTo)) &&
+          (params?.amountMin === undefined ||
+            params.amountMin === "" ||
+            l.amount >= Number(params.amountMin)) &&
+          (params?.amountMax === undefined ||
+            params.amountMax === "" ||
+            l.amount <= Number(params.amountMax)) &&
           matches(`${l.clientName} ${l.accountNumber} ${l.reference}`, params?.q),
       );
       return { items: filtered, total: filtered.length, page: 1, pageSize: filtered.length } as T;

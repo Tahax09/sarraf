@@ -77,10 +77,11 @@ export function UserMenu({
       </button>
 
       {open ? (
+        // `end-0`: the menu hangs from the trigger's reading-end edge — the
+        // right in English, the left in Arabic.
         <div
           role="menu"
-          className="absolute z-40 mt-2 w-60 overflow-hidden rounded-card border border-border bg-surface shadow-[var(--shadow-pop)]"
-          style={{ insetInlineEnd: 0 }}
+          className="absolute end-0 z-40 mt-2 w-60 overflow-hidden rounded-card border border-border bg-surface shadow-[var(--shadow-pop)]"
         >
           <div className="border-b border-border px-3 py-2.5">
             <p className="truncate text-sm font-medium text-fg">{name}</p>

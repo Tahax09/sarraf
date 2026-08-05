@@ -58,7 +58,119 @@
     "comingSoonBody": "This section is under construction and will ship in a later phase.",
     "notAvailable": "—",
     "expandRow": "Show details",
-    "collapseRow": "Hide details"
+    "collapseRow": "Hide details",
+    "exportPage": "Export page"
+  },
+  "search": {
+    "title": "Search",
+    "placeholder": "Search clients, accounts, operations…",
+    "recent": "Recent searches",
+    "clearRecent": "Clear",
+    "noResults": "No matches",
+    "noResultsHint": "Check the spelling, or try an account number or a reference.",
+    "hint": "Type at least {min} characters to search.",
+    "failed": "Search is unavailable right now.",
+    "resultCount": "{count} results",
+    "navigateHint": "↑ ↓ to navigate · Enter to open",
+    "categories": {
+      "clients": "Clients",
+      "accounts": "Accounts",
+      "operations": "Operations",
+      "pages": "Pages"
+    }
+  },
+  "shortcuts": {
+    "title": "Keyboard shortcuts",
+    "description": "Press ? at any time to reopen this list.",
+    "groups": {
+      "global": "General",
+      "navigation": "Navigation",
+      "forms": "Forms"
+    },
+    "openSearch": "Open search",
+    "focusSearch": "Focus search",
+    "showHelp": "Show keyboard shortcuts",
+    "goBack": "Back",
+    "goForward": "Forward",
+    "closeDialog": "Close dialog or menu",
+    "save": "Save"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "open": "Notifications",
+    "openWithUnread": "Notifications, {count} unread",
+    "unread": "Unread",
+    "unreadCount": "{count} unread",
+    "allRead": "You are all caught up",
+    "markAllRead": "Mark all as read",
+    "emptyTitle": "Nothing to review",
+    "emptyBody": "Pending approvals and daily activity will appear here.",
+    "categories": {
+      "approvals": "Approvals",
+      "operations": "Operations",
+      "system": "System"
+    },
+    "items": {
+      "pendingAuthorized": "{count} authorized withdrawals awaiting approval",
+      "pendingAuthorizedBody": "Review and approve or reject them in the operations queue.",
+      "pendingExternal": "{count} external transfers awaiting approval",
+      "pendingExternalBody": "Beneficiary details must be verified before approval.",
+      "dailyVolume": "{count} operations recorded today",
+      "dailyVolumeBody": "Open the ledger to review today’s activity."
+    }
+  },
+  "a11y": {
+    "title": "Accessibility",
+    "description": "These settings apply to this browser only and are remembered.",
+    "textSize": "Text size",
+    "textSizes": {
+      "normal": "Default",
+      "large": "Large",
+      "larger": "Larger"
+    },
+    "contrast": "Contrast",
+    "contrasts": {
+      "normal": "Default",
+      "high": "High contrast"
+    },
+    "motion": "Motion",
+    "motions": {
+      "system": "Follow system",
+      "reduced": "Reduce motion"
+    },
+    "keyboardTitle": "Keyboard navigation",
+    "keyboardBody": "Every action in this panel is reachable by keyboard.",
+    "keyboardAction": "View keyboard shortcuts",
+    "persistenceNote": "Stored in a preference cookie. No account or personal data is saved.",
+    "skipToContent": "Skip to main content"
+  },
+  "filters": {
+    "title": "Filters",
+    "show": "Filters",
+    "showWithCount": "Filters ({count})",
+    "activeCount": "{count, plural, =0 {No filters applied} one {# filter applied} other {# filters applied}}",
+    "remove": "Remove filter: {name}",
+    "clearAll": "Clear all",
+    "done": "Done",
+    "from": "From",
+    "to": "To",
+    "minAmount": "Min",
+    "maxAmount": "Max",
+    "rangeBetween": "{from} – {to}",
+    "rangeFrom": "From {value}",
+    "rangeTo": "Until {value}"
+  },
+  "errors": {
+    "title": "Something went wrong",
+    "body": "This page could not be displayed. You can retry, or go back to the dashboard.",
+    "reference": "Reference: {reference}",
+    "retry": "Try again",
+    "goHome": "Back to dashboard",
+    "notFoundTitle": "Page not found",
+    "notFoundBody": "The page you are looking for does not exist or has been moved.",
+    "deniedTitle": "Access denied",
+    "deniedBody": "Your role does not grant access to this page. Contact an administrator if you believe this is a mistake.",
+    "deniedModule": "Required section: {module}"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -101,7 +213,9 @@
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "mainNavigation": "Main navigation",
-    "more": "More"
+    "more": "More",
+    "quickNavigation": "Quick navigation",
+    "pendingItems": "pending items"
   },
   "user": {
     "menu": "User menu",
@@ -203,7 +317,8 @@
     "cancelled": "Cancelled",
     "today": "Today",
     "yesterday": "Yesterday",
-    "netFlow": "Net flow"
+    "netFlow": "Net flow",
+    "pageTotal": "Page total"
   },
   "masked": {
     "revealLabel": "Reveal {field}",
@@ -255,7 +370,13 @@
     "trendsRange": "Last {days} days",
     "rangeLabel": "Time range",
     "rangeDays": "{days}d",
-    "trendDay": "Day {day}"
+    "trendDay": "Day {day}",
+    "vsPreviousDay": "vs yesterday",
+    "quickActions": "Quick actions",
+    "quickDeposit": "New deposit",
+    "quickWithdrawal": "New withdrawal",
+    "quickFundTransfer": "New fund transfer",
+    "quickExchange": "New exchange"
   },
   "topClients": {
     "title": "Top Clients",
@@ -439,7 +560,8 @@
     "totalActivities": "Total activities",
     "sevenDayBreakdown": "7-day activity breakdown",
     "operationVolumeByType": "Volume by type",
-    "volumeIn": "Volume ({currency})"
+    "volumeIn": "Volume ({currency})",
+    "chartScope": "Latest {count} operations matching the current filters"
   },
   "profile": {
     "title": "My Profile",

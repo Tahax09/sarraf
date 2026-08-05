@@ -6,7 +6,13 @@ import { getMessages, setRequestLocale } from "next-intl/server";
 import { IBM_Plex_Sans_Arabic } from "next/font/google";
 import { routing, localeDirection, isLocale } from "@/i18n/routing";
 import { THEME_COOKIE, defaultTheme, isTheme } from "@/lib/theme";
+import {
+  A11Y_COOKIE,
+  a11yDataAttributes,
+  parseA11yPreferences,
+} from "@/lib/a11y-preferences";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { A11yProvider } from "@/components/providers/a11y-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import "../globals.css";
 
@@ -43,6 +49,10 @@ export default async function LocaleLayout({
   const cookieStore = await cookies();
   const themeCookie = cookieStore.get(THEME_COOKIE)?.value;
   const theme = isTheme(themeCookie) ? themeCookie : defaultTheme;
+  // Text size and contrast are rendered into the first response for the same
+  // reason the theme is: a reader who needs larger text must not be shown a
+  // frame of the default and a reflow.
+  const a11y = parseA11yPreferences(cookieStore.get(A11Y_COOKIE)?.value);
 
   return (
     <html
@@ -50,13 +60,16 @@ export default async function LocaleLayout({
       // Direction follows the locale — the whole layout flips, not just labels.
       dir={localeDirection[locale]}
       data-theme={theme}
+      {...a11yDataAttributes(a11y)}
       className={`${appFont.variable} h-full`}
       suppressHydrationWarning
     >
       <body className="min-h-full">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ThemeProvider initialTheme={theme}>
-            <QueryProvider>{children}</QueryProvider>
+            <A11yProvider initial={a11y}>
+              <QueryProvider>{children}</QueryProvider>
+            </A11yProvider>
           </ThemeProvider>
         </NextIntlClientProvider>
       </body>

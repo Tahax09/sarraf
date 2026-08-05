@@ -33,6 +33,15 @@ async function pickParty(user: User, panel: 0 | 1, clientIndex: number) {
     ),
   );
   await user.click(within(listbox).getAllByRole("option")[clientIndex]);
+
+  // The picker asks for that client's accounts only once a client is chosen, so
+  // the sole-account auto-selection lands a tick later. The balance readout is
+  // the signal that this panel has settled on an account.
+  await waitFor(() =>
+    expect(
+      screen.getAllByText(message("fields.availableBalance")),
+    ).toHaveLength(panel + 1),
+  );
 }
 
 describe("register form — fund transfer (§3 DualPartyForm)", () => {

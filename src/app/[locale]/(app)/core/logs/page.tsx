@@ -1,18 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { SelectInput, TextInput } from "@/components/ui/field";
 import { PageHeader } from "@/components/shared/page-header";
 import { HeaderStatBar } from "@/components/shared/header-stat-bar";
 import { DataTable, type Column } from "@/components/shared/data-table";
+import { FilterBar } from "@/components/shared/filter-bar";
 import { DetailRow, DetailSection } from "@/components/shared/detail-drawer";
 import { useLogs } from "@/lib/api/hooks";
 import { useLabels } from "@/lib/labels";
 import { formatCount, formatDateTime } from "@/lib/format";
+import { useTableQuery } from "@/lib/use-table-query";
+import { useFilters, type FilterDef } from "@/lib/filters";
 import type { LogLevel, SystemLog } from "@/lib/api/types";
 
 const LEVELS: LogLevel[] = ["info", "warning", "error"];
@@ -28,24 +29,60 @@ const LEVEL_TONE: Record<LogLevel, "info" | "warning" | "danger"> = {
 export default function LogsPage() {
   const t = useTranslations("logs");
   const tf = useTranslations("fields");
-  const tc = useTranslations("common");
   const tStats = useTranslations("stats");
   const labels = useLabels();
 
-  const [filters, setFilters] = useState({ level: "", tag: "", q: "" });
-  const query = useLogs({ ...filters, pageSize: 200 });
+  const filterDefs: FilterDef[] = [
+    {
+      key: "level",
+      type: "select",
+      label: t("filterType"),
+      options: LEVELS.map((level) => ({
+        value: level,
+        label: labels.logLevel(level),
+      })),
+    },
+    {
+      key: "tag",
+      type: "select",
+      label: t("filterTags"),
+      options: TAGS.map((tag) => ({ value: tag, label: tag })),
+    },
+    { key: "date", type: "dateRange", label: tf("date") },
+  ];
+  const filters = useFilters(filterDefs, { persistKey: "logs" });
+
+  const table = useTableQuery({
+    filters: filters.params,
+    sort: { key: "createdAt", direction: "desc" },
+  });
+  const query = useLogs(table.params);
   const rows = useMemo(() => query.data?.items ?? [], [query.data]);
+  const total = query.data?.total ?? 0;
+
+  // Severity counts have to cover the whole filtered range, not the rows that
+  // happen to be on screen — one page of a log is no basis for "how many errors
+  // are there". Asking for a single row and reading `total` is the cheapest way
+  // to get the count from the server.
+  const errorCount = useLogs({ ...filters.params, level: "error", pageSize: 1 });
+  const warningCount = useLogs({
+    ...filters.params,
+    level: "warning",
+    pageSize: 1,
+  });
 
   const columns: Column<SystemLog>[] = [
     {
       key: "title",
       header: tf("title"),
       primary: true,
+      sortKey: "title",
       cell: (row) => row.title,
     },
     {
       key: "level",
       header: tf("level"),
+      sortKey: "level",
       cell: (row) => (
         <Badge tone={LEVEL_TONE[row.level]}>{labels.logLevel(row.level)}</Badge>
       ),
@@ -66,6 +103,7 @@ export default function LogsPage() {
     {
       key: "timestamp",
       header: tf("timestamp"),
+      sortKey: "createdAt",
       // Every entry carries a timestamp — no blank cells here.
       cell: (row) => (
         <span className="numeric text-xs text-fg-muted">
@@ -75,8 +113,6 @@ export default function LogsPage() {
     },
   ];
 
-  const anyFilter = Object.values(filters).some((value) => value !== "");
-
   return (
     <div className="space-y-4">
       <PageHeader title={t("title")} />
@@ -85,22 +121,18 @@ export default function LogsPage() {
         stats={[
           {
             label: tStats("count"),
-            value: formatCount(query.data?.total ?? 0),
+            value: formatCount(total),
             numeric: true,
           },
           {
             label: t("levelError"),
-            value: formatCount(
-              rows.filter((row) => row.level === "error").length,
-            ),
+            value: formatCount(errorCount.data?.total ?? 0),
             numeric: true,
             tone: "danger",
           },
           {
             label: t("levelWarning"),
-            value: formatCount(
-              rows.filter((row) => row.level === "warning").length,
-            ),
+            value: formatCount(warningCount.data?.total ?? 0),
             numeric: true,
             tone: "warning",
           },
@@ -108,55 +140,12 @@ export default function LogsPage() {
       />
 
       <Card>
-        <div className="grid gap-3 border-b border-border p-3 sm:grid-cols-3">
-          <SelectInput
-            label={t("filterType")}
-            value={filters.level}
-            onChange={(event) =>
-              setFilters((prev) => ({ ...prev, level: event.target.value }))
-            }
-          >
-            <option value="">{tc("all")}</option>
-            {LEVELS.map((level) => (
-              <option key={level} value={level}>
-                {labels.logLevel(level)}
-              </option>
-            ))}
-          </SelectInput>
-          <SelectInput
-            label={t("filterTags")}
-            value={filters.tag}
-            onChange={(event) =>
-              setFilters((prev) => ({ ...prev, tag: event.target.value }))
-            }
-          >
-            <option value="">{tc("all")}</option>
-            {TAGS.map((tag) => (
-              <option key={tag} value={tag}>
-                {tag}
-              </option>
-            ))}
-          </SelectInput>
-          <TextInput
-            label={tc("search")}
-            placeholder={tc("searchPlaceholder")}
-            value={filters.q}
-            onChange={(event) =>
-              setFilters((prev) => ({ ...prev, q: event.target.value }))
-            }
-          />
-          {anyFilter ? (
-            <div className="sm:col-span-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setFilters({ level: "", tag: "", q: "" })}
-              >
-                {tc("clearFilters")}
-              </Button>
-            </div>
-          ) : null}
-        </div>
+        <FilterBar
+          defs={filterDefs}
+          state={filters}
+          search={table.search}
+          onSearchChange={table.setSearch}
+        />
 
         <DataTable
           columns={columns}
@@ -166,6 +155,15 @@ export default function LogsPage() {
           error={query.isError}
           onRetry={() => query.refetch()}
           caption={t("title")}
+          pagination={{
+            page: table.page,
+            pageSize: table.pageSize,
+            total,
+            onPageChange: table.setPage,
+            onPageSizeChange: table.setPageSize,
+          }}
+          sort={table.sort}
+          onSortChange={table.setSort}
           detailTitle={(row) => row.title}
           renderDetail={(row) => (
             <DetailSection title={t("rawMessage")}>

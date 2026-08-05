@@ -63,6 +63,23 @@ export function formatCount(value: number): string {
   return new Intl.NumberFormat(LOCALE_FOR_NUMBERS).format(value);
 }
 
+/**
+ * Signed percentage for a period-on-period change: `0.124` → `+12.4%`. The sign
+ * is always written, because "12%" beside a figure reads as a share of it
+ * rather than a movement. Whole percentages drop the decimal.
+ */
+export function formatPercentDelta(ratio: number, precision = 1): string {
+  const percent = ratio * 100;
+  const rounded = Number(percent.toFixed(precision));
+  const body = formatNumber(
+    Math.abs(rounded),
+    Number.isInteger(rounded) ? 0 : precision,
+  );
+  // U+2212 MINUS SIGN, not a hyphen: it aligns with the digits at this size.
+  const sign = rounded > 0 ? "+" : rounded < 0 ? "−" : "";
+  return `${sign}${body}%`;
+}
+
 export function formatRate(value: number): string {
   return formatNumber(value, 5).replace(/0+$/, "").replace(/\.$/, "");
 }
@@ -104,7 +121,10 @@ export function diffToParts(target: string | Date, now: Date = new Date()) {
 }
 
 export function formatIban(iban: string): string {
-  return iban.replace(/\s+/g, "").replace(/(.{4})/g, "$1 ").trim();
+  return iban
+    .replace(/\s+/g, "")
+    .replace(/(.{4})/g, "$1 ")
+    .trim();
 }
 
 /**
@@ -119,9 +139,7 @@ export function isValidIban(value: string): boolean {
   // Reduce progressively — the full number overflows Number precision.
   let remainder = 0;
   for (const char of rearranged) {
-    const digits = /[0-9]/.test(char)
-      ? char
-      : String(char.charCodeAt(0) - 55); // A=10 … Z=35
+    const digits = /[0-9]/.test(char) ? char : String(char.charCodeAt(0) - 55); // A=10 … Z=35
     for (const digit of digits) {
       remainder = (remainder * 10 + Number(digit)) % 97;
     }
@@ -137,16 +155,29 @@ export function countryFlag(code: string): string {
   );
 }
 
+/**
+ * Wraps a value in Unicode isolate marks so it keeps its own direction when it
+ * is interpolated into a translated string.
+ *
+ * `${t("availableBalance")}: ${formatAmount(…)}` produces one text run. Inside
+ * an Arabic sentence the bidi algorithm resolves the trailing `1,234.560 LYD`
+ * against the surrounding RTL paragraph, which pushes the currency code to the
+ * wrong side of the digits and drags the colon along with it. FSI … PDI makes
+ * the value a self-contained run: it is laid out on its own, then placed as a
+ * single neutral object in the Arabic sentence.
+ *
+ * Use this only for strings. Anything rendered as its own element should use
+ * `<bdi>` (or `.numeric`) instead — same effect, no invisible characters in the
+ * accessible name or in a copy-paste.
+ */
+export function isolate(value: string | number): string {
+  // U+2068 FIRST STRONG ISOLATE … U+2069 POP DIRECTIONAL ISOLATE.
+  return `⁨${value}⁩`;
+}
+
 /** Keeps the last `visible` characters, masking everything before them. */
 export function maskTail(value: string, visible = 4): string {
   const clean = value.replace(/\s+/g, "");
   if (clean.length <= visible) return "•".repeat(clean.length);
   return `${"•".repeat(Math.min(clean.length - visible, 12))}${clean.slice(-visible)}`;
-}
-
-/** Short display for hashed backend IDs when one must be shown at all. */
-export function shortId(id: string, visible = 6): string {
-  return id.length <= visible * 2
-    ? id
-    : `${id.slice(0, visible)}…${id.slice(-visible)}`;
 }

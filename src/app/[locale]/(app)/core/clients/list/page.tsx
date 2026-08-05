@@ -1,17 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { Card } from "@/components/ui/card";
-import { TextInput } from "@/components/ui/field";
-import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
 import { HeaderStatBar } from "@/components/shared/header-stat-bar";
 import { DataTable, type Column } from "@/components/shared/data-table";
+import { FilterBar } from "@/components/shared/filter-bar";
 import { DetailRow, DetailSection } from "@/components/shared/detail-drawer";
 import { PhoneText } from "@/components/shared/cells";
 import { useAccounts, useClients } from "@/lib/api/hooks";
 import { formatAmount, formatCount, formatDateTime, formatPhone } from "@/lib/format";
+import { useTableQuery } from "@/lib/use-table-query";
+import { useFilters, type FilterDef } from "@/lib/filters";
 import type { Client } from "@/lib/api/types";
 
 export default function ClientsPage() {
@@ -20,18 +21,38 @@ export default function ClientsPage() {
   const tc = useTranslations("common");
   const tStats = useTranslations("stats");
 
-  const [filters, setFilters] = useState({ name: "", email: "", phone: "" });
-  const query = useClients({ ...filters, pageSize: 100 });
-  const rows = useMemo(() => query.data?.items ?? [], [query.data]);
+  const filterDefs: FilterDef[] = [
+    { key: "name", type: "text", label: t("filterByName") },
+    { key: "phone", type: "text", label: t("filterByPhone") },
+    { key: "email", type: "text", label: t("filterByEmail") },
+  ];
+  // Deliberately not persisted: every value here is personal data — a client
+  // name, a phone, an email — and none of it belongs in web storage.
+  const filters = useFilters(filterDefs);
 
-  // Loaded once and reused for every drawer instead of a fetch per row.
-  const accounts = useAccounts({ pageSize: 500 });
+  // The register filters and pages on the server; the three inputs are filters,
+  // so changing any of them starts again at page 1.
+  const table = useTableQuery({
+    filters: filters.params,
+    searchable: false,
+    sort: { key: "name", direction: "asc" },
+  });
+  const query = useClients(table.params);
+  const rows = useMemo(() => query.data?.items ?? [], [query.data]);
+  const total = query.data?.total ?? 0;
 
   const columns: Column<Client>[] = [
-    { key: "name", header: tf("name"), primary: true, cell: (row) => row.name },
+    {
+      key: "name",
+      header: tf("name"),
+      primary: true,
+      sortKey: "name",
+      cell: (row) => row.name,
+    },
     {
       key: "phone",
       header: tf("phone"),
+      sortKey: "phone",
       cell: (row) => <PhoneText value={row.phone} />,
     },
     {
@@ -43,13 +64,12 @@ export default function ClientsPage() {
       key: "accounts",
       header: t("title"),
       align: "end",
+      sortKey: "accountsCount",
       cell: (row) => (
         <span className="numeric text-sm">{formatCount(row.accountsCount)}</span>
       ),
     },
   ];
-
-  const anyFilter = Object.values(filters).some((value) => value !== "");
 
   return (
     <div className="space-y-4">
@@ -59,50 +79,14 @@ export default function ClientsPage() {
         stats={[
           {
             label: tStats("count"),
-            value: formatCount(query.data?.total ?? 0),
+            value: formatCount(total),
             numeric: true,
           },
         ]}
       />
 
       <Card>
-        <div className="grid gap-3 border-b border-border p-3 sm:grid-cols-3">
-          <TextInput
-            label={t("filterByName")}
-            value={filters.name}
-            onChange={(event) =>
-              setFilters((prev) => ({ ...prev, name: event.target.value }))
-            }
-          />
-          <TextInput
-            label={t("filterByPhone")}
-            numeric
-            inputMode="tel"
-            value={filters.phone}
-            onChange={(event) =>
-              setFilters((prev) => ({ ...prev, phone: event.target.value }))
-            }
-          />
-          <TextInput
-            label={t("filterByEmail")}
-            type="email"
-            value={filters.email}
-            onChange={(event) =>
-              setFilters((prev) => ({ ...prev, email: event.target.value }))
-            }
-          />
-          {anyFilter ? (
-            <div className="sm:col-span-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setFilters({ name: "", email: "", phone: "" })}
-              >
-                {tc("clearFilters")}
-              </Button>
-            </div>
-          ) : null}
-        </div>
+        <FilterBar defs={filterDefs} state={filters} />
 
         <DataTable
           columns={columns}
@@ -112,11 +96,17 @@ export default function ClientsPage() {
           error={query.isError}
           onRetry={() => query.refetch()}
           caption={t("title")}
+          pagination={{
+            page: table.page,
+            pageSize: table.pageSize,
+            total,
+            onPageChange: table.setPage,
+            onPageSizeChange: table.setPageSize,
+          }}
+          sort={table.sort}
+          onSortChange={table.setSort}
           detailTitle={(row) => row.name}
           renderDetail={(row) => {
-            const clientAccounts = (accounts.data?.items ?? []).filter(
-              (account) => account.clientId === row.id,
-            );
             return (
               <>
                 <DetailSection title={tc("details")}>
@@ -138,25 +128,43 @@ export default function ClientsPage() {
                   />
                 </DetailSection>
 
-                <DetailSection title={tf("account")}>
-                  {clientAccounts.length === 0 ? (
-                    <DetailRow label={tf("account")} value={tc("empty")} />
-                  ) : (
-                    clientAccounts.map((account) => (
-                      <DetailRow
-                        key={account.id}
-                        label={account.number}
-                        value={formatAmount(account.balance, account.currency)}
-                        numeric
-                      />
-                    ))
-                  )}
-                </DetailSection>
+                <ClientAccounts clientId={row.id} />
               </>
             );
           }}
         />
       </Card>
     </div>
+  );
+}
+
+/**
+ * The opened client's accounts, fetched when the drawer mounts. Asking for one
+ * client's accounts beats pulling the whole account register up front and
+ * filtering it in the browser.
+ */
+function ClientAccounts({ clientId }: { clientId: string }) {
+  const tf = useTranslations("fields");
+  const tc = useTranslations("common");
+  const query = useAccounts({ clientId, pageSize: 50 });
+  const accounts = query.data?.items ?? [];
+
+  return (
+    <DetailSection title={tf("account")}>
+      {query.isLoading ? (
+        <DetailRow label={tf("account")} value={tc("loading")} />
+      ) : accounts.length === 0 ? (
+        <DetailRow label={tf("account")} value={tc("empty")} />
+      ) : (
+        accounts.map((account) => (
+          <DetailRow
+            key={account.id}
+            label={account.number}
+            value={formatAmount(account.balance, account.currency)}
+            numeric
+          />
+        ))
+      )}
+    </DetailSection>
   );
 }

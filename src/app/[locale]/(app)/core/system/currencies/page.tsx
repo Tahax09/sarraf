@@ -31,19 +31,11 @@ export default function CurrenciesPage() {
   const tv = useTranslations("validation");
 
   const query = useCurrencies();
-  const accounts = useAccounts({ pageSize: 500 });
   const create = useCreateCurrency();
-  const remove = useDeleteCurrency();
 
   const [adding, setAdding] = useState(false);
   const [deleting, setDeleting] = useState<Currency | null>(null);
   const [search, setSearch] = useState("");
-
-  // Codes actually in use — deleting one of these is blocked up front.
-  const usedCodes = useMemo(
-    () => new Set((accounts.data?.items ?? []).map((a) => a.currency)),
-    [accounts.data],
-  );
 
   const rows = useMemo(() => {
     const all = query.data ?? [];
@@ -106,10 +98,6 @@ export default function CurrenciesPage() {
         <Button
           size="sm"
           variant="secondary"
-          disabled={usedCodes.has(row.alphabeticCode)}
-          title={
-            usedCodes.has(row.alphabeticCode) ? t("deleteBlocked") : undefined
-          }
           onClick={(event) => {
             event.stopPropagation();
             setDeleting(row);
@@ -233,21 +221,57 @@ export default function CurrenciesPage() {
         </form>
       </Dialog>
 
-      <ConfirmDialog
-        open={deleting !== null}
-        onClose={() => setDeleting(null)}
-        tone="danger"
-        requireTyped
-        loading={remove.isPending}
-        title={t("deleteTitle")}
-        body={t("deleteBody", { code: deleting?.alphabeticCode ?? "" })}
-        confirmLabel={tc("delete")}
-        onConfirm={async () => {
-          if (!deleting) return;
-          await remove.mutateAsync(deleting.id);
-          setDeleting(null);
-        }}
-      />
+      {deleting ? (
+        <DeleteCurrencyDialog
+          currency={deleting}
+          onClose={() => setDeleting(null)}
+        />
+      ) : null}
     </div>
+  );
+}
+
+/**
+ * Delete confirmation for one currency.
+ *
+ * Whether a currency is in use is asked about the currency being deleted, at
+ * the moment of deletion — one `total`-only request. The page used to prefetch
+ * hundreds of accounts to build the same answer, which was both wasteful and
+ * wrong: an account past the prefetch window made a used currency look free.
+ */
+function DeleteCurrencyDialog({
+  currency,
+  onClose,
+}: {
+  currency: Currency;
+  onClose: () => void;
+}) {
+  const t = useTranslations("currencies");
+  const tc = useTranslations("common");
+  const remove = useDeleteCurrency();
+  const usage = useAccounts({
+    currency: currency.alphabeticCode,
+    pageSize: 1,
+  });
+  // Advisory: the typed confirmation is the real gate and the server refuses an
+  // in-use currency regardless, so an unsettled check never blocks the dialog.
+  const inUse = (usage.data?.total ?? 0) > 0;
+
+  return (
+    <ConfirmDialog
+      open
+      onClose={onClose}
+      tone="danger"
+      requireTyped
+      loading={remove.isPending}
+      title={t("deleteTitle")}
+      body={t("deleteBody", { code: currency.alphabeticCode })}
+      confirmLabel={tc("delete")}
+      blocked={inUse ? t("deleteBlocked") : undefined}
+      onConfirm={async () => {
+        await remove.mutateAsync(currency.id);
+        onClose();
+      }}
+    />
   );
 }

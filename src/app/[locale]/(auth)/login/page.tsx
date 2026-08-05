@@ -12,6 +12,7 @@ import { Logo } from "@/components/shared/logo";
 import { TextInput } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { apiFetch, usingFixtures } from "@/lib/api/client";
+import { secureFlag } from "@/lib/cookies";
 import { endpoints } from "@/lib/api/endpoints";
 
 const schema = z.object({
@@ -27,7 +28,7 @@ type Values = z.infer<typeof schema>;
  * the API is stubbed.
  */
 function setFixtureSessionCookie() {
-  document.cookie = "saraf_session=fixture; path=/; samesite=lax";
+  document.cookie = `saraf_session=fixture; path=/; samesite=lax${secureFlag()}`;
 }
 
 export default function LoginPage() {

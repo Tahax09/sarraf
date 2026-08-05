@@ -2,6 +2,7 @@ import type { ReactElement, ReactNode } from "react";
 import { render, type RenderOptions } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ShortcutProvider } from "@/lib/shortcuts";
 import ar from "../../messages/ar.json";
 import en from "../../messages/en.json";
 
@@ -38,7 +39,9 @@ export function Providers({
       now={new Date("2026-01-15T10:00:00Z")}
     >
       <QueryClientProvider client={queryClient ?? makeQueryClient()}>
-        {children}
+        {/* Mirrors the app shell: anything rendering a component that claims a
+            keyboard chord needs the registry above it. */}
+        <ShortcutProvider>{children}</ShortcutProvider>
       </QueryClientProvider>
     </NextIntlClientProvider>
   );

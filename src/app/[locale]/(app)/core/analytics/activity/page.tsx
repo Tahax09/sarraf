@@ -3,7 +3,6 @@
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/states";
 import { PageHeader } from "@/components/shared/page-header";
 import { HeaderStatBar } from "@/components/shared/header-stat-bar";
 import { DataTable, type Column } from "@/components/shared/data-table";
@@ -118,21 +117,20 @@ export default function ActivityPage() {
       <Card>
         <CardHeader title={t("sevenDayBreakdown")} />
         <CardBody>
-          {query.isLoading ? (
-            <Skeleton className="h-56 w-full" />
-          ) : (
-            <CategoryBarChart
-              data={breakdown as unknown as Record<string, unknown>[]}
-              xKey="label"
-              series={[
-                {
-                  key: "count",
-                  label: t("totalActivities"),
-                  color: "var(--color-chart-exchange)",
-                },
-              ]}
-            />
-          )}
+          <CategoryBarChart
+            data={breakdown as unknown as Record<string, unknown>[]}
+            xKey="label"
+            series={[
+              {
+                key: "count",
+                label: t("totalActivities"),
+                color: "var(--color-chart-exchange)",
+              },
+            ]}
+            loading={query.isLoading}
+            error={query.isError}
+            onRetry={() => query.refetch()}
+          />
         </CardBody>
         <DataTable
           columns={[

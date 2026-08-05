@@ -15,6 +15,13 @@ export type ClientAccountValue = {
 };
 
 /**
+ * Upper bound on the accounts one client can hold in this panel. The select is
+ * a flat list, so this is both the fetch size and the point past which the list
+ * would need its own search.
+ */
+const ACCOUNTS_PER_CLIENT = 50;
+
+/**
  * Searchable client picker that auto-populates the client's accounts and shows
  * the live balance of the selected one. Used by every register form.
  */
@@ -39,14 +46,16 @@ export function ClientAccountPicker({
   const listboxId = useId();
 
   const clientsQuery = useClients({ name: search, pageSize: 8 });
-  const accountsQuery = useAccounts({ pageSize: 200 });
+  // Only the chosen client's accounts, and only once a client is chosen — no
+  // client means nothing to show, so there is nothing worth fetching either.
+  const accountsQuery = useAccounts(
+    { clientId: value.clientId ?? undefined, pageSize: ACCOUNTS_PER_CLIENT },
+    { enabled: value.clientId !== null },
+  );
 
   const clientAccounts = useMemo(
-    () =>
-      (accountsQuery.data?.items ?? []).filter(
-        (a) => a.clientId === value.clientId,
-      ),
-    [accountsQuery.data, value.clientId],
+    () => accountsQuery.data?.items ?? [],
+    [accountsQuery.data],
   );
 
   const selectedAccount =
@@ -75,8 +84,7 @@ export function ClientAccountPicker({
         <div className="relative">
           <Search
             aria-hidden
-            className="pointer-events-none absolute inset-inline-start-3 top-1/2 size-4 -translate-y-1/2 text-fg-subtle"
-            style={{ insetInlineStart: "0.75rem" }}
+            className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-fg-subtle"
           />
           <input
             type="text"

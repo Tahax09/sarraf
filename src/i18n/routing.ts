@@ -24,5 +24,14 @@ export const routing = defineRouting({
     name: "SARAF_LOCALE",
     sameSite: "lax",
     maxAge: 60 * 60 * 24 * 365,
+    /**
+     * Unlike the theme and accessibility cookies — written from the browser,
+     * where `location.protocol` is the honest answer — this one is configured
+     * once at module scope with no request in hand, so the build mode is the
+     * only signal available. A production deployment is expected to terminate
+     * TLS in front of the app; serving it over plain HTTP would drop the
+     * cookie and fall back to the default locale.
+     */
+    secure: process.env.NODE_ENV === "production",
   },
 });

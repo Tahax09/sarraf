@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
@@ -67,6 +68,27 @@ const get =
   () =>
     apiFetch<T>(path, { params });
 
+/**
+ * One query shape for every server-paged register.
+ *
+ * `keepPreviousData` holds the page already on screen while the next one is in
+ * flight, so turning a page or re-sorting a column never collapses the table
+ * back to a skeleton and never jumps the scroll position.
+ */
+function usePagedQuery<T>(
+  queryKey: readonly unknown[],
+  path: string,
+  params: QueryParams,
+  opts?: Opts<Paged<T>>,
+) {
+  return useQuery({
+    queryKey,
+    queryFn: get<Paged<T>>(path, params),
+    placeholderData: keepPreviousData,
+    ...opts,
+  });
+}
+
 // ---------------------------------------------------------------- identity
 export function useCurrentUser(opts?: Opts<CurrentUser>) {
   return useQuery({
@@ -116,60 +138,54 @@ export const useRecentOperations = () =>
   });
 
 // ------------------------------------------------------ clients & accounts
-export const useClients = (params: QueryParams) =>
-  useQuery({
-    queryKey: qk.clients(params),
-    queryFn: get<Paged<Client>>(endpoints.clients, params),
-  });
+export const useClients = (params: QueryParams, opts?: Opts<Paged<Client>>) =>
+  usePagedQuery<Client>(qk.clients(params), endpoints.clients, params, opts);
 
-export const useAccounts = (params: QueryParams) =>
-  useQuery({
-    queryKey: qk.accounts(params),
-    queryFn: get<Paged<Account>>(endpoints.accounts, params),
-  });
+export const useAccounts = (params: QueryParams, opts?: Opts<Paged<Account>>) =>
+  usePagedQuery<Account>(qk.accounts(params), endpoints.accounts, params, opts);
 
 // --------------------------------------------------------- money movement
 export const useWithdrawals = (params: QueryParams) =>
-  useQuery({
-    queryKey: qk.operations("withdrawals", params),
-    queryFn: get<Paged<WithdrawalOperation>>(endpoints.withdrawals, params),
-  });
+  usePagedQuery<WithdrawalOperation>(
+    qk.operations("withdrawals", params),
+    endpoints.withdrawals,
+    params,
+  );
 
 export const useDeposits = (params: QueryParams) =>
-  useQuery({
-    queryKey: qk.operations("deposits", params),
-    queryFn: get<Paged<DepositOperation>>(endpoints.deposits, params),
-  });
+  usePagedQuery<DepositOperation>(
+    qk.operations("deposits", params),
+    endpoints.deposits,
+    params,
+  );
 
 export const useAuthorizedWithdrawals = (params: QueryParams) =>
-  useQuery({
-    queryKey: qk.operations("authorized-withdrawals", params),
-    queryFn: get<Paged<AuthorizedWithdrawalOperation>>(
-      endpoints.authorizedWithdrawals,
-      params,
-    ),
-  });
+  usePagedQuery<AuthorizedWithdrawalOperation>(
+    qk.operations("authorized-withdrawals", params),
+    endpoints.authorizedWithdrawals,
+    params,
+  );
 
 export const useExternalTransfers = (params: QueryParams) =>
-  useQuery({
-    queryKey: qk.operations("external-transfers", params),
-    queryFn: get<Paged<ExternalTransferOperation>>(
-      endpoints.externalTransfers,
-      params,
-    ),
-  });
+  usePagedQuery<ExternalTransferOperation>(
+    qk.operations("external-transfers", params),
+    endpoints.externalTransfers,
+    params,
+  );
 
 export const useFundTransfers = (params: QueryParams) =>
-  useQuery({
-    queryKey: qk.operations("fund-transfers", params),
-    queryFn: get<Paged<FundTransferOperation>>(endpoints.fundTransfers, params),
-  });
+  usePagedQuery<FundTransferOperation>(
+    qk.operations("fund-transfers", params),
+    endpoints.fundTransfers,
+    params,
+  );
 
 export const useCeftOperations = (params: QueryParams) =>
-  useQuery({
-    queryKey: qk.operations("ceft", params),
-    queryFn: get<Paged<CeftOperation>>(endpoints.ceft, params),
-  });
+  usePagedQuery<CeftOperation>(
+    qk.operations("ceft", params),
+    endpoints.ceft,
+    params,
+  );
 
 export function useExchangeRate(from?: string, to?: string) {
   return useQuery({
@@ -431,10 +447,7 @@ export const useRoles = () =>
   useQuery({ queryKey: qk.roles, queryFn: get<Role[]>(endpoints.roles) });
 
 export const useLogs = (params: QueryParams) =>
-  useQuery({
-    queryKey: qk.logs(params),
-    queryFn: get<Paged<SystemLog>>(endpoints.logs, params),
-  });
+  usePagedQuery<SystemLog>(qk.logs(params), endpoints.logs, params);
 
 // ------------------------------------------------- reports & analytics
 export const useReport = (date: string) =>
@@ -451,10 +464,11 @@ export const useBranchFlow = () =>
   });
 
 export const useAllOperations = (params: QueryParams) =>
-  useQuery({
-    queryKey: qk.analytics("ledger", params),
-    queryFn: get<Paged<LedgerEntry>>(endpoints.analytics.ledger, params),
-  });
+  usePagedQuery<LedgerEntry>(
+    qk.analytics("ledger", params),
+    endpoints.analytics.ledger,
+    params,
+  );
 
 export const useActivity = () =>
   useQuery({

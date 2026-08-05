@@ -1,12 +1,13 @@
 import {
   countryFlag,
   formatIban,
+  formatPercentDelta,
   formatPhone,
+  isolate,
   isValidIban,
   isValidPhone,
   maskTail,
   normalizePhone,
-  shortId,
 } from "@/lib/format";
 
 describe("phone formatting", () => {
@@ -66,9 +67,17 @@ describe("masking", () => {
     expect(masked.endsWith("5432")).toBe(true);
     expect(masked).not.toContain("WEST");
   });
+});
 
-  it("shortens raw ids for the detail drawer", () => {
-    expect(shortId("9f8c1a2b3d4e5f6071829304", 6)).toContain("9f8c1a");
+describe("formatPercentDelta", () => {
+  it("always writes the sign, so a movement cannot read as a share", () => {
+    expect(formatPercentDelta(0.124)).toBe("+12.4%");
+    expect(formatPercentDelta(-0.05)).toBe("−5%");
+    expect(formatPercentDelta(0)).toBe("0%");
+  });
+
+  it("drops the decimal on whole percentages", () => {
+    expect(formatPercentDelta(0.2)).toBe("+20%");
   });
 });
 
@@ -76,5 +85,19 @@ describe("countryFlag", () => {
   it("maps alpha-2 codes to regional indicators", () => {
     expect(countryFlag("LY")).toBe("🇱🇾");
     expect(countryFlag("gb")).toBe("🇬🇧");
+  });
+});
+
+describe("isolate", () => {
+  it("wraps the value in FIRST STRONG ISOLATE … POP DIRECTIONAL ISOLATE", () => {
+    const wrapped = isolate("1,234.560 LYD");
+    expect(wrapped.codePointAt(0)).toBe(0x2068);
+    expect(wrapped.codePointAt(wrapped.length - 1)).toBe(0x2069);
+    // The value itself is untouched — this only adds directional context.
+    expect(wrapped.slice(1, -1)).toBe("1,234.560 LYD");
+  });
+
+  it("accepts a number, so callers do not stringify first", () => {
+    expect(isolate(42).slice(1, -1)).toBe("42");
   });
 });

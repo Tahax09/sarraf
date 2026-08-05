@@ -18,7 +18,7 @@ import {
   useRegisterOperation,
 } from "@/lib/api/hooks";
 import type { Account } from "@/lib/api/types";
-import { formatAmount, formatRate } from "@/lib/format";
+import { formatAmount, formatRate, isolate } from "@/lib/format";
 
 /**
  * Sender/receiver register template.
@@ -195,7 +195,9 @@ export function DualPartyForm({
                   error={fieldState.error?.message}
                   hint={
                     sender
-                      ? `${t("availableBalance")}: ${formatAmount(sender.balance, sender.currency)}`
+                      ? `${t("availableBalance")}: ${isolate(
+                          formatAmount(sender.balance, sender.currency),
+                        )}`
                       : undefined
                   }
                 />
@@ -286,7 +288,12 @@ export function DualPartyForm({
           items={[
             {
               label: t("sender"),
-              value: `${sender?.clientName ?? "—"} (${sender?.number ?? "—"})`,
+              // Name and account number are isolated from each other: the
+              // parentheses are neutral, so a Latin number beside an Arabic
+              // name would otherwise render with its brackets reversed.
+              value: `${isolate(sender?.clientName ?? "—")} (${isolate(
+                sender?.number ?? "—",
+              )})`,
             },
             {
               label: t("receiver"),

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { Plus } from "lucide-react";
 import { Link } from "@/i18n/navigation";
@@ -12,8 +12,16 @@ import { HeaderStatBar } from "@/components/shared/header-stat-bar";
 import { DataTable, type Column } from "@/components/shared/data-table";
 import { DetailRow, DetailSection } from "@/components/shared/detail-drawer";
 import { DateCell, TransferCell } from "@/components/shared/cells";
-import { formatAmount, formatCount, formatDateTime, formatPhone } from "@/lib/format";
+import {
+  formatAmount,
+  formatCount,
+  formatDateTime,
+  formatPhone,
+  isolate,
+} from "@/lib/format";
 import { useLabels } from "@/lib/labels";
+import { useTableQuery } from "@/lib/use-table-query";
+import type { QueryParams } from "@/lib/api/client";
 import type { OperationBase, Paged } from "@/lib/api/types";
 
 /** Both transfer lists move funds between two accounts inside the system. */
@@ -35,7 +43,7 @@ export function TransferList<T extends TransferOperation>({
   title: string;
   amountLabel: string;
   registerHref: string;
-  useData: (params: { q: string; pageSize: number }) => {
+  useData: (params: QueryParams) => {
     data?: Paged<T>;
     isLoading: boolean;
     isError: boolean;
@@ -49,11 +57,13 @@ export function TransferList<T extends TransferOperation>({
   const tc = useTranslations("common");
   const tStats = useTranslations("stats");
   const labels = useLabels();
-  const [q, setQ] = useState("");
 
-  const query = useData({ q, pageSize: 100 });
+  const table = useTableQuery({ sort: { key: "createdAt", direction: "desc" } });
+  const query = useData(table.params);
   const rows = useMemo(() => query.data?.items ?? [], [query.data]);
+  const total = query.data?.total ?? 0;
 
+  // Sums cover the rows on screen only — see the note in SimpleOperationList.
   const totals = useMemo(() => {
     const map = new Map<string, number>();
     for (const row of rows) {
@@ -67,6 +77,7 @@ export function TransferList<T extends TransferOperation>({
       key: "parties",
       header: `${t("sender")} / ${t("receiver")}`,
       primary: true,
+      sortKey: "clientName",
       cell: (row) => (
         <TransferCell from={row.clientName} to={row.receiverClientName} />
       ),
@@ -75,6 +86,7 @@ export function TransferList<T extends TransferOperation>({
     {
       key: "date",
       header: t("date"),
+      sortKey: "createdAt",
       cell: (row) => <DateCell value={row.createdAt} />,
     },
   ];
@@ -95,12 +107,12 @@ export function TransferList<T extends TransferOperation>({
         stats={[
           {
             label: tStats("count"),
-            value: formatCount(query.data?.total ?? 0),
+            value: formatCount(total),
             numeric: true,
           },
-          ...totals.map(([currency, total]) => ({
-            label: `${tStats("total")} — ${currency}`,
-            value: formatAmount(total, currency),
+          ...totals.map(([currency, sum]) => ({
+            label: `${tStats("pageTotal")} — ${isolate(currency)}`,
+            value: formatAmount(sum, currency),
             numeric: true,
           })),
         ]}
@@ -111,8 +123,8 @@ export function TransferList<T extends TransferOperation>({
           <TextInput
             label={tc("search")}
             placeholder={tc("searchPlaceholder")}
-            value={q}
-            onChange={(event) => setQ(event.target.value)}
+            value={table.search}
+            onChange={(event) => table.setSearch(event.target.value)}
           />
         </div>
         <DataTable
@@ -123,7 +135,18 @@ export function TransferList<T extends TransferOperation>({
           error={query.isError}
           onRetry={() => query.refetch()}
           caption={title}
-          detailTitle={(row) => `${row.clientName} → ${row.receiverClientName}`}
+          pagination={{
+            page: table.page,
+            pageSize: table.pageSize,
+            total,
+            onPageChange: table.setPage,
+            onPageSizeChange: table.setPageSize,
+          }}
+          sort={table.sort}
+          onSortChange={table.setSort}
+          detailTitle={(row) =>
+            `${isolate(row.clientName)} → ${isolate(row.receiverClientName)}`
+          }
           renderDetail={(row) => (
             <>
               <DetailSection title={tc("details")}>

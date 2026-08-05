@@ -227,6 +227,11 @@ function LocationPicker({
             aria-hidden
             className="absolute inset-x-0 top-1/2 h-px bg-border"
           />
+          {/*
+            Physical `left`, deliberately — this is the prime meridian on a
+            world map, and the marker below is positioned by longitude. A map
+            that mirrored itself in Arabic would put Libya west of Morocco.
+          */}
           <span
             aria-hidden
             className="absolute inset-y-0 left-1/2 w-px bg-border"

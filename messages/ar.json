@@ -58,7 +58,119 @@
     "comingSoonBody": "هذه الصفحة قيد التطوير وستتوفر في مرحلة لاحقة.",
     "notAvailable": "—",
     "expandRow": "عرض التفاصيل",
-    "collapseRow": "إخفاء التفاصيل"
+    "collapseRow": "إخفاء التفاصيل",
+    "exportPage": "تصدير الصفحة"
+  },
+  "search": {
+    "title": "بحث",
+    "placeholder": "ابحث عن العملاء أو الحسابات أو العمليات…",
+    "recent": "عمليات البحث الأخيرة",
+    "clearRecent": "مسح",
+    "noResults": "لا توجد نتائج",
+    "noResultsHint": "تحقّق من الإملاء، أو جرّب رقم حساب أو مرجعًا.",
+    "hint": "اكتب {min} أحرف على الأقل للبحث.",
+    "failed": "البحث غير متاح حاليًا.",
+    "resultCount": "{count} نتيجة",
+    "navigateHint": "↑ ↓ للتنقّل · Enter للفتح",
+    "categories": {
+      "clients": "العملاء",
+      "accounts": "الحسابات",
+      "operations": "العمليات",
+      "pages": "الصفحات"
+    }
+  },
+  "shortcuts": {
+    "title": "اختصارات لوحة المفاتيح",
+    "description": "اضغط ؟ في أي وقت لإعادة فتح هذه القائمة.",
+    "groups": {
+      "global": "عام",
+      "navigation": "التنقّل",
+      "forms": "النماذج"
+    },
+    "openSearch": "فتح البحث",
+    "focusSearch": "التركيز على البحث",
+    "showHelp": "عرض اختصارات لوحة المفاتيح",
+    "goBack": "رجوع",
+    "goForward": "تقدّم",
+    "closeDialog": "إغلاق الحوار أو القائمة",
+    "save": "حفظ"
+  },
+  "notifications": {
+    "title": "الإشعارات",
+    "open": "الإشعارات",
+    "openWithUnread": "الإشعارات، {count} غير مقروء",
+    "unread": "غير مقروء",
+    "unreadCount": "{count} غير مقروء",
+    "allRead": "لا يوجد جديد",
+    "markAllRead": "تعليم الكل كمقروء",
+    "emptyTitle": "لا شيء للمراجعة",
+    "emptyBody": "ستظهر هنا الموافقات المعلّقة والنشاط اليومي.",
+    "categories": {
+      "approvals": "الموافقات",
+      "operations": "العمليات",
+      "system": "النظام"
+    },
+    "items": {
+      "pendingAuthorized": "{count} سحوبات مفوّضة بانتظار الموافقة",
+      "pendingAuthorizedBody": "راجعها ثم اعتمدها أو ارفضها من قائمة العمليات.",
+      "pendingExternal": "{count} حوالات خارجية بانتظار الموافقة",
+      "pendingExternalBody": "يجب التحقّق من بيانات المستفيد قبل الاعتماد.",
+      "dailyVolume": "{count} عملية مسجّلة اليوم",
+      "dailyVolumeBody": "افتح السجل لمراجعة نشاط اليوم."
+    }
+  },
+  "a11y": {
+    "title": "إمكانية الوصول",
+    "description": "تنطبق هذه الإعدادات على هذا المتصفّح فقط ويتم تذكّرها.",
+    "textSize": "حجم النص",
+    "textSizes": {
+      "normal": "افتراضي",
+      "large": "كبير",
+      "larger": "أكبر"
+    },
+    "contrast": "التباين",
+    "contrasts": {
+      "normal": "افتراضي",
+      "high": "تباين عالٍ"
+    },
+    "motion": "الحركة",
+    "motions": {
+      "system": "حسب النظام",
+      "reduced": "تقليل الحركة"
+    },
+    "keyboardTitle": "التنقّل بلوحة المفاتيح",
+    "keyboardBody": "يمكن الوصول إلى كل إجراء في هذه اللوحة عبر لوحة المفاتيح.",
+    "keyboardAction": "عرض اختصارات لوحة المفاتيح",
+    "persistenceNote": "يُحفظ في ملف تعريف ارتباط للتفضيلات. لا تُحفظ أي بيانات حساب أو بيانات شخصية.",
+    "skipToContent": "تخطٍّ إلى المحتوى الرئيسي"
+  },
+  "filters": {
+    "title": "عوامل التصفية",
+    "show": "عوامل التصفية",
+    "showWithCount": "عوامل التصفية ({count})",
+    "activeCount": "{count, plural, =0 {لا توجد عوامل تصفية مطبَّقة} one {عامل تصفية واحد مطبَّق} two {عاملا تصفية مطبَّقان} few {# عوامل تصفية مطبَّقة} many {# عامل تصفية مطبَّقًا} other {# عامل تصفية مطبَّق}}",
+    "remove": "إزالة عامل التصفية: {name}",
+    "clearAll": "مسح الكل",
+    "done": "تم",
+    "from": "من",
+    "to": "إلى",
+    "minAmount": "الحد الأدنى",
+    "maxAmount": "الحد الأعلى",
+    "rangeBetween": "{from} – {to}",
+    "rangeFrom": "من {value}",
+    "rangeTo": "حتى {value}"
+  },
+  "errors": {
+    "title": "حدث خطأ ما",
+    "body": "تعذّر عرض هذه الصفحة. يمكنك إعادة المحاولة أو العودة إلى لوحة المعلومات.",
+    "reference": "الرقم المرجعي: {reference}",
+    "retry": "إعادة المحاولة",
+    "goHome": "العودة إلى لوحة المعلومات",
+    "notFoundTitle": "الصفحة غير موجودة",
+    "notFoundBody": "الصفحة المطلوبة غير موجودة أو تم نقلها.",
+    "deniedTitle": "الوصول مرفوض",
+    "deniedBody": "صلاحيات دورك لا تسمح بالوصول إلى هذه الصفحة. تواصل مع المسؤول إذا كنت ترى أن هذا خطأ.",
+    "deniedModule": "القسم المطلوب: {module}"
   },
   "nav": {
     "dashboard": "لوحة التحكم",
@@ -101,7 +213,9 @@
     "openMenu": "فتح القائمة",
     "closeMenu": "إغلاق القائمة",
     "mainNavigation": "التنقل الرئيسي",
-    "more": "المزيد"
+    "more": "المزيد",
+    "quickNavigation": "تنقّل سريع",
+    "pendingItems": "عناصر معلّقة"
   },
   "user": {
     "menu": "قائمة المستخدم",
@@ -203,7 +317,8 @@
     "cancelled": "ملغاة",
     "today": "اليوم",
     "yesterday": "أمس",
-    "netFlow": "صافي التدفق"
+    "netFlow": "صافي التدفق",
+    "pageTotal": "إجمالي الصفحة"
   },
   "masked": {
     "revealLabel": "إظهار {field}",
@@ -255,7 +370,13 @@
     "trendsRange": "الاتجاه خلال آخر {days} يوماً",
     "rangeLabel": "النطاق الزمني",
     "rangeDays": "{days} يوم",
-    "trendDay": "اليوم {day}"
+    "trendDay": "اليوم {day}",
+    "vsPreviousDay": "مقارنة بالأمس",
+    "quickActions": "إجراءات سريعة",
+    "quickDeposit": "إيداع جديد",
+    "quickWithdrawal": "سحب جديد",
+    "quickFundTransfer": "تحويل أموال جديد",
+    "quickExchange": "عملية صرف جديدة"
   },
   "topClients": {
     "title": "أفضل العملاء",
@@ -439,7 +560,8 @@
     "totalActivities": "إجمالي الأحداث",
     "sevenDayBreakdown": "توزيع النشاط خلال 7 أيام",
     "operationVolumeByType": "حجم العمليات حسب النوع",
-    "volumeIn": "الحجم ({currency})"
+    "volumeIn": "الحجم ({currency})",
+    "chartScope": "أحدث {count} عملية مطابقة للمرشحات الحالية"
   },
   "profile": {
     "title": "ملفي الشخصي",

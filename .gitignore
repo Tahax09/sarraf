@@ -55,3 +55,6 @@ AGENTS.md
 /playwright-report/
 /blob-report/
 /.playwright/
+
+# lighthouse ci reports
+/.lighthouseci/

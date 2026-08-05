@@ -24,6 +24,7 @@ export function ConfirmDialog({
   loading,
   requireTyped,
   reason,
+  blocked,
 }: {
   open: boolean;
   onClose: () => void;
@@ -36,6 +37,12 @@ export function ConfirmDialog({
   requireTyped?: boolean;
   /** Optional free-text reason captured with the confirmation (cancellations). */
   reason?: { label: string; required?: boolean };
+  /**
+   * Why the action cannot proceed. Set it and the dialog explains the block and
+   * refuses to confirm, instead of letting the operator arm a request the
+   * backend will only reject.
+   */
+  blocked?: ReactNode;
 }) {
   const t = useTranslations("common");
   const tc = useTranslations("confirm");
@@ -70,7 +77,7 @@ export function ConfirmDialog({
           <Button
             variant={tone === "danger" ? "danger" : tone === "success" ? "success" : "primary"}
             loading={loading}
-            disabled={!typedOk || !reasonOk}
+            disabled={blocked != null || !typedOk || !reasonOk}
             onClick={() =>
               onConfirm({ reason: reasonText.trim() || undefined })
             }
@@ -82,7 +89,15 @@ export function ConfirmDialog({
     >
       <div className="space-y-4">
         {body ? <p className="text-sm text-fg">{body}</p> : null}
-        {requireTyped ? (
+        {blocked ? (
+          <p
+            role="alert"
+            className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger"
+          >
+            {blocked}
+          </p>
+        ) : null}
+        {blocked == null && requireTyped ? (
           <>
             <p className="text-xs text-fg-muted">{tc("irreversible")}</p>
             <TextInput
@@ -93,7 +108,7 @@ export function ConfirmDialog({
             />
           </>
         ) : null}
-        {reason ? (
+        {blocked == null && reason ? (
           <TextArea
             label={reason.label}
             required={reason.required}

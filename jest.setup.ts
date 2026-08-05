@@ -15,6 +15,10 @@ if (typeof HTMLDialogElement !== "undefined") {
   };
 }
 
+// jsdom has no layout, so scrolling is a no-op rather than a missing method.
+// The command palette keeps its highlighted row in view through it.
+Element.prototype.scrollIntoView ??= function scrollIntoView() {};
+
 globalThis.ResizeObserver ??= class {
   observe() {}
   unobserve() {}

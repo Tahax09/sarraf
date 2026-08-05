@@ -10,9 +10,15 @@ import {
 } from "react";
 import { cn } from "@/lib/utils";
 
+/**
+ * Every control shares one focus treatment: a real, offset outline rather than
+ * a border colour swap. A 1px border changing hue is not a visible focus
+ * indicator under WCAG 2.4.11, and it disappears entirely in high contrast.
+ */
 const CONTROL =
   "w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg " +
-  "placeholder:text-fg-subtle focus:border-accent focus:outline-none " +
+  "placeholder:text-fg-subtle focus-visible:border-accent focus-visible:outline-2 " +
+  "focus-visible:outline-offset-2 focus-visible:outline-accent " +
   "disabled:bg-surface-muted disabled:text-fg-subtle";
 
 export function Field({
@@ -21,6 +27,7 @@ export function Field({
   hint,
   required,
   htmlFor,
+  messageId,
   children,
   className,
 }: {
@@ -29,6 +36,12 @@ export function Field({
   hint?: ReactNode;
   required?: boolean;
   htmlFor?: string;
+  /**
+   * Id given to the error or hint line so the control can point at it with
+   * `aria-describedby`. Without it a screen reader announces the label and the
+   * invalid state but never the reason.
+   */
+  messageId?: string;
   children: ReactNode;
   className?: string;
 }) {
@@ -36,6 +49,8 @@ export function Field({
     <div className={cn("flex flex-col gap-1.5", className)}>
       <label htmlFor={htmlFor} className="text-xs font-medium text-fg-muted">
         {label}
+        {/* The asterisk is decorative: `required` on the control is what
+            assistive technology actually announces. */}
         {required ? (
           <span aria-hidden className="text-danger">
             {" *"}
@@ -44,14 +59,27 @@ export function Field({
       </label>
       {children}
       {error ? (
-        <p role="alert" className="text-xs text-danger">
+        <p id={messageId} role="alert" className="text-xs text-danger">
           {error}
         </p>
       ) : hint ? (
-        <p className="text-xs text-fg-subtle">{hint}</p>
+        <p id={messageId} className="text-xs text-fg-subtle">
+          {hint}
+        </p>
       ) : null}
     </div>
   );
+}
+
+/** Points a control at its message line, and only when there is one. */
+function describedBy(
+  messageId: string,
+  error: string | undefined,
+  hint: ReactNode,
+  own: string | undefined,
+) {
+  const ids = [own, error || hint ? messageId : undefined].filter(Boolean);
+  return ids.length > 0 ? ids.join(" ") : undefined;
 }
 
 export type TextInputProps = InputHTMLAttributes<HTMLInputElement> & {
@@ -66,6 +94,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
   function TextInput({ label, error, hint, numeric, className, ...props }, ref) {
     const autoId = useId();
     const id = props.id ?? autoId;
+    const messageId = `${id}-message`;
     return (
       <Field
         label={label}
@@ -73,6 +102,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
         hint={hint}
         required={props.required}
         htmlFor={id}
+        messageId={messageId}
       >
         <input
           ref={ref}
@@ -80,6 +110,12 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
           aria-invalid={error ? true : undefined}
           className={cn(CONTROL, numeric && "numeric", className)}
           {...props}
+          aria-describedby={describedBy(
+            messageId,
+            error,
+            hint,
+            props["aria-describedby"],
+          )}
         />
       </Field>
     );
@@ -96,6 +132,7 @@ export const SelectInput = forwardRef<HTMLSelectElement, SelectInputProps>(
   function SelectInput({ label, error, hint, className, children, ...props }, ref) {
     const autoId = useId();
     const id = props.id ?? autoId;
+    const messageId = `${id}-message`;
     return (
       <Field
         label={label}
@@ -103,6 +140,7 @@ export const SelectInput = forwardRef<HTMLSelectElement, SelectInputProps>(
         hint={hint}
         required={props.required}
         htmlFor={id}
+        messageId={messageId}
       >
         <select
           ref={ref}
@@ -110,6 +148,12 @@ export const SelectInput = forwardRef<HTMLSelectElement, SelectInputProps>(
           aria-invalid={error ? true : undefined}
           className={cn(CONTROL, className)}
           {...props}
+          aria-describedby={describedBy(
+            messageId,
+            error,
+            hint,
+            props["aria-describedby"],
+          )}
         >
           {children}
         </select>
@@ -127,14 +171,27 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
   function TextArea({ label, error, className, ...props }, ref) {
     const autoId = useId();
     const id = props.id ?? autoId;
+    const messageId = `${id}-message`;
     return (
-      <Field label={label} error={error} required={props.required} htmlFor={id}>
+      <Field
+        label={label}
+        error={error}
+        required={props.required}
+        htmlFor={id}
+        messageId={messageId}
+      >
         <textarea
           ref={ref}
           id={id}
           aria-invalid={error ? true : undefined}
           className={cn(CONTROL, "min-h-24", className)}
           {...props}
+          aria-describedby={describedBy(
+            messageId,
+            error,
+            undefined,
+            props["aria-describedby"],
+          )}
         />
       </Field>
     );
@@ -162,7 +219,7 @@ export function Toggle({
         checked={checked}
         disabled={disabled}
         onChange={(e) => onChange(e.target.checked)}
-        className="mt-0.5 size-4 shrink-0 accent-[var(--color-accent)]"
+        className="mt-0.5 size-4 shrink-0 accent-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       />
       <span className="min-w-0">
         <span className="block text-sm text-fg">{label}</span>

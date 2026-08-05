@@ -1,3 +1,5 @@
+import { secureFlag } from "@/lib/cookies";
+
 export const THEME_COOKIE = "SARAF_THEME";
 
 export const themes = ["light", "dark"] as const;
@@ -16,5 +18,5 @@ export function isTheme(value: string | undefined): value is Theme {
  */
 export function themeCookieString(theme: Theme): string {
   const oneYear = 60 * 60 * 24 * 365;
-  return `${THEME_COOKIE}=${theme}; path=/; max-age=${oneYear}; samesite=lax`;
+  return `${THEME_COOKIE}=${theme}; path=/; max-age=${oneYear}; samesite=lax${secureFlag()}`;
 }
