@@ -23,6 +23,7 @@ import { localeDirection, type Locale } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/states";
 import { formatCount, formatNumber } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { SERIES_COLORS } from "./palette";
 
 /**
@@ -74,12 +75,51 @@ function tooltipProps(rtl: boolean) {
   };
 }
 
-function legendStyle(rtl: boolean) {
-  return {
-    fontSize: 11,
-    color: "var(--color-fg-muted)",
-    direction: rtl ? ("rtl" as const) : ("ltr" as const),
-  };
+type LegendEntry = { value?: unknown; color?: string };
+
+/**
+ * The legend recharts draws paints every label in its own series colour,
+ * centres the column and leaves no gap after the swatch — which reads as an
+ * overlap once the label is Arabic. This one is plain markup: aligned swatches,
+ * muted labels, and the reading direction of the page.
+ */
+function ChartLegend({
+  payload,
+  rtl,
+  layout,
+}: {
+  /** Supplied by recharts, which clones this element with the series it drew. */
+  payload?: LegendEntry[];
+  rtl: boolean;
+  layout: "vertical" | "horizontal";
+}) {
+  return (
+    <ul
+      dir={rtl ? "rtl" : "ltr"}
+      className={cn(
+        "flex gap-x-4 gap-y-1 text-[11px] text-fg-muted",
+        layout === "vertical" ? "flex-col" : "flex-wrap justify-center",
+      )}
+    >
+      {(payload ?? []).map((entry, index) => (
+        <li key={index} className="flex items-center gap-1.5">
+          <span
+            aria-hidden
+            className="size-2.5 shrink-0 rounded-[2px]"
+            style={{ backgroundColor: entry.color }}
+          />
+          <span>{String(entry.value ?? "")}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function legendProps(
+  rtl: boolean,
+  layout: "vertical" | "horizontal" = "horizontal",
+) {
+  return { content: <ChartLegend rtl={rtl} layout={layout} /> };
 }
 
 /** Axis pair shared by every cartesian chart, mirrored for RTL. */
@@ -97,7 +137,12 @@ function CartesianAxes({
   return (
     <>
       <CartesianGrid stroke="var(--color-chart-grid)" vertical={false} />
-      <XAxis dataKey={xKey} {...axisProps} reversed={rtl} minTickGap={minTickGap} />
+      <XAxis
+        dataKey={xKey}
+        {...axisProps}
+        reversed={rtl}
+        minTickGap={minTickGap}
+      />
       <YAxis
         {...axisProps}
         width={56}
@@ -250,7 +295,7 @@ export function TrendLineChart({
       <LineChart data={data} margin={chartMargin(rtl)}>
         <CartesianAxes xKey={xKey} rtl={rtl} minTickGap={24} />
         <Tooltip {...tooltipProps(rtl)} labelFormatter={tooltipLabel} />
-        <Legend wrapperStyle={legendStyle(rtl)} />
+        <Legend {...legendProps(rtl)} />
         {series.map((s) => (
           <Line
             key={s.key}
@@ -314,7 +359,10 @@ export function CompositionDonut({
           cx={legend === "side" ? sideCx : "50%"}
         >
           {data.map((_, index) => (
-            <Cell key={index} fill={SERIES_COLORS[index % SERIES_COLORS.length]} />
+            <Cell
+              key={index}
+              fill={SERIES_COLORS[index % SERIES_COLORS.length]}
+            />
           ))}
         </Pie>
         <Tooltip
@@ -329,7 +377,7 @@ export function CompositionDonut({
                 verticalAlign: "middle",
               } as const)
             : {})}
-          wrapperStyle={legendStyle(rtl)}
+          {...legendProps(rtl, legend === "side" ? "vertical" : "horizontal")}
         />
       </PieChart>
     </ChartFrame>
@@ -363,7 +411,7 @@ export function CategoryBarChart({
           {...tooltipProps(rtl)}
           cursor={{ fill: "var(--color-surface-muted)" }}
         />
-        <Legend wrapperStyle={legendStyle(rtl)} />
+        <Legend {...legendProps(rtl)} />
         {series.map((s, index) => (
           <Bar
             key={s.key}

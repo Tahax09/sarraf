@@ -583,7 +583,9 @@ export async function fixtureFetch<T>(
             l.amount <= Number(params.amountMax)) &&
           matches(`${l.clientName} ${l.accountNumber} ${l.reference}`, params?.q),
       );
-      return { items: filtered, total: filtered.length, page: 1, pageSize: filtered.length } as T;
+      // Paged like every other register: returning all ~3,700 matching rows
+      // made the page render the whole ledger in one table.
+      return paginate(filtered, params) as T;
     }
     case "/analytics/activity":
       return db.activity as T;

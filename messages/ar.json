@@ -307,7 +307,9 @@
     "rowsPerPage": "عدد الصفوف لكل صفحة",
     "pagination": "التنقّل بين الصفحات",
     "page": "صفحة {page}",
-    "range": "عرض {from}–{to} من {total}"
+    "range": "عرض {from}–{to} من {total}",
+    "densityCompact": "صفوف مضغوطة",
+    "densityComfortable": "صفوف مريحة"
   },
   "stats": {
     "count": "العدد",

@@ -349,6 +349,9 @@ export default function AllOperationsPage() {
           columns={columns}
           rows={rows}
           getRowId={(row) => row.id}
+          // The ledger is the one register long enough to push its own filters
+          // and pager off the screen, so it scrolls inside the card instead.
+          scroll
           loading={query.isLoading}
           error={query.isError}
           onRetry={() => query.refetch()}

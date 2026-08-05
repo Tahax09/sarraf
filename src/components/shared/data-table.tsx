@@ -1,11 +1,18 @@
 "use client";
 
-import { useId, useMemo, useState, type ReactNode } from "react";
+import {
+  useId,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 import { useTranslations } from "next-intl";
-import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronsUpDown, Rows2, Rows3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCount } from "@/lib/format";
 import { EmptyState, ErrorState, TableSkeleton } from "@/components/ui/states";
+import { createRecordStore } from "@/lib/local-store";
 import { PAGE_SIZES, nextSort } from "@/lib/use-table-query";
 import type { SortState } from "@/lib/api/types";
 import { DetailDrawer } from "./detail-drawer";
@@ -75,9 +82,67 @@ export type DataTableProps<T> = {
   sort?: SortState;
   onSortChange?: (sort: SortState) => void;
   caption?: string;
+  /**
+   * Bounds the table to a scrolling viewport instead of letting it run the
+   * length of the page. Registers with a page of rows read fine as they are;
+   * the ledger does not, and its header and pager have to stay reachable.
+   */
+  scroll?: boolean;
 };
 
 const DEFAULT_PAGE_SIZES = [...PAGE_SIZES];
+
+export type Density = "comfortable" | "compact";
+
+/**
+ * Row height, shared by every register for the session.
+ *
+ * It is a display preference, not data: an operator scanning the ledger for one
+ * reference wants as many rows on screen as will fit, while one reading a day's
+ * approvals wants room between them. Stored so the choice survives moving
+ * between registers, and session-scoped like every other view preference here.
+ */
+const densityStore = createRecordStore("saraf.table");
+
+function useDensity(): [Density, (next: Density) => void] {
+  const values = useSyncExternalStore(
+    densityStore.subscribe,
+    densityStore.getSnapshot,
+    densityStore.getServerSnapshot,
+  );
+  const density: Density =
+    values.density === "compact" ? "compact" : "comfortable";
+  const set = (next: Density) =>
+    densityStore.set({ ...densityStore.getSnapshot(), density: next });
+  return [density, set];
+}
+
+/** Labelled with the state it switches to, so the button says what it does. */
+function DensityToggle({
+  density,
+  onChange,
+}: {
+  density: Density;
+  onChange: (next: Density) => void;
+}) {
+  const tt = useTranslations("table");
+  const compact = density === "compact";
+  const Icon = compact ? Rows2 : Rows3;
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(compact ? "comfortable" : "compact")}
+      className={cn(
+        "hidden items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs md:inline-flex",
+        "text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg",
+        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+      )}
+    >
+      <Icon className="size-3.5 shrink-0" aria-hidden />
+      {compact ? tt("densityComfortable") : tt("densityCompact")}
+    </button>
+  );
+}
 
 /**
  * Page control. The label is always on the button (never on the glyph alone),
@@ -185,6 +250,7 @@ export function DataTable<T>({
   sort = null,
   onSortChange,
   caption,
+  scroll = false,
 }: DataTableProps<T>) {
   const t = useTranslations("common");
   const tt = useTranslations("table");
@@ -195,6 +261,10 @@ export function DataTable<T>({
   const pageSizeId = useId();
 
   const server = pagination ?? null;
+  const [density, setDensity] = useDensity();
+  const compact = density === "compact";
+  const headCell = compact ? "px-3 py-1.5" : "px-3 py-2.5";
+  const bodyCell = compact ? "px-3 py-1.5" : "px-3 py-3";
   const paging = server !== null || paginate;
   const showNumbers = numbered ?? paging;
 
@@ -263,7 +333,14 @@ export function DataTable<T>({
       </p>
 
       {/* Desktop / tablet: real table. */}
-      <div className="hidden overflow-x-auto md:block">
+      <div
+        className={cn(
+          "hidden overflow-x-auto md:block",
+          // The sticky header only sticks against a scroll container; without a
+          // bound it is the page that scrolls and the header leaves with it.
+          scroll && "max-h-[65vh]",
+        )}
+      >
         <table className="w-full border-collapse text-sm">
           {caption ? <caption className="sr-only">{caption}</caption> : null}
           <thead className="sticky top-0 z-10 bg-surface-muted">
@@ -271,7 +348,10 @@ export function DataTable<T>({
               {showNumbers ? (
                 <th
                   scope="col"
-                  className="w-12 border-b border-border px-3 py-2.5 text-start text-xs font-medium text-fg-muted"
+                  className={cn(
+                    "w-12 border-b border-border text-start text-xs font-medium text-fg-muted",
+                    headCell,
+                  )}
                 >
                   {tt("rowNumber")}
                 </th>
@@ -293,7 +373,8 @@ export function DataTable<T>({
                           : "none"
                     }
                     className={cn(
-                      "border-b border-border px-3 py-2.5 text-xs font-medium text-fg-muted",
+                      "border-b border-border text-xs font-medium text-fg-muted",
+                      headCell,
                       col.align === "end" ? "text-end" : "text-start",
                       col.headerClassName,
                     )}
@@ -320,7 +401,10 @@ export function DataTable<T>({
               {renderActions ? (
                 <th
                   scope="col"
-                  className="border-b border-border px-3 py-2.5 text-end text-xs font-medium text-fg-muted"
+                  className={cn(
+                    "border-b border-border text-end text-xs font-medium text-fg-muted",
+                    headCell,
+                  )}
                 >
                   {t("actions")}
                 </th>
@@ -350,7 +434,12 @@ export function DataTable<T>({
                 aria-label={openable ? t("expandRow") : undefined}
               >
                 {showNumbers ? (
-                  <td className="numeric px-3 py-3 align-middle text-xs text-fg-subtle">
+                  <td
+                    className={cn(
+                      "numeric align-middle text-xs text-fg-subtle",
+                      bodyCell,
+                    )}
+                  >
                     {/* Continues across pages: page 2 starts at 11. */}
                     {formatCount(offset + index + 1)}
                   </td>
@@ -359,7 +448,8 @@ export function DataTable<T>({
                   <td
                     key={col.key}
                     className={cn(
-                      "px-3 py-3 align-middle text-fg",
+                      "align-middle text-fg",
+                      bodyCell,
                       col.align === "end" ? "text-end" : "text-start",
                       col.cellClassName,
                     )}
@@ -369,7 +459,7 @@ export function DataTable<T>({
                 ))}
                 {renderActions ? (
                   <td
-                    className="px-3 py-2 text-end"
+                    className={cn("text-end", compact ? "px-3 py-1" : "px-3 py-2")}
                     onClick={(event) => event.stopPropagation()}
                   >
                     {renderActions(row)}
@@ -388,7 +478,7 @@ export function DataTable<T>({
           const primary = visibleColumns.find((c) => c.primary);
           const rest = visibleColumns.filter((c) => !c.primary && !c.hideOnCard);
           return (
-            <li key={getRowId(row)} className="p-4">
+            <li key={getRowId(row)} className={compact ? "p-3" : "p-4"}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex min-w-0 items-baseline gap-2 text-sm font-medium text-fg">
                   {showNumbers ? (
@@ -430,7 +520,10 @@ export function DataTable<T>({
       {paging && total > pageSizeOptions[0] ? (
         <nav
           aria-label={tt("pagination")}
-          className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-3 py-3"
+          // Not sticky: with `scroll` the rows are bounded and the pager already
+          // sits under whatever the reader can see, and pinning it to the
+          // viewport only covered the last row of every other register.
+          className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-surface px-3 py-3"
         >
           <div className="flex items-center gap-2">
             <label htmlFor={pageSizeId} className="text-xs text-fg-muted">
@@ -449,6 +542,7 @@ export function DataTable<T>({
               ))}
             </select>
             <span className="numeric text-xs text-fg-subtle">{rangeLabel}</span>
+            <DensityToggle density={density} onChange={setDensity} />
           </div>
 
           <div className="flex items-center gap-1">

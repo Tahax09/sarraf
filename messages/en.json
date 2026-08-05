@@ -307,7 +307,9 @@
     "rowsPerPage": "Rows per page",
     "pagination": "Pagination",
     "page": "Page {page}",
-    "range": "Showing {from}–{to} of {total}"
+    "range": "Showing {from}–{to} of {total}",
+    "densityCompact": "Compact rows",
+    "densityComfortable": "Comfortable rows"
   },
   "stats": {
     "count": "Count",

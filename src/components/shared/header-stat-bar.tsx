@@ -77,6 +77,18 @@ function DeltaIndicator({ delta }: { delta: StatDelta }) {
  * Standard count/total summary above every list and queue page — one component
  * so the treatment is identical across modules.
  */
+/**
+ * Columns for the number of figures actually supplied. A fixed four-column grid
+ * left the unfilled cells showing the border colour behind them, which read as
+ * an empty panel rather than as spacing.
+ */
+const COLUMNS: Record<number, string> = {
+  1: "grid-cols-1",
+  2: "grid-cols-2",
+  3: "grid-cols-2 sm:grid-cols-3",
+  4: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4",
+};
+
 export function HeaderStatBar({
   stats,
   className,
@@ -87,7 +99,8 @@ export function HeaderStatBar({
   return (
     <dl
       className={cn(
-        "grid grid-cols-2 gap-px overflow-hidden rounded-card border border-border bg-border sm:grid-cols-3 lg:grid-cols-4",
+        "grid gap-px overflow-hidden rounded-card border border-border bg-border",
+        COLUMNS[Math.min(stats.length, 4)] ?? COLUMNS[4],
         className,
       )}
     >

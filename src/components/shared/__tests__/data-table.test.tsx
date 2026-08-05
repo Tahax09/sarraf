@@ -322,6 +322,48 @@ describe("DataTable", () => {
     expect(within(header).queryByRole("button")).not.toBeInTheDocument();
   });
 
+  it("switches row density and remembers the choice for the next register", async () => {
+    const user = userEvent.setup();
+    // Enough rows to page, which is where the density control lives.
+    const many: Row[] = Array.from({ length: 12 }, (_, index) => ({
+      id: `row-${index}`,
+      name: `عميل ${index}`,
+      amount: index,
+      fee: null,
+    }));
+    const { unmount } = renderWithProviders(
+      <DataTable
+        columns={columns(false)}
+        rows={many}
+        getRowId={(row) => row.id}
+        caption="t"
+        paginate
+      />,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: message("table.densityCompact") }),
+    );
+    // The button now offers the way back, which is how it reports the state.
+    expect(
+      screen.getByRole("button", { name: message("table.densityComfortable") }),
+    ).toBeInTheDocument();
+
+    unmount();
+    renderWithProviders(
+      <DataTable
+        columns={columns(false)}
+        rows={many}
+        getRowId={(row) => row.id}
+        caption="t"
+        paginate
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: message("table.densityComfortable") }),
+    ).toBeInTheDocument();
+  });
+
   it("offers a retry path on failure", async () => {
     const user = userEvent.setup();
     const onRetry = jest.fn();
