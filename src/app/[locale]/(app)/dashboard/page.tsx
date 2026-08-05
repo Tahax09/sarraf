@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { PageHeader } from "@/components/shared/page-header";
-import { DashboardKpiBar } from "@/components/dashboard/kpi-bar";
+import { DashboardKpiCards } from "@/components/dashboard/kpi-cards";
 import { QuickActions } from "@/components/dashboard/quick-actions";
 import { AlertsCard } from "@/components/dashboard/alerts-card";
 import { TrendsCard } from "@/components/dashboard/trends-card";
@@ -30,7 +30,7 @@ export default function DashboardPage() {
     <div className="space-y-4">
       <PageHeader title={t("title")} />
 
-      <DashboardKpiBar />
+      <DashboardKpiCards />
       <QuickActions />
       <AlertsCard />
       <TrendsCard />

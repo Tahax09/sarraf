@@ -1,4 +1,4 @@
-import { dayOverDayDelta } from "@/components/dashboard/kpi-bar";
+import { dayOverDayDelta } from "@/components/dashboard/kpi-cards";
 import type { TrendPoint } from "@/lib/api/types";
 
 function point(

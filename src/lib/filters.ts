@@ -1,6 +1,14 @@
 "use client";
 
-import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import { useSearchParams } from "next/navigation";
 import {
   createMemoryRecordStore,
   createRecordStore,
@@ -109,6 +117,30 @@ export function useFilters(
   );
 
   const clearAll = useCallback(() => store.set({}), [store]);
+
+  // A link may arrive carrying filter values — the dashboard's "today's
+  // operations" KPI points at this register already narrowed to today. Known
+  // keys in the query string seed the store once, on the navigation that
+  // brought them; after that the operator's own choices own the register, so a
+  // later clear is not undone by the URL they arrived from.
+  const searchParams = useSearchParams();
+  const seeded = useRef<string | null>(null);
+  useEffect(() => {
+    // Null where there is no route around the hook — a unit test rendering the
+    // bar on its own, or a component mounted outside the App Router.
+    if (!searchParams) return;
+    const signature = searchParams.toString();
+    if (seeded.current === signature) return;
+    seeded.current = signature;
+
+    const known = new Set(defs.flatMap(filterKeys));
+    const fromUrl: Record<string, string> = {};
+    for (const [key, value] of searchParams.entries()) {
+      if (known.has(key) && value !== "") fromUrl[key] = value;
+    }
+    if (Object.keys(fromUrl).length === 0) return;
+    store.set({ ...store.getSnapshot(), ...fromUrl });
+  }, [defs, searchParams, store]);
 
   const params = useMemo(() => {
     const known = new Set(defs.flatMap(filterKeys));
