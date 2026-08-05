@@ -174,7 +174,15 @@ function ChartFrame({
           same figures, or `summary` states them in a sentence. Exposing a few
           hundred unlabelled SVG nodes would be worse than either. */}
       {summary ? <p className="sr-only">{summary}</p> : null}
-      <div style={{ height }} aria-hidden>
+      {/* `dir="ltr"` on the drawing surface, deliberately, inside an RTL page.
+          recharts positions every tick with an absolute `x` plus an SVG
+          `text-anchor`, and `text-anchor: start` resolves to the *right* edge of
+          the glyph run under `direction: rtl` — so a right-hand value axis drew
+          its labels leftwards, on top of the series. The axis text is digits and
+          dates, which read LTR anyway; the legend and the tooltip carry their own
+          `direction` so their Arabic labels are unaffected. Mirroring stays where
+          it belongs: `orientation`, `reversed` and the margins below. */}
+      <div style={{ height }} dir="ltr" aria-hidden>
         <ResponsiveContainer width="100%" height="100%">
           {children as never}
         </ResponsiveContainer>
