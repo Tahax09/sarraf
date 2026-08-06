@@ -585,6 +585,26 @@
     "addAnother": "Add another",
     "removeField": "Remove field"
   },
+  "diagnostics": {
+    "title": "Build and environment",
+    "description": "What support needs to reproduce a problem. Nothing here is secret.",
+    "version": "Version",
+    "commit": "Commit",
+    "builtAt": "Built",
+    "environment": "Environment",
+    "apiMode": "Data source",
+    "apiModeFixtures": "Built-in sample data",
+    "apiModeLive": "Live backend",
+    "sessionId": "Session reference",
+    "flags": "Feature flags",
+    "flagsNone": "none",
+    "flagOn": "on",
+    "flagOff": "off",
+    "unstamped": "not recorded",
+    "unstampedNote": "This build was not produced by the release pipeline, so it carries no commit or build time.",
+    "copy": "Copy for support",
+    "copied": "Copied"
+  },
   "branches": {
     "title": "Branches",
     "add": "Add branch"

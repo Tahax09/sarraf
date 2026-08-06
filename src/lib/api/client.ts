@@ -1,4 +1,6 @@
 import { env } from "@/lib/env";
+import { correlationHeaders } from "@/lib/observability/correlation";
+import { emit } from "@/lib/observability/telemetry";
 
 export class ApiError extends Error {
   readonly status: number;
@@ -58,6 +60,21 @@ function csrfHeader(): Record<string, string> {
   return match ? { "X-XSRF-TOKEN": decodeURIComponent(match[1]) } : {};
 }
 
+/**
+ * `/clients/cli_1000/accounts` → `/clients/[id]/accounts`.
+ *
+ * Telemetry is grouped by this, never by the raw path: one row per client is
+ * not a metric, and a record id in a trace store is operator data leaving the
+ * building. Segments carrying a digit are treated as identifiers — every id
+ * this API issues does (`cli_1000`, `acc_0_0`, `op_44`).
+ */
+function endpointName(path: string): string {
+  return path
+    .split("/")
+    .map((segment) => (/\d/.test(segment) ? "[id]" : segment))
+    .join("/");
+}
+
 export async function apiFetch<T>(
   path: string,
   options: RequestOptions = {},
@@ -69,18 +86,47 @@ export async function apiFetch<T>(
     return fixtureFetch<T>(path, { method, body, params });
   }
 
-  const response = await fetch(buildUrl(path, params), {
-    method,
-    signal,
-    // Auth travels in an httpOnly cookie; no token ever touches JS storage.
-    credentials: "include",
-    headers: {
-      Accept: "application/json",
-      ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
-      ...(method === "GET" ? {} : csrfHeader()),
-    },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
+  // `performance.now()` rather than `Date.now()`: a clock adjustment mid-call
+  // must not turn a 200 ms request into a negative one.
+  const startedAt = performance.now();
+  const endpoint = endpointName(path);
+
+  /** One place to report from, so a throw and a return are measured alike. */
+  const report = (status: number, outcome: "ok" | "error" | "network") =>
+    emit({
+      kind: "request",
+      name: `api.${method} ${endpoint}`,
+      level: outcome === "ok" ? "info" : "warning",
+      durationMs: Math.round(performance.now() - startedAt),
+      attributes: { method, endpoint, status, outcome },
+    });
+
+  let response: Response;
+  try {
+    response = await fetch(buildUrl(path, params), {
+      method,
+      signal,
+      // Auth travels in an httpOnly cookie; no token ever touches JS storage.
+      credentials: "include",
+      headers: {
+        Accept: "application/json",
+        ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+        ...(method === "GET" ? {} : csrfHeader()),
+        // Correlation only. Nothing here identifies the operator — the backend
+        // already knows who they are from the session cookie.
+        ...correlationHeaders(),
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  } catch (cause) {
+    // An abort is the caller changing its mind, not a failure worth an alert.
+    if (!(cause instanceof DOMException && cause.name === "AbortError")) {
+      report(0, "network");
+    }
+    throw cause;
+  }
+
+  report(response.status, response.ok ? "ok" : "error");
 
   if (response.status === 204) return undefined as T;
 

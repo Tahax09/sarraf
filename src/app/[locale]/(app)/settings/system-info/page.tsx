@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Plus, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardFooter, CardHeader } from "@/components/ui/card";
+import { BuildDiagnostics } from "@/components/shared/build-diagnostics";
 import { Field, TextInput } from "@/components/ui/field";
 import { ErrorState, Skeleton } from "@/components/ui/states";
 import { PageHeader } from "@/components/shared/page-header";
@@ -117,6 +118,12 @@ function SystemInfoForm({ initial }: { initial: SystemInfo }) {
           </Button>
         </CardFooter>
       </Card>
+
+      {/* Below the form it belongs to nothing on this page — which is the
+          point. This is the screen an administrator is already on when support
+          asks "which build are you running?", and a second place to look for
+          it would be a place nobody finds. */}
+      <BuildDiagnostics />
     </div>
   );
 }

@@ -10,6 +10,7 @@
  * `context` — the payload is a diagnostic breadcrumb, not a data dump.
  */
 import { apiFetch } from "@/lib/api/client";
+import { emit } from "@/lib/observability/telemetry";
 
 export type ErrorContext = {
   /** Where the boundary sits: "global", "locale", "app", "route:<name>". */
@@ -40,6 +41,24 @@ export function reportError(error: unknown, context: ErrorContext): void {
     // In development the developer is the audience; surface it immediately.
     console.error(`[${context.boundary}]`, error);
   }
+
+  // Any registered sink — Sentry, an OTel exporter, a collector — sees this
+  // first and sees it whole. The backend POST below stays regardless: it is
+  // the one destination that exists whether or not a deployment has wired
+  // observability, and losing it would trade a working path for a possible one.
+  emit({
+    kind: "error",
+    name: `error.${context.boundary}`,
+    level: "error",
+    attributes: {
+      boundary: context.boundary,
+      digest: context.digest ?? null,
+      errorName: normalized.name,
+      // The message, not the stack: a sink is a routing decision, and the full
+      // payload belongs to whatever the sink forwards to.
+      message: normalized.message.slice(0, 200),
+    },
+  });
 
   // Fire-and-forget. A failed report must never mask the original error or
   // throw a second one on top of it.
