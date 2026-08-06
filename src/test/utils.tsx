@@ -3,6 +3,10 @@ import { render, type RenderOptions } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ShortcutProvider } from "@/lib/shortcuts";
+import { ThemeProvider } from "@/components/providers/theme-provider";
+import { A11yProvider } from "@/components/providers/a11y-provider";
+import { defaultTheme } from "@/lib/theme";
+import { defaultA11yPreferences } from "@/lib/a11y-preferences";
 import ar from "../../messages/ar.json";
 import en from "../../messages/en.json";
 
@@ -26,10 +30,16 @@ export function Providers({
   children,
   locale = "ar",
   queryClient,
+  shortcuts = true,
 }: {
   children: ReactNode;
   locale?: "ar" | "en";
   queryClient?: QueryClient;
+  /**
+   * The signed-out pages render outside the app shell and register no
+   * shortcuts, so a test for one has to be able to leave the registry out.
+   */
+  shortcuts?: boolean;
 }) {
   return (
     <NextIntlClientProvider
@@ -39,9 +49,15 @@ export function Providers({
       now={new Date("2026-01-15T10:00:00Z")}
     >
       <QueryClientProvider client={queryClient ?? makeQueryClient()}>
-        {/* Mirrors the app shell: anything rendering a component that claims a
-            keyboard chord needs the registry above it. */}
-        <ShortcutProvider>{children}</ShortcutProvider>
+        {/* Mirrors the root layout and the app shell. Theme and accessibility
+            preferences are above every page in the real app, so a component
+            that reads either should not have to be rendered specially here. */}
+        <ThemeProvider initialTheme={defaultTheme}>
+          <A11yProvider initial={defaultA11yPreferences}>
+            {/* Anything claiming a keyboard chord needs the registry above it. */}
+            {shortcuts ? <ShortcutProvider>{children}</ShortcutProvider> : children}
+          </A11yProvider>
+        </ThemeProvider>
       </QueryClientProvider>
     </NextIntlClientProvider>
   );
@@ -52,15 +68,20 @@ export function renderWithProviders(
   {
     locale = "ar",
     queryClient,
+    shortcuts = true,
     ...options
-  }: RenderOptions & { locale?: "ar" | "en"; queryClient?: QueryClient } = {},
+  }: RenderOptions & {
+    locale?: "ar" | "en";
+    queryClient?: QueryClient;
+    shortcuts?: boolean;
+  } = {},
 ) {
   const client = queryClient ?? makeQueryClient();
   return {
     queryClient: client,
     ...render(ui, {
       wrapper: ({ children }) => (
-        <Providers locale={locale} queryClient={client}>
+        <Providers locale={locale} queryClient={client} shortcuts={shortcuts}>
           {children}
         </Providers>
       ),

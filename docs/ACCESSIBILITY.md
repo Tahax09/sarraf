@@ -86,7 +86,8 @@ message that a screen reader never reaches.
 ## The Accessibility Center
 
 Operators on shared branch machines often cannot change OS settings, so three
-preferences live in the product, in a dialog reachable from the header:
+preferences live in the product, in a dialog reachable from the header — and,
+equally, from the signed-out pages:
 
 - **Motion** — system / reduced.
 - **Contrast** — normal / high.
@@ -107,6 +108,25 @@ sees a frame of the default before the preference lands.
 - High contrast raises muted foregrounds and borders without inverting the
   palette — green still means in, red still means out — and adds underlines to
   inline links so colour is never the only cue (**1.4.1 Use of Colour**).
+
+### Before sign-in
+
+The dialog is not the header's. `AuthShell` — the frame every signed-out page
+renders in — carries the same three controls the shell offers an operator who is
+already in: language, theme and the accessibility centre. An operator who needs
+larger text or more contrast needs them to read the sign-in form, not once they
+are past it, and a reset page that dropped the contrast they had just set would
+be taking it away at the worst moment.
+
+Two consequences worth stating:
+
+- The keyboard-shortcut sheet is **not** offered there. Shortcuts are registered
+  by the app shell, so a signed-out page has none, and a button that opened an
+  empty list would be worse than no button. `useOptionalShortcutRegistry()`
+  returns `null` outside the shell and the block is omitted.
+- Both preferences are cookies read server-side, so they survive the navigation
+  from sign-in to password reset and back, and the next page renders already
+  correct rather than correcting itself after paint.
 
 ## Colour and contrast
 

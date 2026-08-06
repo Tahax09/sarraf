@@ -172,6 +172,18 @@ export function useShortcutRegistry(): ShortcutState {
 }
 
 /**
+ * The registry when there is one, `null` when there is not.
+ *
+ * The signed-out pages live outside the shell and register no shortcuts, so a
+ * component that offers the shortcut sheet has to be able to ask whether one
+ * exists. Throwing is right for a component that needs the registry to work;
+ * this is for the one that only mentions it.
+ */
+export function useOptionalShortcutRegistry(): ShortcutState | null {
+  return useContext(ShortcutContext);
+}
+
+/**
  * Registers one shortcut for the lifetime of the calling component.
  *
  * The handler is read through a ref, so a shortcut stays bound to fresh state

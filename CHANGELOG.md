@@ -6,6 +6,33 @@ a release yet, so everything below is unreleased.
 
 ## [Unreleased]
 
+### Signed-out pages — 2026-08-06
+
+**Added**
+
+- `AuthShell` (`src/components/auth/auth-shell.tsx`) — one frame for every page
+  reachable without a session. Sign-in and password reset now render in it, and
+  any page added later inherits the layout rather than reproducing it.
+- Language, theme and the accessibility centre are available **before** sign-in,
+  from a toolbar in that shell. An operator who needs larger text or more
+  contrast needs it to read the sign-in form, not after.
+- `ThemeToggle` (`src/components/shared/theme-toggle.tsx`) — a standalone icon
+  button for surfaces with no user menu. The menu keeps its own
+  `menuitemcheckbox` row; the two are different controls, not one component
+  rendering two ways.
+- `useOptionalShortcutRegistry()`, so a component can ask whether a shortcut
+  registry exists instead of throwing. The accessibility centre uses it to omit
+  the keyboard-shortcut sheet on pages that register no chords.
+
+**Changed**
+
+- Password reset was a card on a plain background; it now matches sign-in
+  exactly. Its behaviour is untouched — same schema, same uniform response
+  whether or not the account exists, same challenge gating.
+- `renderWithProviders` wraps tests in `ThemeProvider` and `A11yProvider`,
+  mirroring the root layout, and takes `shortcuts: false` for components that
+  render outside the app shell.
+
 ### Production hardening sprint — 2026-08-06
 
 **Added**

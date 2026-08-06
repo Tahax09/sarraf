@@ -19,6 +19,8 @@
     "cancel": "Cancel",
     "confirm": "Confirm",
     "close": "Close",
+    "themeDark": "Switch to dark mode",
+    "themeLight": "Switch to light mode",
     "back": "Back",
     "next": "Next",
     "previous": "Previous",

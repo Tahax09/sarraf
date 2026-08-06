@@ -12,7 +12,7 @@ import {
   textSizeSettings,
   type A11yPreferences,
 } from "@/lib/a11y-preferences";
-import { useShortcutRegistry } from "@/lib/shortcuts";
+import { useOptionalShortcutRegistry } from "@/lib/shortcuts";
 import { cn } from "@/lib/utils";
 
 /**
@@ -73,7 +73,11 @@ function OptionGroup<T extends string>({
   );
 }
 
-/** Header trigger. Paired with the bell so both live in the same cluster. */
+/**
+ * The button that opens the centre: beside the bell in the app header, and in
+ * the toolbar on the signed-out pages. An operator who needs larger text needs
+ * it to read the sign-in form, not after they are past it.
+ */
 export function AccessibilityTrigger({ className }: { className?: string }) {
   const t = useTranslations("a11y");
   const [open, setOpen] = useState(false);
@@ -107,7 +111,9 @@ export function AccessibilityCenter({
   const t = useTranslations("a11y");
   const tc = useTranslations("common");
   const { preferences, update, reset } = useA11yPreferences();
-  const { setHelpOpen } = useShortcutRegistry();
+  // Signed-out pages open this dialog too, and they register no shortcuts.
+  // Offering a sheet that would list nothing is worse than not offering it.
+  const shortcuts = useOptionalShortcutRegistry();
 
   const setting = <K extends keyof A11yPreferences>(
     key: K,
@@ -154,21 +160,23 @@ export function AccessibilityCenter({
           label={(option) => t(`motions.${option}`)}
         />
 
-        <div className="rounded-lg border border-border p-3">
-          <p className="text-sm font-medium text-fg">{t("keyboardTitle")}</p>
-          <p className="mt-1 text-xs text-fg-muted">{t("keyboardBody")}</p>
-          <Button
-            variant="secondary"
-            size="sm"
-            className="mt-3"
-            onClick={() => {
-              onClose();
-              setHelpOpen(true);
-            }}
-          >
-            {t("keyboardAction")}
-          </Button>
-        </div>
+        {shortcuts ? (
+          <div className="rounded-lg border border-border p-3">
+            <p className="text-sm font-medium text-fg">{t("keyboardTitle")}</p>
+            <p className="mt-1 text-xs text-fg-muted">{t("keyboardBody")}</p>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="mt-3"
+              onClick={() => {
+                onClose();
+                shortcuts.setHelpOpen(true);
+              }}
+            >
+              {t("keyboardAction")}
+            </Button>
+          </div>
+        ) : null}
 
         <p className="text-xs text-fg-subtle">{t("persistenceNote")}</p>
       </div>

@@ -36,11 +36,11 @@ record of where the routes sat that day.
 
 | Route | KB |
 | --- | --- |
-| `/core/analytics/all-operations` | 377 |
-| `/dashboard` | 370 |
-| `/core/analytics/branch-cash-flow` | 368 |
-| `/core/withdrawal/list` | 247 |
-| `/core/roles` | 239 |
+| `/core/analytics/all-operations` | 378 |
+| `/dashboard` | 371 |
+| `/core/analytics/branch-cash-flow` | 369 |
+| `/core/withdrawal/list` | 248 |
+| `/core/roles` | 240 |
 
 The budgets sit above these with room for ordinary growth. They are ceilings to
 catch a regression, not targets to grow into — a change that adds 40 KB to every

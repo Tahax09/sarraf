@@ -6,11 +6,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
-import Image from "next/image";
 import { AlertCircle, Info, Phone, ShieldCheck, User } from "lucide-react";
 import { Link, useRouter } from "@/i18n/navigation";
-import { Logo } from "@/components/shared/logo";
-import { LocaleSwitcher } from "@/components/shared/locale-switcher";
+import { AuthShell } from "@/components/auth/auth-shell";
 import { PasswordInput, PhoneInput, TextInput } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented-control";
@@ -18,9 +16,8 @@ import { Turnstile, isTurnstileEnabled } from "@/components/auth/turnstile";
 import { ApiError, apiFetch, usingFixtures } from "@/lib/api/client";
 import { safeRedirect } from "@/lib/safe-redirect";
 import { secureFlag } from "@/lib/cookies";
-import { formatYear, isValidPhone, normalizePhone } from "@/lib/format";
+import { isValidPhone, normalizePhone } from "@/lib/format";
 import { endpoints } from "@/lib/api/endpoints";
-import loginBanner from "@/assests/Auth/loginbanner.svg";
 
 /**
  * How the operator identifies themselves. Both reach the same account — a
@@ -183,247 +180,151 @@ export function LoginForm({ nonce }: { nonce?: string }) {
   });
 
   return (
-    /*
-     * Two panels: what this is, and the way in.
-     *
-     * The brand side is `hidden lg:flex` — below that width there is no room
-     * for two columns, and a phone gets the form alone rather than a headline
-     * it has to scroll past. Nothing on the brand side is needed to sign in,
-     * so nothing is lost by dropping it.
-     *
-     * The order is source order, so it mirrors on its own: the brand panel sits
-     * on the right in Arabic and the left in English, because a grid column
-     * follows the page's direction without being told to.
-     */
-    <main className="grid min-h-dvh lg:grid-cols-2">
-      <BrandPanel />
+    <AuthShell
+      title={t("welcomeTitle")}
+      subtitle={t("welcomeSubtitle")}
+      footer={t("sessionNotice")}
+    >
+      {notice ? (
+        <p
+          role="status"
+          className="flex items-start gap-2 rounded-lg bg-surface-muted px-3 py-2 text-xs text-fg-muted"
+        >
+          <Info className="mt-px size-3.5 shrink-0" aria-hidden />
+          {t(notice)}
+        </p>
+      ) : null}
 
-      <div className="relative flex items-center justify-center bg-bg px-4 py-8">
-        {/* Top of the reading edge, above the form: an operator who landed in
-            the wrong language needs this before they need anything else. */}
-        <LocaleSwitcher className="absolute top-4 end-4" showIcon />
+      {error ? (
+        <p
+          role="alert"
+          className="flex items-start gap-2 rounded-lg bg-danger-soft px-3 py-2 text-xs text-danger"
+        >
+          <AlertCircle className="mt-px size-3.5 shrink-0" aria-hidden />
+          {error}
+        </p>
+      ) : null}
 
-        <div className="w-full max-w-sm space-y-5">
-          {/* The logo rides with the form only when the brand panel is gone. */}
-          <div className="text-center lg:hidden">
-            <Logo orientation="vertical" className="mx-auto h-16" decorative />
-          </div>
+      {challenge ? (
+        <form className="space-y-4" onSubmit={submitOtp}>
+          <p className="flex items-start gap-2 text-xs text-fg-muted">
+            <ShieldCheck className="mt-px size-3.5 shrink-0" aria-hidden />
+            {t("otpSent")}
+          </p>
+          <TextInput
+            label={t("otpCode")}
+            // Numeric, one-time, and never remembered by the browser.
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={OTP_LENGTH}
+            numeric
+            required
+            autoFocus
+            error={otpForm.formState.errors.code ? t("invalidCodeFormat") : undefined}
+            {...otpForm.register("code")}
+          />
+          <Button
+            type="submit"
+            className="w-full"
+            loading={otpForm.formState.isSubmitting}
+          >
+            {t("verifyCta")}
+          </Button>
+          <button
+            type="button"
+            onClick={() => {
+              setChallenge(null);
+              setError(null);
+              otpForm.reset();
+            }}
+            className="w-full text-xs text-fg-muted hover:text-fg"
+          >
+            {t("useAnotherAccount")}
+          </button>
+        </form>
+      ) : (
+        <form className="space-y-4" onSubmit={submitCredentials}>
+          <SegmentedControl
+            segments={[
+              {
+                value: "username",
+                label: t("username"),
+                icon: <User className="size-3.5 shrink-0" aria-hidden />,
+              },
+              {
+                value: "phone",
+                label: t("phone"),
+                icon: <Phone className="size-3.5 shrink-0" aria-hidden />,
+              },
+            ]}
+            value={method}
+            onChange={(next) => {
+              setMethod(next);
+              // The typed value means nothing under the other method, and
+              // an error about it means less.
+              form.setValue("identifier", "");
+              form.clearErrors("identifier");
+              setError(null);
+            }}
+            ariaLabel={t("signInMethod")}
+          />
 
-          <div>
-            <h1 className="text-2xl font-semibold text-fg">
-              {t("welcomeTitle")}
-            </h1>
-            <p className="mt-1 text-sm text-fg-muted">{t("welcomeSubtitle")}</p>
-          </div>
-
-          {notice ? (
-            <p
-              role="status"
-              className="flex items-start gap-2 rounded-lg bg-surface-muted px-3 py-2 text-xs text-fg-muted"
-            >
-              <Info className="mt-px size-3.5 shrink-0" aria-hidden />
-              {t(notice)}
-            </p>
-          ) : null}
-
-          {error ? (
-            <p
-              role="alert"
-              className="flex items-start gap-2 rounded-lg bg-danger-soft px-3 py-2 text-xs text-danger"
-            >
-              <AlertCircle className="mt-px size-3.5 shrink-0" aria-hidden />
-              {error}
-            </p>
-          ) : null}
-
-          {challenge ? (
-            <form className="space-y-4" onSubmit={submitOtp}>
-              <p className="flex items-start gap-2 text-xs text-fg-muted">
-                <ShieldCheck className="mt-px size-3.5 shrink-0" aria-hidden />
-                {t("otpSent")}
-              </p>
-              <TextInput
-                label={t("otpCode")}
-                // Numeric, one-time, and never remembered by the browser.
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={OTP_LENGTH}
-                numeric
-                required
-                autoFocus
-                error={otpForm.formState.errors.code ? t("invalidCodeFormat") : undefined}
-                {...otpForm.register("code")}
-              />
-              <Button
-                type="submit"
-                className="w-full"
-                loading={otpForm.formState.isSubmitting}
-              >
-                {t("verifyCta")}
-              </Button>
-              <button
-                type="button"
-                onClick={() => {
-                  setChallenge(null);
-                  setError(null);
-                  otpForm.reset();
-                }}
-                className="w-full text-xs text-fg-muted hover:text-fg"
-              >
-                {t("useAnotherAccount")}
-              </button>
-            </form>
+          {/* `key`: remounting is what clears the browser's autofill and
+              gives the new field the focus, which a swapped label alone
+              does not. */}
+          {method === "phone" ? (
+            <PhoneInput
+              key="phone"
+              label={t("phone")}
+              placeholder={t("phoneHint")}
+              required
+              autoFocus
+              error={form.formState.errors.identifier?.message}
+              {...form.register("identifier")}
+            />
           ) : (
-            <form className="space-y-4" onSubmit={submitCredentials}>
-              <SegmentedControl
-                segments={[
-                  {
-                    value: "username",
-                    label: t("username"),
-                    icon: <User className="size-3.5 shrink-0" aria-hidden />,
-                  },
-                  {
-                    value: "phone",
-                    label: t("phone"),
-                    icon: <Phone className="size-3.5 shrink-0" aria-hidden />,
-                  },
-                ]}
-                value={method}
-                onChange={(next) => {
-                  setMethod(next);
-                  // The typed value means nothing under the other method, and
-                  // an error about it means less.
-                  form.setValue("identifier", "");
-                  form.clearErrors("identifier");
-                  setError(null);
-                }}
-                ariaLabel={t("signInMethod")}
-              />
-
-              {/* `key`: remounting is what clears the browser's autofill and
-                  gives the new field the focus, which a swapped label alone
-                  does not. */}
-              {method === "phone" ? (
-                <PhoneInput
-                  key="phone"
-                  label={t("phone")}
-                  placeholder={t("phoneHint")}
-                  required
-                  autoFocus
-                  error={form.formState.errors.identifier?.message}
-                  {...form.register("identifier")}
-                />
-              ) : (
-                <TextInput
-                  key="username"
-                  label={t("username")}
-                  autoComplete="username"
-                  required
-                  autoFocus
-                  error={form.formState.errors.identifier?.message}
-                  {...form.register("identifier")}
-                />
-              )}
-              <PasswordInput
-                label={t("password")}
-                autoComplete="current-password"
-                required
-                {...form.register("password")}
-              />
-
-              {captchaRequired ? (
-                <Turnstile onToken={setCaptchaToken} nonce={nonce} />
-              ) : null}
-
-              <Button
-                type="submit"
-                className="w-full"
-                loading={form.formState.isSubmitting}
-                // Submitting without a token only produces a rejection the
-                // operator cannot act on, so the button waits for the challenge.
-                disabled={captchaRequired && !captchaToken}
-              >
-                {t("signInCta")}
-              </Button>
-
-              <p className="text-center">
-                <Link
-                  href="/forgot-password"
-                  className="text-xs text-accent hover:underline"
-                >
-                  {t("forgotPassword")}
-                </Link>
-              </p>
-            </form>
+            <TextInput
+              key="username"
+              label={t("username")}
+              autoComplete="username"
+              required
+              autoFocus
+              error={form.formState.errors.identifier?.message}
+              {...form.register("identifier")}
+            />
           )}
+          <PasswordInput
+            label={t("password")}
+            autoComplete="current-password"
+            required
+            {...form.register("password")}
+          />
 
-          <p className="text-center text-[11px] text-fg-subtle">
-            {t("sessionNotice")}
+          {captchaRequired ? (
+            <Turnstile onToken={setCaptchaToken} nonce={nonce} />
+          ) : null}
+
+          <Button
+            type="submit"
+            className="w-full"
+            loading={form.formState.isSubmitting}
+            // Submitting without a token only produces a rejection the
+            // operator cannot act on, so the button waits for the challenge.
+            disabled={captchaRequired && !captchaToken}
+          >
+            {t("signInCta")}
+          </Button>
+
+          <p className="text-center">
+            <Link
+              href="/forgot-password"
+              className="text-xs text-accent hover:underline"
+            >
+              {t("forgotPassword")}
+            </Link>
           </p>
-
-          {/* The brand panel carries the copyright where it is visible; on a
-              phone that panel is gone, so the form carries it instead. */}
-          <p className="text-center text-[11px] text-fg-subtle lg:hidden">
-            <Copyright />
-          </p>
-        </div>
-      </div>
-    </main>
-  );
-}
-
-/**
- * The half of the page that says what the operator is signing in to.
- *
- * The artwork is the supplied banner: three blurred colour fields, drawn as
- * vectors rather than the 15 MB export of the same picture, so it costs about a
- * kilobyte and stays sharp at any panel height. It is decorative — `alt=""`,
- * and nothing on this side is needed to sign in — and it sits behind the
- * content rather than beside it, which is why the children are positioned.
- *
- * `object-cover` on a fixed 720×900 drawing means the blobs are cropped, not
- * squashed, whatever shape the column ends up; the composition survives it
- * because there is no subject to lose.
- */
-function BrandPanel() {
-  const t = useTranslations("auth");
-
-  return (
-    <div className="relative hidden flex-col justify-between overflow-hidden border-e border-border bg-surface-muted p-10 lg:flex">
-      <Image
-        src={loginBanner}
-        alt=""
-        aria-hidden
-        // Above the fold on the one page every session starts at.
-        priority
-        // The artwork is not symmetric — the heavy field sits low on one side —
-        // so it turns with the page like every other directional graphic here,
-        // and the weight stays on the same side as the reader's eye.
-        className="rtl-flip pointer-events-none absolute inset-0 size-full object-cover"
-      />
-
-      <Logo className="relative h-9 w-auto" decorative />
-
-      <div className="relative max-w-md">
-        <p className="text-3xl leading-tight font-semibold text-balance text-fg">
-          {t("brandHeadline")}
-        </p>
-        <p className="mt-3 text-sm text-pretty text-fg-muted">
-          {t("brandSubcopy")}
-        </p>
-      </div>
-
-      <p className="relative text-xs text-fg-subtle">
-        <Copyright />
-      </p>
-    </div>
-  );
-}
-
-/** The sign-in page is outside the shell, so it carries its own footer line. */
-function Copyright() {
-  const tApp = useTranslations("app");
-  return (
-    <>{tApp("copyright", { year: formatYear(new Date().getFullYear()) })}</>
+        </form>
+      )}
+    </AuthShell>
   );
 }
