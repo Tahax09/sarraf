@@ -1,7 +1,10 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { Minus, TrendingDown, TrendingUp } from "lucide-react";
+import { useId, type ReactNode } from "react";
+import { ChevronRight, Minus, TrendingDown, TrendingUp } from "lucide-react";
+import { Link } from "@/i18n/navigation";
+import { usePermission } from "@/lib/use-permission";
+import type { PermissionModule } from "@/lib/permissions";
 import { formatPercentDelta } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +37,14 @@ export type HeaderStat = {
   numeric?: boolean;
   tone?: "default" | "success" | "danger" | "warning" | "accent";
   delta?: StatDelta;
+  /**
+   * Register the figure was counted from, narrowed to what the figure counts —
+   * the card becomes the way in. Set it only where the destination really shows
+   * those records: a count of the very table underneath is not a shortcut.
+   */
+  href?: string;
+  /** Module the destination belongs to; an operator without it gets no link. */
+  module?: PermissionModule;
 };
 
 const TONES: Record<NonNullable<HeaderStat["tone"]>, string> = {
@@ -127,44 +138,79 @@ export function HeaderStatBar({
       )}
     >
       {stats.map((stat, index) => (
-        <div
-          key={index}
-          className="flex items-start gap-3 rounded-card border border-border bg-surface p-4"
-        >
-          {stat.icon ? (
-            <span
-              aria-hidden
-              className="flex size-9 shrink-0 items-center justify-center rounded-lg"
-              // The tint is the icon's own colour at low opacity, mixed rather
-              // than written down: one value per card stays right in both
-              // themes, and a flat wash keeps the no-gradients rule.
-              style={{
-                color: stat.color ?? TONE_COLORS[stat.tone ?? "default"],
-                backgroundColor: `color-mix(in srgb, ${
-                  stat.color ?? TONE_COLORS[stat.tone ?? "default"]
-                } 14%, transparent)`,
-              }}
-            >
-              {stat.icon}
-            </span>
-          ) : null}
-          <div className="min-w-0 flex-1">
-            <dt className="text-xs text-fg-muted">{stat.label}</dt>
-            <dd
-              className={cn(
-                "mt-1 text-xl font-semibold",
-                stat.numeric && "numeric",
-                TONES[stat.tone ?? "default"],
-              )}
-            >
-              {/* Isolated: a figure carrying a Latin currency code must not be
-              re-ordered by the Arabic label above it. */}
-              <bdi className="block truncate">{stat.value}</bdi>
-              {stat.delta ? <DeltaIndicator delta={stat.delta} /> : null}
-            </dd>
-          </div>
-        </div>
+        <StatCard key={index} stat={stat} />
       ))}
     </dl>
+  );
+}
+
+function StatCard({ stat }: { stat: HeaderStat }) {
+  const permission = usePermission();
+  // Same rule as the Dashboard's KPI row: the figure still shows without the
+  // permission to open the register, it just stops pretending to be a door.
+  const navigable = Boolean(stat.href) && (!stat.module || permission.can(stat.module));
+
+  // `<dl>` may hold `<div>` groups but never an `<a>`, so the card stays a
+  // group and the link is stretched over it — one target covering the whole
+  // card, named by the label the reader sees.
+  const labelId = useId();
+
+  return (
+    <div
+      className={cn(
+        "group flex items-start gap-3 rounded-card border border-border bg-surface p-4",
+        navigable && "relative transition-colors hover:border-accent",
+      )}
+    >
+      {stat.icon ? (
+        <span
+          aria-hidden
+          className="flex size-9 shrink-0 items-center justify-center rounded-lg"
+          // The tint is the icon's own colour at low opacity, mixed rather
+          // than written down: one value per card stays right in both
+          // themes, and a flat wash keeps the no-gradients rule.
+          style={{
+            color: stat.color ?? TONE_COLORS[stat.tone ?? "default"],
+            backgroundColor: `color-mix(in srgb, ${
+              stat.color ?? TONE_COLORS[stat.tone ?? "default"]
+            } 14%, transparent)`,
+          }}
+        >
+          {stat.icon}
+        </span>
+      ) : null}
+      <div className="min-w-0 flex-1">
+        <dt id={labelId} className="text-xs text-fg-muted">
+          {stat.label}
+        </dt>
+        <dd
+          className={cn(
+            "mt-1 text-xl font-semibold",
+            stat.numeric && "numeric",
+            TONES[stat.tone ?? "default"],
+          )}
+        >
+          {/* Isolated: a figure carrying a Latin currency code must not be
+          re-ordered by the Arabic label above it. */}
+          <bdi className="block truncate">{stat.value}</bdi>
+          {stat.delta ? <DeltaIndicator delta={stat.delta} /> : null}
+        </dd>
+      </div>
+      {navigable ? (
+        <>
+          <ChevronRight
+            aria-hidden
+            // Points the way the page reads: right in English, mirrored to left
+            // in Arabic by `.rtl-flip`.
+            className="rtl-flip size-4 shrink-0 self-center text-fg-subtle transition-colors group-hover:text-accent"
+          />
+          <Link
+            href={stat.href!}
+            aria-labelledby={labelId}
+            className="absolute inset-0 rounded-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          />
+        </>
+      ) : null}
+    </div>
   );
 }

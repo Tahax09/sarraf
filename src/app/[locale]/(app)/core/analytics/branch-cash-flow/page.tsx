@@ -133,6 +133,10 @@ export default function BranchCashFlowPage() {
             numeric: true,
             icon: <ListOrdered className="size-4" aria-hidden />,
             color: "var(--color-accent)",
+            // Every movement this page adds up, in the register that lists them
+            // one by one.
+            href: "/core/analytics/all-operations",
+            module: "analytics",
           },
           {
             label: tDashboard("trendDeposits"),
@@ -140,6 +144,8 @@ export default function BranchCashFlowPage() {
             numeric: true,
             tone: "success",
             icon: <ArrowDownToLine className="size-4" aria-hidden />,
+            href: "/core/analytics/all-operations?type=deposit",
+            module: "analytics",
           },
           {
             label: tDashboard("trendWithdrawals"),
@@ -147,6 +153,8 @@ export default function BranchCashFlowPage() {
             numeric: true,
             tone: "danger",
             icon: <ArrowUpFromLine className="size-4" aria-hidden />,
+            href: "/core/analytics/all-operations?type=withdrawal",
+            module: "analytics",
           },
           {
             label: tStats("netFlow"),
