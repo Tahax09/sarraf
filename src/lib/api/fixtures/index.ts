@@ -111,6 +111,7 @@ function searchOperations(items: AnyOperation[], params?: QueryParams) {
   return items.filter(
     (o) =>
       matches(o.clientName, q) ||
+      matches(o.clientNameEn ?? "", q) ||
       matches(o.accountNumber, q) ||
       matches(o.reference, q) ||
       matches(o.clientPhone, q),
@@ -411,7 +412,9 @@ export async function fixtureFetch<T>(
     case "/clients": {
       const filtered = db.clients.filter(
         (c) =>
-          matches(c.name, params?.name) &&
+          // Either spelling answers a name filter: the register is bilingual.
+          (matches(c.name, params?.name) ||
+            matches(c.nameEn ?? "", params?.name)) &&
           matches(c.email ?? "", params?.email) &&
           matches(c.phone, params?.phone),
       );
@@ -421,7 +424,8 @@ export async function fixtureFetch<T>(
     case "/accounts": {
       const filtered = db.accounts.filter(
         (a) =>
-          matches(a.clientName, params?.name) &&
+          (matches(a.clientName, params?.name) ||
+            matches(a.clientNameEn ?? "", params?.name)) &&
           matches(a.number, params?.q) &&
           (!params?.clientId || a.clientId === params.clientId) &&
           (!params?.currency || a.currency === params.currency) &&
@@ -600,7 +604,10 @@ export async function fixtureFetch<T>(
           (params?.amountMax === undefined ||
             params.amountMax === "" ||
             l.amount <= Number(params.amountMax)) &&
-          matches(`${l.clientName} ${l.accountNumber} ${l.reference}`, params?.q),
+          matches(
+            `${l.clientName} ${l.clientNameEn ?? ""} ${l.accountNumber} ${l.reference}`,
+            params?.q,
+          ),
       );
       // Paged like every other register: returning all ~3,700 matching rows
       // made the page render the whole ledger in one table.

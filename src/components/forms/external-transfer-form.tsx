@@ -7,6 +7,7 @@ import { z } from "zod";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { ClientAccountPicker } from "@/components/shared/client-account-picker";
+import { useClientNameText } from "@/components/shared/cells";
 import { ConditionalFeeBlock } from "@/components/shared/conditional-fee-block";
 import {
   FormWizard,
@@ -33,6 +34,7 @@ import {
  */
 export function ExternalTransferForm() {
   const t = useTranslations("fields");
+  const clientName = useClientNameText();
   const tv = useTranslations("validation");
   const tSteps = useTranslations("steps");
   const tc = useTranslations("common");
@@ -271,7 +273,12 @@ export function ExternalTransferForm() {
       content: (
         <ReviewList
           items={[
-            { label: t("client"), value: account?.clientName ?? "—" },
+            {
+              label: t("client"),
+              value: account
+                ? clientName(account.clientName, account.clientNameEn)
+                : "—",
+            },
             {
               label: t("accountNumber"),
               value: account?.number ?? "—",

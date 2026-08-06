@@ -12,6 +12,7 @@ import {
   type ReactNode,
 } from "react";
 import { useTranslations } from "next-intl";
+import { useClientNameText } from "@/components/shared/cells";
 import { formatAmount } from "@/lib/format";
 import { createStringListStore } from "@/lib/local-store";
 import { usePermission } from "@/lib/use-permission";
@@ -103,9 +104,10 @@ export function SearchProvider({
   );
 
   const navLabel = useCallback((key: string) => tNav(key), [tNav]);
+  const clientName = useClientNameText();
   const service = useMemo(
-    () => injected ?? createApiSearchService({ navLabel, can, formatAmount }),
-    [injected, navLabel, can],
+    () => injected ?? createApiSearchService({ navLabel, can, formatAmount, clientName }),
+    [injected, navLabel, can, clientName],
   );
 
   useEffect(() => {

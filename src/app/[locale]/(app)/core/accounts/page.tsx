@@ -8,7 +8,7 @@ import { HeaderStatBar } from "@/components/shared/header-stat-bar";
 import { DataTable, type Column } from "@/components/shared/data-table";
 import { FilterBar } from "@/components/shared/filter-bar";
 import { DetailRow, DetailSection } from "@/components/shared/detail-drawer";
-import { ClientCell } from "@/components/shared/cells";
+import { ClientCell, ClientNameText } from "@/components/shared/cells";
 import { MaskedField } from "@/components/shared/masked-field";
 import { useAccounts, useBranches, useCurrencies } from "@/lib/api/hooks";
 import { useLabels } from "@/lib/labels";
@@ -84,7 +84,13 @@ export default function AccountsPage() {
       key: "client",
       header: tf("client"),
       sortKey: "clientName",
-      cell: (row) => <ClientCell name={row.clientName} phone={row.clientPhone} />,
+      cell: (row) => (
+        <ClientCell
+          name={row.clientName}
+          nameEn={row.clientNameEn}
+          phone={row.clientPhone}
+        />
+      ),
     },
     {
       key: "iban",
@@ -205,7 +211,12 @@ export default function AccountsPage() {
               </DetailSection>
 
               <DetailSection title={tf("client")}>
-                <DetailRow label={tf("clientName")} value={row.clientName} />
+                <DetailRow
+                  label={tf("clientName")}
+                  value={
+                    <ClientNameText name={row.clientName} nameEn={row.clientNameEn} />
+                  }
+                />
                 <DetailRow
                   label={tf("phone")}
                   value={formatPhone(row.clientPhone)}

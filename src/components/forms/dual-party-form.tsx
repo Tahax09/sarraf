@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
 import { ClientAccountPicker } from "@/components/shared/client-account-picker";
+import { useClientNameText } from "@/components/shared/cells";
 import { ConditionalFeeBlock } from "@/components/shared/conditional-fee-block";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { FormWizard, ReviewList, type WizardStep } from "@/components/shared/form-wizard";
@@ -37,6 +38,7 @@ export function DualPartyForm({
   conversion?: boolean;
 }) {
   const t = useTranslations("fields");
+  const clientName = useClientNameText();
   const tv = useTranslations("validation");
   const tSteps = useTranslations("steps");
   const tc = useTranslations("common");
@@ -291,13 +293,17 @@ export function DualPartyForm({
               // Name and account number are isolated from each other: the
               // parentheses are neutral, so a Latin number beside an Arabic
               // name would otherwise render with its brackets reversed.
-              value: `${isolate(sender?.clientName ?? "—")} (${isolate(
-                sender?.number ?? "—",
-              )})`,
+              value: `${isolate(
+                sender ? clientName(sender.clientName, sender.clientNameEn) : "—",
+              )} (${isolate(sender?.number ?? "—")})`,
             },
             {
               label: t("receiver"),
-              value: `${receiver?.clientName ?? "—"} (${receiver?.number ?? "—"})`,
+              value: `${isolate(
+                receiver
+                  ? clientName(receiver.clientName, receiver.clientNameEn)
+                  : "—",
+              )} (${isolate(receiver?.number ?? "—")})`,
             },
             {
               label: conversion ? t("sentAmount") : t("amount"),

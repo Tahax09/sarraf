@@ -11,7 +11,12 @@ import { PageHeader } from "@/components/shared/page-header";
 import { HeaderStatBar } from "@/components/shared/header-stat-bar";
 import { DataTable, type Column } from "@/components/shared/data-table";
 import { DetailRow, DetailSection } from "@/components/shared/detail-drawer";
-import { DateCell, TransferCell } from "@/components/shared/cells";
+import {
+  ClientNameText,
+  DateCell,
+  TransferCell,
+  useClientNameText,
+} from "@/components/shared/cells";
 import {
   formatAmount,
   formatCount,
@@ -29,6 +34,7 @@ export type TransferOperation = OperationBase & {
   receiverAccountId: string;
   receiverAccountNumber: string;
   receiverClientName: string;
+  receiverClientNameEn: string | null;
   receiverClientPhone: string;
 };
 
@@ -57,6 +63,7 @@ export function TransferList<T extends TransferOperation>({
   const tc = useTranslations("common");
   const tStats = useTranslations("stats");
   const labels = useLabels();
+  const clientName = useClientNameText();
 
   const table = useTableQuery({ sort: { key: "createdAt", direction: "desc" } });
   const query = useData(table.params);
@@ -79,7 +86,10 @@ export function TransferList<T extends TransferOperation>({
       primary: true,
       sortKey: "clientName",
       cell: (row) => (
-        <TransferCell from={row.clientName} to={row.receiverClientName} />
+        <TransferCell
+          from={clientName(row.clientName, row.clientNameEn)}
+          to={clientName(row.receiverClientName, row.receiverClientNameEn)}
+        />
       ),
     },
     ...amountColumns,
@@ -145,7 +155,9 @@ export function TransferList<T extends TransferOperation>({
           sort={table.sort}
           onSortChange={table.setSort}
           detailTitle={(row) =>
-            `${isolate(row.clientName)} → ${isolate(row.receiverClientName)}`
+            `${isolate(clientName(row.clientName, row.clientNameEn))} → ${isolate(
+              clientName(row.receiverClientName, row.receiverClientNameEn),
+            )}`
           }
           renderDetail={(row) => (
             <>
@@ -162,7 +174,15 @@ export function TransferList<T extends TransferOperation>({
               </DetailSection>
 
               <DetailSection title={t("sender")}>
-                <DetailRow label={t("clientName")} value={row.clientName} />
+                <DetailRow
+                  label={t("clientName")}
+                  value={
+                    <ClientNameText
+                      name={row.clientName}
+                      nameEn={row.clientNameEn}
+                    />
+                  }
+                />
                 <DetailRow
                   label={t("phone")}
                   value={formatPhone(row.clientPhone)}
@@ -176,7 +196,15 @@ export function TransferList<T extends TransferOperation>({
               </DetailSection>
 
               <DetailSection title={t("receiver")}>
-                <DetailRow label={t("clientName")} value={row.receiverClientName} />
+                <DetailRow
+                  label={t("clientName")}
+                  value={
+                    <ClientNameText
+                      name={row.receiverClientName}
+                      nameEn={row.receiverClientNameEn}
+                    />
+                  }
+                />
                 <DetailRow
                   label={t("phone")}
                   value={formatPhone(row.receiverClientPhone)}

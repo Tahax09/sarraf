@@ -2,7 +2,7 @@
   "app": {
     "name": "Saraf",
     "tagline": "Admin Panel",
-    "copyright": "© {year} Saraf. All rights reserved."
+    "copyright": "© {year} Saraf. All rights reserved. Designed with care."
   },
   "common": {
     "search": "Search",
@@ -261,6 +261,7 @@
     "phone": "Phone",
     "email": "Email",
     "name": "Name",
+    "nameEn": "Latin name",
     "country": "Country",
     "city": "City",
     "region": "Region",

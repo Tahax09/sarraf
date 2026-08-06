@@ -28,6 +28,8 @@ export type SearchDependencies = {
   /** The current user's authorization check — see `usePermission`. */
   can: (module: PermissionModule, action: PermissionAction) => boolean;
   formatAmount: (amount: number, currency: string) => string;
+  /** Picks the client name that leads for the reading locale — see `clientNames`. */
+  clientName: (name: string, nameEn?: string | null) => string;
 };
 
 /** A navigation destination, matched locally. */
@@ -70,7 +72,7 @@ function top(results: SearchResult[]): SearchResult[] {
 export function createApiSearchService(
   deps: SearchDependencies,
 ): SearchService {
-  const { navLabel, can, formatAmount } = deps;
+  const { navLabel, can, formatAmount, clientName } = deps;
 
   /** Pages, matched in memory and filtered by what the reader may open. */
   function searchPages(query: string): SearchResult[] {
@@ -117,11 +119,17 @@ export function createApiSearchService(
     });
 
     return page.items.map((client) => {
-      const match = matchFields(query, [client.name, client.phone]);
+      // Both spellings are searchable: an operator holding a passport types the
+      // Latin name even while reading the panel in Arabic.
+      const match = matchFields(query, [
+        client.name,
+        client.nameEn ?? "",
+        client.phone,
+      ]);
       return {
         id: `client:${client.id}`,
         category: "clients" as const,
-        title: client.name,
+        title: clientName(client.name, client.nameEn),
         subtitle: client.phone,
         href: "/core/clients/list",
         icon: Users,
@@ -145,12 +153,13 @@ export function createApiSearchService(
       const match = matchFields(query, [
         account.number,
         account.clientName,
+        account.clientNameEn ?? "",
       ]);
       return {
         id: `account:${account.id}`,
         category: "accounts" as const,
         title: account.number,
-        subtitle: account.clientName,
+        subtitle: clientName(account.clientName, account.clientNameEn),
         meta: formatAmount(account.balance, account.currency),
         href: "/core/accounts",
         icon: Wallet,
@@ -177,13 +186,14 @@ export function createApiSearchService(
       const match = matchFields(query, [
         entry.reference,
         entry.clientName,
+        entry.clientNameEn ?? "",
         entry.accountNumber,
       ]);
       return {
         id: `operation:${entry.id}`,
         category: "operations" as const,
         title: entry.reference,
-        subtitle: entry.clientName,
+        subtitle: clientName(entry.clientName, entry.clientNameEn),
         meta: formatAmount(entry.amount, entry.currency),
         href: "/core/analytics/all-operations",
         score: match?.score ?? 0,

@@ -87,7 +87,16 @@ export type Currency = {
 
 export type Client = {
   id: Id;
+  /** Arabic full name, as it appears on the identity document. */
   name: string;
+  /**
+   * Latin full name from the same KYC record.
+   *
+   * Nullable: the field postdates the register, so a client onboarded before it
+   * — or a backend that does not publish it — leaves it absent, and every
+   * surface falls back to the Arabic name rather than showing a gap.
+   */
+  nameEn: string | null;
   phone: string;
   email: string | null;
   accountsCount: number;
@@ -105,6 +114,8 @@ export type Account = {
   iban: string | null;
   clientId: Id;
   clientName: string;
+  /** Latin name of the same client — see `Client.nameEn`. */
+  clientNameEn: string | null;
   clientPhone: string;
   type: string;
   currency: string;
@@ -132,6 +143,8 @@ export type OperationBase = {
   type: OperationType;
   clientId: Id;
   clientName: string;
+  /** Latin name of the same client — see `Client.nameEn`. */
+  clientNameEn: string | null;
   clientPhone: string;
   accountId: Id;
   accountNumber: string;
@@ -171,6 +184,8 @@ export type FundTransferOperation = OperationBase & {
   receiverAccountId: Id;
   receiverAccountNumber: string;
   receiverClientName: string;
+  /** Latin name of the receiving client — see `Client.nameEn`. */
+  receiverClientNameEn: string | null;
   receiverClientPhone: string;
 };
 
@@ -179,6 +194,8 @@ export type CeftOperation = OperationBase & {
   receiverAccountId: Id;
   receiverAccountNumber: string;
   receiverClientName: string;
+  /** Latin name of the receiving client — see `Client.nameEn`. */
+  receiverClientNameEn: string | null;
   receiverClientPhone: string;
   /** Amount debited from the sender, in `currency`. */
   sentAmount: number;
@@ -202,6 +219,8 @@ export type LedgerEntry = {
   type: OperationType;
   event: string;
   clientName: string;
+  /** Latin name of the same client — see `Client.nameEn`. */
+  clientNameEn: string | null;
   accountNumber: string;
   amount: number;
   currency: string;

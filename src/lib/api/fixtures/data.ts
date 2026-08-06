@@ -60,6 +60,34 @@ const LAST_NAMES_AR = [
   "المصراتي", "الزنتاني", "البرعصي", "الشريف", "القذافي", "التاجوري",
   "الورفلي", "بن سعيد", "الفيتوري", "الدرسي",
 ];
+/** Latin forms of the same names, index for index: a KYC record holds two
+ *  spellings of one person, not two people. */
+const FIRST_NAMES_EN = [
+  "Ahmed", "Fatima", "Mohamed", "Aisha", "Ali", "Mariam", "Khaled", "Zeinab",
+  "Omar", "Hala", "Youssef", "Salma", "Ibrahim", "Nour", "Mustafa", "Layla",
+];
+const LAST_NAMES_EN = [
+  "Al-Misrati", "Al-Zintani", "Al-Barassi", "Al-Sharif", "Al-Gaddafi",
+  "Al-Tajouri", "Al-Werfalli", "Bin Saeed", "Al-Fituri", "Al-Darsi",
+];
+
+/**
+ * One person, spelled both ways — the indices are drawn once and read from both
+ * catalogues, so the Latin name is the Arabic name transliterated rather than
+ * an unrelated draw.
+ *
+ * `withLatin: false` leaves the Latin name absent, which is what a client
+ * onboarded before the field looks like. The fixtures keep some of those so the
+ * fallback path is exercised rather than assumed.
+ */
+const bilingualName = (withLatin: boolean) => {
+  const first = Math.floor(rand() * FIRST_NAMES_AR.length);
+  const last = Math.floor(rand() * LAST_NAMES_AR.length);
+  return {
+    name: `${FIRST_NAMES_AR[first]} ${LAST_NAMES_AR[last]}`,
+    nameEn: withLatin ? `${FIRST_NAMES_EN[first]} ${LAST_NAMES_EN[last]}` : null,
+  };
+};
 
 export const branches: Branch[] = [
   { id: "brn_main", name: "الفرع الرئيسي", city: "طرابلس", region: "طرابلس" },
@@ -108,7 +136,7 @@ const ACTIVE_CURRENCIES = ["LYD", "USD", "EUR", "GBP", "TND"] as const;
 
 export const clients: Client[] = Array.from({ length: 46 }, (_, i) => ({
   id: `cli_${1000 + i}`,
-  name: `${pick(FIRST_NAMES_AR)} ${pick(LAST_NAMES_AR)}`,
+  ...bilingualName(i % 5 !== 4),
   // Deliberately mixed raw formats — the shared formatter normalizes them.
   phone:
     i % 3 === 0
@@ -152,6 +180,7 @@ export const accounts: Account[] = clients.flatMap((client, ci) =>
           : libyanIban(2 + (ci % 7), 1 + ((ci + ai) % 40), 100000 + ci * 10 + ai),
       clientId: client.id,
       clientName: client.name,
+      clientNameEn: client.nameEn,
       clientPhone: client.phone,
       type: pick(["current", "savings"]),
       currency,
@@ -174,6 +203,7 @@ function baseOp(i: number, type: string) {
     reference: `${type.slice(0, 3).toUpperCase()}-${String(24000 + i)}`,
     clientId: account.clientId,
     clientName: account.clientName,
+    clientNameEn: account.clientNameEn,
     clientPhone: account.clientPhone,
     accountId: account.id,
     accountNumber: account.number,
@@ -285,6 +315,7 @@ export const fundTransfers: FundTransferOperation[] = Array.from(
       receiverAccountId: receiver.id,
       receiverAccountNumber: receiver.number,
       receiverClientName: receiver.clientName,
+      receiverClientNameEn: receiver.clientNameEn,
       receiverClientPhone: receiver.clientPhone,
     };
   },
@@ -303,6 +334,7 @@ export const ceftOperations: CeftOperation[] = Array.from(
       receiverAccountId: receiver.id,
       receiverAccountNumber: receiver.number,
       receiverClientName: receiver.clientName,
+      receiverClientNameEn: receiver.clientNameEn,
       receiverClientPhone: receiver.clientPhone,
       sentAmount: base.amount,
       convertedAmount: Number((base.amount * rate).toFixed(3)),
@@ -344,6 +376,7 @@ export const ledger: LedgerEntry[] = Array.from({ length: 3_712 }, (_, i) => {
     type: LEDGER_TYPES[i % LEDGER_TYPES.length],
     event: LEDGER_EVENTS[i % LEDGER_EVENTS.length],
     clientName: account.clientName,
+    clientNameEn: account.clientNameEn,
     accountNumber: account.number,
     amount: Number(between(10, 60_000).toFixed(3)),
     currency: account.currency,

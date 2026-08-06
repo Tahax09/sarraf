@@ -8,7 +8,11 @@ import { HeaderStatBar } from "@/components/shared/header-stat-bar";
 import { DataTable, type Column } from "@/components/shared/data-table";
 import { FilterBar } from "@/components/shared/filter-bar";
 import { DetailRow, DetailSection } from "@/components/shared/detail-drawer";
-import { PhoneText } from "@/components/shared/cells";
+import {
+  ClientNameText,
+  PhoneText,
+  useClientNameText,
+} from "@/components/shared/cells";
 import { useAccounts, useClients } from "@/lib/api/hooks";
 import { formatAmount, formatCount, formatDateTime, formatPhone } from "@/lib/format";
 import { useTableQuery } from "@/lib/use-table-query";
@@ -20,6 +24,7 @@ export default function ClientsPage() {
   const tf = useTranslations("fields");
   const tc = useTranslations("common");
   const tStats = useTranslations("stats");
+  const clientName = useClientNameText();
 
   const filterDefs: FilterDef[] = [
     { key: "name", type: "text", label: t("filterByName") },
@@ -47,7 +52,7 @@ export default function ClientsPage() {
       header: tf("name"),
       primary: true,
       sortKey: "name",
-      cell: (row) => row.name,
+      cell: (row) => <ClientNameText name={row.name} nameEn={row.nameEn} />,
     },
     {
       key: "phone",
@@ -105,13 +110,17 @@ export default function ClientsPage() {
           }}
           sort={table.sort}
           onSortChange={table.setSort}
-          detailTitle={(row) => row.name}
+          detailTitle={(row) => clientName(row.name, row.nameEn)}
           renderDetail={(row) => {
             return (
               <>
                 <DetailSection title={tc("details")}>
                   <DetailRow label={tf("entryId")} value={row.id} numeric />
                   <DetailRow label={tf("name")} value={row.name} />
+                  <DetailRow
+                    label={tf("nameEn")}
+                    value={row.nameEn ?? tc("notAvailable")}
+                  />
                   <DetailRow
                     label={tf("phone")}
                     value={formatPhone(row.phone)}

@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { HeaderStatBar } from "@/components/shared/header-stat-bar";
 import { DataTable, type Column } from "@/components/shared/data-table";
 import { DetailRow, DetailSection } from "@/components/shared/detail-drawer";
-import { ClientCell } from "@/components/shared/cells";
+import { ClientCell, useClientNameText } from "@/components/shared/cells";
 import { useTopClients, type TopClient } from "@/lib/api/hooks";
 import { formatAmount, formatCount, formatDate } from "@/lib/format";
 
@@ -17,6 +17,7 @@ type Mode = "balance" | "activity";
 export default function TopClientsPage() {
   const t = useTranslations("topClients");
   const tf = useTranslations("fields");
+  const clientName = useClientNameText();
   const tStats = useTranslations("stats");
 
   const [mode, setMode] = useState<Mode>("balance");
@@ -28,7 +29,9 @@ export default function TopClientsPage() {
       key: "client",
       header: tf("client"),
       primary: true,
-      cell: (row) => <ClientCell name={row.name} phone={row.phone} />,
+      cell: (row) => (
+        <ClientCell name={row.name} nameEn={row.nameEn} phone={row.phone} />
+      ),
     },
     {
       key: "balance",
@@ -92,7 +95,7 @@ export default function TopClientsPage() {
           // Fixed-length ranking: no page-size control, but keep the rank number.
           paginate={false}
           numbered
-          detailTitle={(row) => row.name}
+          detailTitle={(row) => clientName(row.name, row.nameEn)}
           renderDetail={(row) => (
             <DetailSection title={tf("client")}>
               {/* Raw backend id belongs here, never in a visible column (§7). */}

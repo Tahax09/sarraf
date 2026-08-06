@@ -15,8 +15,10 @@ import { ExpiryIndicator } from "@/components/shared/expiry-indicator";
 import {
   AmountCell,
   ClientCell,
+  ClientNameText,
   DateCell,
   StatusCell,
+  useClientNameText,
 } from "@/components/shared/cells";
 import {
   useApproveOperation,
@@ -242,6 +244,7 @@ function QueueTable<T extends QueueOperation>({
   const tStats = useTranslations("stats");
   const tAuth = useTranslations("authorizedWithdrawal");
   const enumLabels = useLabels();
+  const clientName = useClientNameText();
   // The tab is a server-side filter, so switching it returns to page 1 and the
   // count below is the queue's real depth, not the number of rows fetched.
   const table = useTableQuery({
@@ -271,7 +274,11 @@ function QueueTable<T extends QueueOperation>({
       primary: true,
       sortKey: "clientName",
       cell: (row) => (
-        <ClientCell name={row.clientName} phone={row.clientPhone} />
+        <ClientCell
+          name={row.clientName}
+          nameEn={row.clientNameEn}
+          phone={row.clientPhone}
+        />
       ),
     },
     {
@@ -376,7 +383,7 @@ function QueueTable<T extends QueueOperation>({
         }}
         sort={table.sort}
         onSortChange={table.setSort}
-        detailTitle={(row) => row.clientName}
+        detailTitle={(row) => clientName(row.clientName, row.clientNameEn)}
         renderDetail={(row) => (
           <>
             <DetailSection title={tc("details")}>
@@ -408,7 +415,15 @@ function QueueTable<T extends QueueOperation>({
             </DetailSection>
 
             <DetailSection title={t("client")}>
-              <DetailRow label={t("clientName")} value={row.clientName} />
+              <DetailRow
+                label={t("clientName")}
+                value={
+                  <ClientNameText
+                    name={row.clientName}
+                    nameEn={row.clientNameEn}
+                  />
+                }
+              />
               <DetailRow
                 label={t("phone")}
                 value={formatPhone(row.clientPhone)}

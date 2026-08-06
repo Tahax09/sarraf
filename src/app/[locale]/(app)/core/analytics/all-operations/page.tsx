@@ -10,6 +10,7 @@ import { HeaderStatBar } from "@/components/shared/header-stat-bar";
 import { DataTable, type Column } from "@/components/shared/data-table";
 import { FilterBar } from "@/components/shared/filter-bar";
 import { DetailRow, DetailSection } from "@/components/shared/detail-drawer";
+import { useClientNameText } from "@/components/shared/cells";
 import { CategoryBarChart, CompositionDonut } from "@/components/charts";
 import { useAllOperations, useBranches } from "@/lib/api/hooks";
 import { useLabels } from "@/lib/labels";
@@ -50,6 +51,7 @@ export default function AllOperationsPage() {
   const tc = useTranslations("common");
   const tStats = useTranslations("stats");
   const labels = useLabels();
+  const clientName = useClientNameText();
 
   const branches = useBranches();
   const filterDefs: FilterDef[] = [
@@ -150,7 +152,9 @@ export default function AllOperationsPage() {
       sortKey: "clientName",
       cell: (row) => (
         <span className="flex min-w-0 flex-col">
-          <bdi className="truncate text-sm">{row.clientName}</bdi>
+          <bdi className="truncate text-sm">
+            {clientName(row.clientName, row.clientNameEn)}
+          </bdi>
           <span className="numeric text-xs text-fg-muted">
             {row.accountNumber}
           </span>
@@ -241,7 +245,7 @@ export default function AllOperationsPage() {
                 ],
                 rows.map((row) => [
                   row.reference,
-                  row.clientName,
+                  clientName(row.clientName, row.clientNameEn),
                   row.accountNumber,
                   labels.ledgerEvent(row.event),
                   row.branchName,
@@ -365,7 +369,7 @@ export default function AllOperationsPage() {
           }}
           sort={table.sort}
           onSortChange={table.setSort}
-          detailTitle={(row) => row.clientName}
+          detailTitle={(row) => clientName(row.clientName, row.clientNameEn)}
           renderDetail={(row) => (
             <DetailSection title={tf("reference")}>
               {/* Reference and raw id stay out of the table (§7 item 10). */}

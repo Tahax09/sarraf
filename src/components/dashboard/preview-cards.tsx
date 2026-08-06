@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Card, CardHeader } from "@/components/ui/card";
 import { DataTable, type Column } from "@/components/shared/data-table";
+import { useClientNameText } from "@/components/shared/cells";
 import { useRecentOperations, useTopClients } from "@/lib/api/hooks";
 import type { TopClient } from "@/lib/api/hooks";
 import { useLabels } from "@/lib/labels";
@@ -47,10 +48,16 @@ function PreviewCard({
 export function TopClientsCard() {
   const t = useTranslations("dashboard");
   const tf = useTranslations("fields");
+  const clientName = useClientNameText();
   const query = useTopClients("balance");
 
   const columns: Column<TopClient>[] = [
-    { key: "name", header: tf("name"), primary: true, cell: (row) => row.name },
+    {
+      key: "name",
+      header: tf("name"),
+      primary: true,
+      cell: (row) => <bdi className="truncate">{clientName(row.name, row.nameEn)}</bdi>,
+    },
     {
       key: "balance",
       header: tf("balance"),
@@ -84,6 +91,7 @@ export function RecentOperationsCard() {
   const t = useTranslations("dashboard");
   const tf = useTranslations("fields");
   const labels = useLabels();
+  const clientName = useClientNameText();
   const query = useRecentOperations();
 
   const columns: Column<LedgerEntry>[] = [
@@ -93,7 +101,9 @@ export function RecentOperationsCard() {
       primary: true,
       cell: (row) => (
         <span className="flex min-w-0 flex-col">
-          <bdi className="truncate text-sm">{row.clientName}</bdi>
+          <bdi className="truncate text-sm">
+            {clientName(row.clientName, row.clientNameEn)}
+          </bdi>
           <span className="text-xs text-fg-muted">
             {labels.operationType(row.type)}
           </span>

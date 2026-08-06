@@ -13,7 +13,13 @@ import {
   DetailRow,
   DetailSection,
 } from "@/components/shared/detail-drawer";
-import { AmountCell, ClientCell, DateCell } from "@/components/shared/cells";
+import {
+  AmountCell,
+  ClientCell,
+  ClientNameText,
+  DateCell,
+  useClientNameText,
+} from "@/components/shared/cells";
 import { MaskedField } from "@/components/shared/masked-field";
 import { TextInput } from "@/components/ui/field";
 import {
@@ -72,6 +78,7 @@ export function SimpleOperationList({
   const tc = useTranslations("common");
   const tStats = useTranslations("stats");
   const labels = useLabels();
+  const clientName = useClientNameText();
 
   const table = useTableQuery({
     sort: { key: "createdAt", direction: "desc" },
@@ -100,7 +107,13 @@ export function SimpleOperationList({
       header: t("client"),
       primary: true,
       sortKey: "clientName",
-      cell: (row) => <ClientCell name={row.clientName} phone={row.clientPhone} />,
+      cell: (row) => (
+        <ClientCell
+          name={row.clientName}
+          nameEn={row.clientNameEn}
+          phone={row.clientPhone}
+        />
+      ),
     },
     {
       key: "account",
@@ -202,7 +215,7 @@ export function SimpleOperationList({
           }}
           sort={table.sort}
           onSortChange={table.setSort}
-          detailTitle={(row) => row.clientName}
+          detailTitle={(row) => clientName(row.clientName, row.clientNameEn)}
           renderDetail={(row) => (
             <>
               <DetailSection title={tc("details")}>
@@ -219,7 +232,15 @@ export function SimpleOperationList({
               </DetailSection>
 
               <DetailSection title={t("client")}>
-                <DetailRow label={t("clientName")} value={row.clientName} />
+                <DetailRow
+                  label={t("clientName")}
+                  value={
+                    <ClientNameText
+                      name={row.clientName}
+                      nameEn={row.clientNameEn}
+                    />
+                  }
+                />
                 <DetailRow
                   label={t("phone")}
                   value={formatPhone(row.clientPhone)}
