@@ -50,6 +50,15 @@ type Kpi = {
   label: string;
   value: string;
   icon: ReactNode;
+  /**
+   * Colour of the icon tile, as a theme variable. One hue per figure, so a card
+   * is recognised by its colour before its label is read — and every value is
+   * theme-aware, which a hardcoded hue would not be.
+   *
+   * Decoration only: it repeats what the icon and the label already say, and no
+   * figure means anything different because of it.
+   */
+  color: string;
   /** Where the figure comes from — the card is a shortcut into that register. */
   href: string;
   /** Module the destination belongs to; an operator without it gets no link. */
@@ -84,12 +93,14 @@ function KpiCard({ kpi }: { kpi: Kpi }) {
     <>
       <span
         aria-hidden
-        className={cn(
-          "flex size-9 shrink-0 items-center justify-center rounded-lg",
-          kpi.tone === "warning"
-            ? "bg-warning-soft text-warning"
-            : "bg-surface-muted text-fg-muted",
-        )}
+        className="flex size-9 shrink-0 items-center justify-center rounded-lg"
+        // The tint is the icon's own colour at low opacity, mixed rather than
+        // written down: one value per card stays right in both themes, and a
+        // flat wash keeps the no-gradients rule.
+        style={{
+          color: kpi.color,
+          backgroundColor: `color-mix(in srgb, ${kpi.color} 14%, transparent)`,
+        }}
       >
         {kpi.icon}
       </span>
@@ -176,6 +187,7 @@ export function DashboardKpiCards() {
       label: t("totalClients"),
       value: formatCount(summary.data?.totalClients ?? 0),
       icon: <Users className="size-4" />,
+      color: "var(--color-accent)",
       href: "/core/clients/list",
       module: "clients",
     },
@@ -184,6 +196,7 @@ export function DashboardKpiCards() {
       label: t("totalAccounts"),
       value: formatCount(summary.data?.totalAccounts ?? 0),
       icon: <Wallet className="size-4" />,
+      color: "var(--color-chart-deposit)",
       href: "/core/accounts",
       module: "accounts",
     },
@@ -192,6 +205,7 @@ export function DashboardKpiCards() {
       label: t("todayOperations"),
       value: formatCount(summary.data?.todayOperations ?? 0),
       icon: <ArrowLeftRight className="size-4" />,
+      color: "var(--color-chart-4)",
       // The register opens already narrowed to today, so the count on screen is
       // the count that was clicked.
       href: `/core/analytics/all-operations?dateFrom=${today}&dateTo=${today}`,
@@ -206,6 +220,7 @@ export function DashboardKpiCards() {
       label: t("pendingApprovals"),
       value: formatCount(pendingTotal),
       icon: <Clock className="size-4" />,
+      color: "var(--color-warning)",
       href: "/core/authorized-withdrawal?status=reserve",
       module: "authorizedWithdrawal",
       tone: pendingTotal > 0 ? "warning" : "default",
