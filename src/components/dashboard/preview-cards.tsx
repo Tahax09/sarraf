@@ -68,7 +68,7 @@ export function TopClientsCard() {
       <DataTable<TopClient>
         columns={columns}
         // Preview only — the full list lives on /core/top-clients.
-        rows={(query.data ?? []).slice(0, 5)}
+        rows={(query.data ?? []).slice(0, 6)}
         getRowId={(row) => row.id}
         loading={query.isLoading}
         error={query.isError}
