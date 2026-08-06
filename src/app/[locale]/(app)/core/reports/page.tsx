@@ -4,10 +4,13 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   ArrowDownToLine,
+  ArrowLeft,
+  ArrowRight,
   ArrowUpFromLine,
   ListOrdered,
   Scale,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { TextInput } from "@/components/ui/field";
 import { PageHeader } from "@/components/shared/page-header";
@@ -23,6 +26,75 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
+/** `days` away from an ISO date, staying on the calendar rather than on ms. */
+function shiftDate(date: string, days: number): string {
+  const moved = new Date(`${date}T00:00:00Z`);
+  moved.setUTCDate(moved.getUTCDate() + days);
+  return moved.toISOString().slice(0, 10);
+}
+
+/**
+ * The date this page is about, and the two ways an operator moves it.
+ *
+ * The picker alone was not enough. Reading a day of business means comparing it
+ * with the one before — the question is "was yesterday like this?" — and on a
+ * phone that meant opening the native date picker twice for a one-day step.
+ * The arrows do that step; "today" comes back from wherever the reader wandered.
+ *
+ * Stepping forward stops at today. There is no report for tomorrow, and a date
+ * input that accepts one only produces an empty page.
+ */
+function DateToolbar({
+  date,
+  onChange,
+}: {
+  date: string;
+  onChange: (date: string) => void;
+}) {
+  const t = useTranslations("reports");
+  const now = today();
+  return (
+    <Card className="print:hidden">
+      <CardBody className="flex flex-wrap items-end gap-2">
+        <div className="min-w-0 sm:max-w-xs">
+          <TextInput
+            label={t("pickDate")}
+            type="date"
+            numeric
+            max={now}
+            value={date}
+            onChange={(event) => onChange(event.target.value)}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            aria-label={t("previousDay")}
+            onClick={() => onChange(shiftDate(date, -1))}
+          >
+            <ArrowLeft className="rtl-flip size-4" aria-hidden />
+          </Button>
+          <Button
+            variant="secondary"
+            aria-label={t("nextDay")}
+            disabled={date >= now}
+            onClick={() => onChange(shiftDate(date, 1))}
+          >
+            <ArrowRight className="rtl-flip size-4" aria-hidden />
+          </Button>
+          <Button
+            variant="secondary"
+            disabled={date === now}
+            onClick={() => onChange(now)}
+          >
+            {t("today")}
+          </Button>
+        </div>
+      </CardBody>
+    </Card>
+  );
+}
+
 /**
  * In / out / net for the selected date. The bars are proportional to the larger
  * of the two sides, so the gap between them reads at a glance.
@@ -34,8 +106,18 @@ function CashFlowCard({ totals }: { totals: BranchFlow }) {
   const negative = totals.netFlow < 0;
 
   const sides = [
-    { key: "in", label: t("inflow"), value: totals.deposits, color: "var(--color-success-strong)" },
-    { key: "out", label: t("outflow"), value: totals.withdrawals, color: "var(--color-danger)" },
+    {
+      key: "in",
+      label: t("inflow"),
+      value: totals.deposits,
+      color: "var(--color-success-strong)",
+    },
+    {
+      key: "out",
+      label: t("outflow"),
+      value: totals.withdrawals,
+      color: "var(--color-danger)",
+    },
   ];
 
   return (
@@ -135,7 +217,9 @@ function TrailingCard({ trailing }: { trailing: ReportSnapshot["trailing"] }) {
           label={t("trailingNet")}
           color="var(--color-accent)"
           height={200}
-          tooltipLabel={(value) => dateForDay.get(Number(value)) ?? String(value)}
+          tooltipLabel={(value) =>
+            dateForDay.get(Number(value)) ?? String(value)
+          }
         />
       </CardBody>
     </Card>
@@ -220,7 +304,21 @@ export default function ReportsPage() {
       <PageHeader
         title={t("title")}
         description={
-          query.data ? t("snapshotFor", { date: formatDate(date) }) : undefined
+          /*
+           * Two lines, and they answer different questions. The first separates
+           * this page from Analytics, which is the confusion it kept causing:
+           * both show branches and cash flow, and only one of them is a document
+           * you file. The second names the day, and prints — the picker above
+           * does not.
+           */
+          <>
+            {t("purpose")}
+            {query.data ? (
+              <span className="mt-0.5 block">
+                {t("snapshotFor", { date: formatDate(date) })}
+              </span>
+            ) : null}
+          </>
         }
         actions={
           <ExportActions
@@ -230,7 +328,11 @@ export default function ReportsPage() {
             meta={[t("snapshotFor", { date: formatDate(date) })]}
             rows={branches}
             columns={[
-              { header: tf("branch"), value: (row) => row.branchName, width: 28 },
+              {
+                header: tf("branch"),
+                value: (row) => row.branchName,
+                width: 28,
+              },
               {
                 header: tStats("count"),
                 value: (row) => row.operations,
@@ -257,18 +359,7 @@ export default function ReportsPage() {
         }
       />
 
-      <Card className="print:hidden">
-        <CardBody className="sm:max-w-xs">
-          <TextInput
-            label={t("pickDate")}
-            type="date"
-            numeric
-            max={today()}
-            value={date}
-            onChange={(event) => setDate(event.target.value)}
-          />
-        </CardBody>
-      </Card>
+      <DateToolbar date={date} onChange={setDate} />
 
       <HeaderStatBar
         stats={[

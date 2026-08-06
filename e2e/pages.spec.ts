@@ -1,5 +1,5 @@
 import { test, expect, type ConsoleMessage } from "@playwright/test";
-import { login, t, visible } from "./helpers";
+import { labelRe, login, t, visible } from "./helpers";
 
 /**
  * Read-only pages, checked for the two failures that never show up in unit
@@ -56,7 +56,9 @@ test("the dashboard trend range switches from 30 to 90 days", async ({
   });
   await expect(group).toBeVisible();
 
-  const ninety = group.getByRole("radio", { name: t("dashboard.rangeDays", { days: "90" }) });
+  const ninety = group.getByRole("radio", {
+    name: t("dashboard.rangeDays", { days: "90" }),
+  });
   await ninety.click();
   await expect(ninety).toHaveAttribute("aria-checked", "true");
   await expect(
@@ -91,8 +93,7 @@ test("the account panel pages its movements without disturbing the stat bar", as
 
   // The reference is the panel's primary column, so it is on screen in the
   // desktop table and in the phone's card fallback alike.
-  const references = () =>
-    visible(page.getByText(/^LED-\d+$/)).allInnerTexts();
+  const references = () => visible(page.getByText(/^LED-\d+$/)).allInnerTexts();
   await expect(visible(page.getByText(/^LED-\d+$/)).first()).toBeVisible();
 
   const stats = page.locator("dl").first();
@@ -113,4 +114,39 @@ test("the account panel pages its movements without disturbing the stat bar", as
     .toBe(true);
 
   expect(await stats.innerText()).toBe(statsBefore);
+});
+
+/*
+ * Reading a day of business means comparing it with the one before, so the
+ * report moves a day at a time without going through the native date picker.
+ * Forward stops at today, because there is no report for tomorrow.
+ */
+test("the reports page steps a day at a time and comes back to today", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/core/reports");
+
+  const picker = visible(page.getByLabel(labelRe("reports.pickDate")));
+  await expect(picker).toBeVisible();
+  const startOfDay = await picker.inputValue();
+
+  // Exact: "today" is a substring of both "previous day" and "next day" in
+  // Arabic — اليوم, اليوم السابق, اليوم التالي.
+  const todayButton = page.getByRole("button", {
+    name: t("reports.today"),
+    exact: true,
+  });
+  const forward = page.getByRole("button", { name: t("reports.nextDay") });
+  // The page opens on today, so neither "today" nor "next" has anywhere to go.
+  await expect(todayButton).toBeDisabled();
+  await expect(forward).toBeDisabled();
+
+  await page.getByRole("button", { name: t("reports.previousDay") }).click();
+  await expect(picker).not.toHaveValue(startOfDay);
+  await expect(forward).toBeEnabled();
+
+  await todayButton.click();
+  await expect(picker).toHaveValue(startOfDay);
+  await expect(todayButton).toBeDisabled();
 });

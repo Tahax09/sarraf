@@ -13,8 +13,9 @@ import {
   ListOrdered,
   Repeat,
   ScrollText,
-  Settings,
   ShieldCheck,
+  SlidersHorizontal,
+  UserCog,
   Users,
   Wallet,
   type LucideIcon,
@@ -46,7 +47,11 @@ export const navGroups: NavGroup[] = [
     icon: LayoutDashboard,
     items: [
       { labelKey: "overview", href: "/dashboard", module: "dashboard" },
-      { labelKey: "topClients", href: "/core/top-clients", module: "dashboard" },
+      {
+        labelKey: "topClients",
+        href: "/core/top-clients",
+        module: "dashboard",
+      },
     ],
   },
   {
@@ -106,56 +111,34 @@ export const navGroups: NavGroup[] = [
     icon: Landmark,
     phase2: true,
     items: [
-      { labelKey: "cblConnection", href: "/cbl/connection", module: "centralBank" },
-      { labelKey: "cblPurchaseRequests", href: "/cbl/purchase-requests", module: "centralBank" },
-      { labelKey: "cblContracts", href: "/cbl/contracts", module: "centralBank" },
-      { labelKey: "cblExchangeRates", href: "/cbl/exchange-rates", module: "centralBank" },
+      {
+        labelKey: "cblConnection",
+        href: "/cbl/connection",
+        module: "centralBank",
+      },
+      {
+        labelKey: "cblPurchaseRequests",
+        href: "/cbl/purchase-requests",
+        module: "centralBank",
+      },
+      {
+        labelKey: "cblContracts",
+        href: "/cbl/contracts",
+        module: "centralBank",
+      },
+      {
+        labelKey: "cblExchangeRates",
+        href: "/cbl/exchange-rates",
+        module: "centralBank",
+      },
     ],
   },
   {
     labelKey: "bankingServices",
     icon: CreditCard,
     phase2: true,
-    items: [{ labelKey: "bankingServices", href: "/ubs", module: "bankingServices" }],
-  },
-  {
-    labelKey: "settings",
-    icon: Settings,
     items: [
-      {
-        labelKey: "operationsPricing",
-        href: "/core/system/operations-pricing",
-        icon: ListOrdered,
-        module: "pricing",
-      },
-      {
-        labelKey: "currencies",
-        href: "/core/system/currencies",
-        icon: Coins,
-        module: "currencies",
-      },
-      {
-        labelKey: "operationRules",
-        href: "/core/system/operation-rules",
-        icon: ClipboardList,
-        module: "operationRules",
-      },
-      { labelKey: "users", href: "/core/users", icon: Users, module: "users" },
-      { labelKey: "roles", href: "/core/roles", icon: ShieldCheck, module: "roles" },
-      {
-        labelKey: "countries",
-        href: "/settings/address-management/countries",
-        icon: Globe2,
-        module: "countries",
-      },
-      {
-        labelKey: "systemInfo",
-        href: "/settings/system-info",
-        icon: Building2,
-        module: "systemInfo",
-      },
-      { labelKey: "branches", href: "/branches", icon: Building2, module: "branches" },
-      { labelKey: "logs", href: "/core/logs", icon: ScrollText, module: "logs" },
+      { labelKey: "bankingServices", href: "/ubs", module: "bankingServices" },
     ],
   },
   {
@@ -177,7 +160,85 @@ export const navGroups: NavGroup[] = [
         href: "/core/analytics/all-operations",
         module: "analytics",
       },
-      { labelKey: "activity", href: "/core/analytics/activity", module: "analytics" },
+      {
+        labelKey: "activity",
+        href: "/core/analytics/activity",
+        module: "analytics",
+      },
+    ],
+  },
+  /*
+   * The rules the panel applies to money: what an operation costs, which
+   * currencies exist, which operations are allowed, and the reference data the
+   * forms read from. Changing anything here changes what every branch can do
+   * tomorrow, which is why it sits at the far end of the sidebar rather than
+   * beside the queues an operator works all day.
+   */
+  {
+    labelKey: "configuration",
+    icon: SlidersHorizontal,
+    items: [
+      {
+        labelKey: "operationsPricing",
+        href: "/core/system/operations-pricing",
+        icon: ListOrdered,
+        module: "pricing",
+      },
+      {
+        labelKey: "currencies",
+        href: "/core/system/currencies",
+        icon: Coins,
+        module: "currencies",
+      },
+      {
+        labelKey: "operationRules",
+        href: "/core/system/operation-rules",
+        icon: ClipboardList,
+        module: "operationRules",
+      },
+      {
+        labelKey: "countries",
+        href: "/settings/address-management/countries",
+        icon: Globe2,
+        module: "countries",
+      },
+      {
+        labelKey: "systemInfo",
+        href: "/settings/system-info",
+        icon: Building2,
+        module: "systemInfo",
+      },
+    ],
+  },
+  /*
+   * Who may act, where they act from, and what they did. One group because they
+   * are one job: an administrator adding an operator picks their branch and
+   * their role in the same sitting, and reads the log when something needs
+   * accounting for.
+   */
+  {
+    labelKey: "administration",
+    icon: UserCog,
+    items: [
+      { labelKey: "users", href: "/core/users", icon: Users, module: "users" },
+      {
+        labelKey: "roles",
+        href: "/core/roles",
+        icon: ShieldCheck,
+        module: "roles",
+      },
+      {
+        labelKey: "branches",
+        href: "/branches",
+        icon: Building2,
+        module: "branches",
+      },
+      {
+        labelKey: "logs",
+        href: "/core/logs",
+        icon: ScrollText,
+        module: "logs",
+      },
     ],
   },
 ];
