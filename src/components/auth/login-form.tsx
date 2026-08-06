@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Turnstile, isTurnstileEnabled } from "@/components/auth/turnstile";
 import { ApiError, apiFetch, usingFixtures } from "@/lib/api/client";
 import { secureFlag } from "@/lib/cookies";
+import { formatCount } from "@/lib/format";
 import { endpoints } from "@/lib/api/endpoints";
 
 const credentialsSchema = z.object({
@@ -258,6 +259,11 @@ export function LoginForm({ nonce }: { nonce?: string }) {
 
           <p className="text-center text-[11px] text-fg-subtle">
             {t("sessionNotice")}
+          </p>
+
+          {/* The sign-in page is outside the shell, so it carries its own. */}
+          <p className="text-center text-[11px] text-fg-subtle">
+            {tApp("copyright", { year: formatCount(new Date().getFullYear()) })}
           </p>
         </CardBody>
       </Card>

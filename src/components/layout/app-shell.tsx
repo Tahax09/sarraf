@@ -9,6 +9,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { SidebarNav } from "./sidebar";
 import { UserMenu } from "./user-menu";
 import { AppShortcuts } from "./app-shortcuts";
+import { AppFooter } from "./app-footer";
 import { AccessibilityTrigger } from "./accessibility-center";
 import { GlobalSearch, GlobalSearchTrigger } from "./global-search";
 import {
@@ -127,13 +128,21 @@ function Shell({ children }: { children: ReactNode }) {
           </div>
         </aside>
 
-        <main
-          id={MAIN_ID}
-          tabIndex={-1}
-          className="min-w-0 flex-1 px-3 pt-4 pb-24 focus:outline-none sm:px-5 lg:pb-8"
-        >
-          {children}
-        </main>
+        {/* The footer belongs to the content column, not the whole shell: under
+            the sidebar too it would sit against a navigation that scrolls
+            separately. The phone's bottom nav is fixed, so the column keeps the
+            clearance the main region used to carry. */}
+        <div className="flex min-w-0 flex-1 flex-col pb-24 lg:pb-0">
+          <main
+            id={MAIN_ID}
+            tabIndex={-1}
+            className="min-w-0 flex-1 px-3 pt-4 pb-8 focus:outline-none sm:px-5"
+          >
+            {children}
+          </main>
+
+          <AppFooter />
+        </div>
       </div>
 
       {/*
