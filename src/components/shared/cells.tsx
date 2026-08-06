@@ -31,7 +31,10 @@ export function clientNames(
     : { primary: nameEn, secondary: name };
 }
 
-export function useClientNames(name: string, nameEn?: string | null) {
+/** Internal: the two cells below share it. Exported nothing — callers outside
+ *  this file want `ClientNameText` or `useClientNameText`, which decide the
+ *  presentation too. */
+function useClientNames(name: string, nameEn?: string | null) {
   return clientNames(name, nameEn, useLocale());
 }
 

@@ -6,7 +6,7 @@ import { Clock, CornerDownLeft, Loader2, Search, X } from "lucide-react";
 import { useRouter } from "@/i18n/navigation";
 import { Dialog } from "@/components/ui/dialog";
 import { highlight } from "@/lib/search/fuzzy";
-import { useSearch } from "@/lib/search/provider";
+import { useSearch } from "@/components/providers/search-provider";
 import { MIN_QUERY_LENGTH, type SearchResult } from "@/lib/search/types";
 import { useChordLabel, useShortcut } from "@/lib/shortcuts";
 import { cn } from "@/lib/utils";

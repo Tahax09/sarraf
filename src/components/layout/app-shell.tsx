@@ -19,7 +19,7 @@ import {
 } from "./notification-center";
 import { useCurrentUser, useDashboardSummary } from "@/lib/api/hooks";
 import { NotificationProvider } from "@/lib/notifications/provider";
-import { SearchProvider } from "@/lib/search/provider";
+import { SearchProvider } from "@/components/providers/search-provider";
 import { ShortcutProvider } from "@/lib/shortcuts";
 import { mobileQuickNav } from "@/lib/nav";
 import { cn } from "@/lib/utils";

@@ -5,7 +5,7 @@ import {
   GlobalSearch,
   GlobalSearchTrigger,
 } from "@/components/layout/global-search";
-import { SearchProvider } from "@/lib/search/provider";
+import { SearchProvider } from "@/components/providers/search-provider";
 import { ShortcutProvider } from "@/lib/shortcuts";
 import type { SearchResult, SearchService } from "@/lib/search/types";
 import { renderWithProviders, message } from "@/test/utils";
