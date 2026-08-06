@@ -7,6 +7,10 @@ export const endpoints = {
   me: "/me",
   logout: "/auth/logout",
   login: "/auth/login",
+  /** Second factor, used only when the login response asks for one. */
+  loginOtp: "/auth/login/otp",
+  /** Starts a reset; the backend decides how the operator is contacted. */
+  passwordResetRequest: "/auth/password-reset/request",
 
   dashboard: {
     summary: "/dashboard/summary",

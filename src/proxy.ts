@@ -7,7 +7,7 @@ const intlMiddleware = createIntlMiddleware(routing);
 const AUTH_COOKIE = process.env.AUTH_COOKIE_NAME ?? "saraf_session";
 
 /** Paths reachable without a session, given without a locale prefix. */
-const PUBLIC_PATHS = ["/login"];
+const PUBLIC_PATHS = ["/login", "/forgot-password"];
 
 function stripLocale(pathname: string): string {
   const [, first, ...rest] = pathname.split("/");
@@ -47,9 +47,19 @@ function apiOrigin(): string {
  * cannot cover. Splitting the directive keeps `<style>` injection blocked
  * rather than relaxing all styles at once.
  */
+/**
+ * Cloudflare's challenge origin, and only where a site key is configured. The
+ * widget draws itself in an iframe, which `script-src`'s `strict-dynamic` says
+ * nothing about — without this the challenge is blocked and no one can sign in.
+ */
+const TURNSTILE_ORIGIN = "https://challenges.cloudflare.com";
+
 function contentSecurityPolicy(nonce: string): string {
   const isDev = process.env.NODE_ENV === "development";
   const api = apiOrigin();
+  const turnstile = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+    ? ` ${TURNSTILE_ORIGIN}`
+    : "";
 
   return [
     "default-src 'self'",
@@ -59,7 +69,8 @@ function contentSecurityPolicy(nonce: string): string {
     "style-src-attr 'unsafe-inline'",
     "img-src 'self' blob: data:",
     "font-src 'self'",
-    `connect-src 'self'${api ? ` ${api}` : ""}`,
+    `connect-src 'self'${api ? ` ${api}` : ""}${turnstile}`,
+    `frame-src 'self'${turnstile}`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -81,8 +92,13 @@ export function proxy(request: NextRequest) {
     if (!session) {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
-      // Only the path is carried over; never put tokens or PII in query strings.
-      url.search = bare === "/" ? "" : `?from=${encodeURIComponent(bare)}`;
+      // Only the path and a reason code are carried over; never a token, never
+      // PII. `reason` tells the operator why they are looking at a sign-in form
+      // they did not ask for — a protected page was open and the session is no
+      // longer valid.
+      const params = new URLSearchParams({ reason: "session" });
+      if (bare !== "/") params.set("from", bare);
+      url.search = `?${params}`;
       return NextResponse.redirect(url);
     }
   }

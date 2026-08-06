@@ -147,7 +147,9 @@ export function UserMenu({
               await apiFetch<void>(endpoints.logout, { method: "POST" }).catch(
                 () => undefined,
               );
-              router.push("/login");
+              // The reason is what stops the sign-in form reading as a session
+              // that dropped on its own.
+              router.push("/login?reason=signedOut");
             }}
             className="flex w-full items-center gap-2 border-t border-border px-3 py-2 text-sm text-danger hover:bg-danger-soft"
           >

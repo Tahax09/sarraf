@@ -3,11 +3,14 @@
 import {
   forwardRef,
   useId,
+  useState,
   type InputHTMLAttributes,
   type ReactNode,
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from "react";
+import { useTranslations } from "next-intl";
+import { Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -117,6 +120,71 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
             props["aria-describedby"],
           )}
         />
+      </Field>
+    );
+  },
+);
+
+/**
+ * A password field with a reveal toggle.
+ *
+ * Typing a password blind on a keyboard laid out for another script is where
+ * lockouts come from, so the operator can check what they typed. The field
+ * starts masked, the toggle is a real button with its state in its accessible
+ * name, and the value is never written anywhere but the input.
+ */
+export const PasswordInput = forwardRef<HTMLInputElement, TextInputProps>(
+  function PasswordInput({ label, error, hint, className, ...props }, ref) {
+    const t = useTranslations("auth");
+    const [visible, setVisible] = useState(false);
+    const autoId = useId();
+    const id = props.id ?? autoId;
+    const messageId = `${id}-message`;
+
+    return (
+      <Field
+        label={label}
+        error={error}
+        hint={hint}
+        required={props.required}
+        htmlFor={id}
+        messageId={messageId}
+      >
+        <div className="relative">
+          <input
+            ref={ref}
+            id={id}
+            type={visible ? "text" : "password"}
+            aria-invalid={error ? true : undefined}
+            // Room for the toggle on the end side, in whichever direction the
+            // page reads.
+            className={cn(CONTROL, "pe-10", className)}
+            {...props}
+            aria-describedby={describedBy(
+              messageId,
+              error,
+              hint,
+              props["aria-describedby"],
+            )}
+          />
+          <button
+            type="button"
+            onClick={() => setVisible(!visible)}
+            // Not a toggle button with `aria-pressed`: the label states the
+            // action, which reads the same way in both languages.
+            aria-label={visible ? t("hidePassword") : t("showPassword")}
+            className={cn(
+              "absolute inset-y-0 end-0 flex items-center px-3 text-fg-muted",
+              "hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+            )}
+          >
+            {visible ? (
+              <EyeOff className="size-4" aria-hidden />
+            ) : (
+              <Eye className="size-4" aria-hidden />
+            )}
+          </button>
+        </div>
       </Field>
     );
   },

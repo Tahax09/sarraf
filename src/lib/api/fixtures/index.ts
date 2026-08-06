@@ -153,6 +153,25 @@ export async function fixtureFetch<T>(
     if (p === "/audit/ui-events" || p === "/audit/ui-errors") {
       return undefined as T;
     }
+
+    // Sign-in. Any credentials are accepted — the fixtures have no password
+    // store — except the reserved username below, which exists so the second
+    // factor and its failure paths can be walked without a backend.
+    if (p === "/auth/login") {
+      const username = (body as { username?: string } | null)?.username ?? "";
+      if (username === "otp") {
+        return { otpRequired: true, challengeId: "fixture-challenge" } as T;
+      }
+      return undefined as T;
+    }
+    if (p === "/auth/login/otp") {
+      const code = (body as { code?: string } | null)?.code;
+      if (code !== "123456") throw new ApiError("Invalid code", 401);
+      return undefined as T;
+    }
+    if (p === "/auth/password-reset/request" || p === "/auth/logout") {
+      return undefined as T;
+    }
     if (p.endsWith("/approve")) {
       const id = p.split("/").at(-2)!;
       const target =
