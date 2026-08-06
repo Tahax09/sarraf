@@ -50,8 +50,10 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
     {
+      // The JS budget is a property of the build, not of the viewport, so it
+      // runs once rather than twice on identical bytes.
       name: "mobile",
-      testIgnore: /a11y\.spec\.ts/,
+      testIgnore: [/a11y\.spec\.ts/, /performance\.spec\.ts/],
       use: { ...devices["Pixel 7"] },
     },
   ],

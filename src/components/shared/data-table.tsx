@@ -1,21 +1,16 @@
 "use client";
 
-import {
-  useId,
-  useMemo,
-  useState,
-  useSyncExternalStore,
-  type ReactNode,
-} from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { ArrowDown, ArrowUp, ChevronsUpDown, Rows2, Rows3 } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCount } from "@/lib/format";
 import { EmptyState, ErrorState, TableSkeleton } from "@/components/ui/states";
-import { createRecordStore } from "@/lib/local-store";
 import { PAGE_SIZES, nextSort } from "@/lib/use-table-query";
 import type { SortState } from "@/lib/api/types";
 import { DetailDrawer } from "./detail-drawer";
+import { useDensity } from "./table-density";
+import { TablePager } from "./table-pager";
 
 export type Column<T> = {
   key: string;
@@ -172,111 +167,6 @@ function sortRows<T>(
   });
 }
 
-export type Density = "comfortable" | "compact";
-
-/**
- * Row height, shared by every register for the session.
- *
- * It is a display preference, not data: an operator scanning the ledger for one
- * reference wants as many rows on screen as will fit, while one reading a day's
- * approvals wants room between them. Stored so the choice survives moving
- * between registers, and session-scoped like every other view preference here.
- */
-const densityStore = createRecordStore("saraf.table");
-
-function useDensity(): [Density, (next: Density) => void] {
-  const values = useSyncExternalStore(
-    densityStore.subscribe,
-    densityStore.getSnapshot,
-    densityStore.getServerSnapshot,
-  );
-  const density: Density =
-    values.density === "compact" ? "compact" : "comfortable";
-  const set = (next: Density) =>
-    densityStore.set({ ...densityStore.getSnapshot(), density: next });
-  return [density, set];
-}
-
-/** Labelled with the state it switches to, so the button says what it does. */
-function DensityToggle({
-  density,
-  onChange,
-}: {
-  density: Density;
-  onChange: (next: Density) => void;
-}) {
-  const tt = useTranslations("table");
-  const compact = density === "compact";
-  const Icon = compact ? Rows2 : Rows3;
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(compact ? "comfortable" : "compact")}
-      className={cn(
-        "hidden items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs md:inline-flex",
-        "text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg",
-        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-      )}
-    >
-      <Icon className="size-3.5 shrink-0" aria-hidden />
-      {compact ? tt("densityComfortable") : tt("densityCompact")}
-    </button>
-  );
-}
-
-/**
- * Page control. The label is always on the button (never on the glyph alone),
- * so a screen reader hears "page 3" rather than an unlabelled chevron.
- */
-function PageButton({
-  label,
-  current,
-  disabled,
-  onClick,
-  children,
-}: {
-  label: string;
-  current?: boolean;
-  disabled?: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-      aria-current={current ? "page" : undefined}
-      className={cn(
-        "min-w-8 rounded-md border px-2 py-1 text-xs transition-colors",
-        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-        "disabled:cursor-not-allowed disabled:opacity-40",
-        current
-          ? "border-accent bg-accent text-accent-fg"
-          : "border-border text-fg-muted hover:bg-surface-muted",
-      )}
-    >
-      {children}
-    </button>
-  );
-}
-
-/** `1 … 4 5 6 … 247` — first, last, and a window around the current page. */
-function pageWindow(page: number, count: number): (number | "gap")[] {
-  if (count <= 7) {
-    return Array.from({ length: count }, (_, index) => index + 1);
-  }
-  const start = Math.max(2, page - 1);
-  const end = Math.min(count - 1, page + 1);
-  const pages: (number | "gap")[] = [1];
-  if (start > 2) pages.push("gap");
-  for (let index = start; index <= end; index += 1) pages.push(index);
-  if (end < count - 1) pages.push("gap");
-  pages.push(count);
-  return pages;
-}
-
 /** Column header that doubles as a sort control. */
 function SortableHeader({
   active,
@@ -291,7 +181,11 @@ function SortableHeader({
   onClick: () => void;
   children: ReactNode;
 }) {
-  const Icon = !active ? ChevronsUpDown : direction === "asc" ? ArrowUp : ArrowDown;
+  const Icon = !active
+    ? ChevronsUpDown
+    : direction === "asc"
+      ? ArrowUp
+      : ArrowDown;
   return (
     <button
       type="button"
@@ -344,10 +238,9 @@ export function DataTable<T>({
   const [clientPageSize, setClientPageSize] = useState(initialPageSize);
   const [requestedPage, setRequestedPage] = useState(1);
   const [seenTotal, setSeenTotal] = useState(rows.length);
-  const pageSizeId = useId();
 
   const server = typeof paging === "object" ? paging : null;
-  const [density, setDensity] = useDensity();
+  const [density] = useDensity();
   const compact = density === "compact";
   const headCell = compact ? "px-3 py-1.5" : "px-3 py-2.5";
   const bodyCell = compact ? "px-3 py-1.5" : "px-3 py-3";
@@ -573,7 +466,10 @@ export function DataTable<T>({
                 ))}
                 {renderActions ? (
                   <td
-                    className={cn("text-end", compact ? "px-3 py-1" : "px-3 py-2")}
+                    className={cn(
+                      "text-end",
+                      compact ? "px-3 py-1" : "px-3 py-2",
+                    )}
                     onClick={(event) => event.stopPropagation()}
                   >
                     {renderActions(row)}
@@ -590,7 +486,9 @@ export function DataTable<T>({
       <ul className="divide-y divide-border md:hidden">
         {pageRows.map((row, index) => {
           const primary = visibleColumns.find((c) => c.primary);
-          const rest = visibleColumns.filter((c) => !c.primary && !c.hideOnCard);
+          const rest = visibleColumns.filter(
+            (c) => !c.primary && !c.hideOnCard,
+          );
           return (
             <li key={getRowId(row)} className={compact ? "p-3" : "p-4"}>
               <div className="flex items-start justify-between gap-3">
@@ -600,7 +498,9 @@ export function DataTable<T>({
                       {formatCount(offset + index + 1)}
                     </span>
                   ) : null}
-                  {primary ? <span className="min-w-0">{primary.cell(row)}</span> : null}
+                  {primary ? (
+                    <span className="min-w-0">{primary.cell(row)}</span>
+                  ) : null}
                 </div>
                 {renderActions ? (
                   <div className="shrink-0">{renderActions(row)}</div>
@@ -610,7 +510,9 @@ export function DataTable<T>({
                 {rest.map((col) => (
                   <div key={col.key} className="min-w-0">
                     <dt className="text-[11px] text-fg-subtle">{col.header}</dt>
-                    <dd className="truncate text-xs text-fg">{col.cell(row)}</dd>
+                    <dd className="truncate text-xs text-fg">
+                      {col.cell(row)}
+                    </dd>
                   </div>
                 ))}
               </dl>
@@ -635,73 +537,15 @@ export function DataTable<T>({
           size — in server mode that is judged on `total`, so a second page can
           never hide behind a full first one. */}
       {paged && total > DEFAULT_PAGE_SIZES[0] ? (
-        <nav
-          aria-label={tt("pagination")}
-          // Not sticky: with `scroll` the rows are bounded and the pager already
-          // sits under whatever the reader can see, and pinning it to the
-          // viewport only covered the last row of every other register.
-          className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-surface px-3 py-3"
-        >
-          <div className="flex flex-wrap items-center gap-2">
-            <label htmlFor={pageSizeId} className="text-xs text-fg-muted">
-              {tt("rowsPerPage")}
-            </label>
-            <select
-              id={pageSizeId}
-              value={pageSize}
-              onChange={(event) => changePageSize(Number(event.target.value))}
-              className="numeric rounded-md border border-border bg-surface px-2 py-1 text-xs text-fg"
-            >
-              {DEFAULT_PAGE_SIZES.map((option) => (
-                <option key={option} value={option}>
-                  {formatCount(option)}
-                </option>
-              ))}
-            </select>
-            <span className="numeric text-xs text-fg-subtle">{rangeLabel}</span>
-            <DensityToggle density={density} onChange={setDensity} />
-          </div>
-
-          {/* Wraps: at 320px a nine-page window plus both arrows is wider than
-              the screen, and a pager that scrolls sideways is a pager the
-              reader never finds. */}
-          <div className="flex flex-wrap items-center justify-end gap-1">
-            <PageButton
-              label={t("previous")}
-              disabled={page === 1}
-              onClick={() => goToPage(page - 1)}
-            >
-              <span aria-hidden>‹</span>
-            </PageButton>
-            {pageWindow(page, pageCount).map((entry, index) =>
-              entry === "gap" ? (
-                <span
-                  key={`gap-${index}`}
-                  aria-hidden
-                  className="px-1 text-xs text-fg-subtle"
-                >
-                  …
-                </span>
-              ) : (
-                <PageButton
-                  key={entry}
-                  label={tt("page", { page: formatCount(entry) })}
-                  current={entry === page}
-                  onClick={() => goToPage(entry)}
-                >
-                  <span className="numeric">{formatCount(entry)}</span>
-                </PageButton>
-              ),
-            )}
-            <PageButton
-              label={t("next")}
-              disabled={page === pageCount}
-              onClick={() => goToPage(page + 1)}
-            >
-              <span aria-hidden>›</span>
-            </PageButton>
-          </div>
-        </nav>
+        <TablePager
+          page={page}
+          pageCount={pageCount}
+          pageSize={pageSize}
+          pageSizes={DEFAULT_PAGE_SIZES}
+          rangeLabel={rangeLabel}
+          onPageChange={goToPage}
+          onPageSizeChange={changePageSize}
+        />
       ) : null}
 
       {renderDetail ? (

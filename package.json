@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "check:messages": "node scripts/check-messages.mjs",
     "test:coverage": "jest --coverage",
-    "test:e2e:a11y": "playwright test --project=a11y"
+    "test:e2e:a11y": "playwright test --project=a11y",
+    "perf:budget": "node scripts/perf-budget.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.7.1",
