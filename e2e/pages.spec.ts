@@ -36,7 +36,12 @@ for (const path of pages) {
 
     await login(page);
     await page.goto(path);
-    await page.waitForLoadState("networkidle");
+    // Not `networkidle`: a production build prefetches the RSC payload of every
+    // link in the sidebar, and those responses are held open, so the network is
+    // never idle on any page of this app. Waiting for the content and giving the
+    // queries a moment to resolve is what the assertion actually needs.
+    await page.locator("main").first().waitFor({ state: "visible" });
+    await page.waitForTimeout(2000);
 
     expect(errors).toEqual([]);
   });

@@ -121,15 +121,11 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    {
-      // Skip API routes, Next internals and files with an extension.
-      source: "/((?!api|_next|_vercel|.*\\..*).*)",
-      // A prefetch renders no document, so it needs no policy of its own.
-      missing: [
-        { type: "header", key: "next-router-prefetch" },
-        { type: "header", key: "purpose", value: "prefetch" },
-      ],
-    },
-  ],
+  // Skip API routes, Next internals and files with an extension. Prefetches are
+  // deliberately *not* excluded: the locale rewrite lives in this proxy, so a
+  // request that skips it asks for `/core/accounts` — a path that exists only
+  // after next-intl turns it into `/ar/core/accounts` — and gets a 404. The
+  // sidebar prefetches every link on every page, so excluding them meant a
+  // console full of failed requests and a router cache that was never warm.
+  matcher: ["/((?!api|_next|_vercel|.*\\..*).*)"],
 };

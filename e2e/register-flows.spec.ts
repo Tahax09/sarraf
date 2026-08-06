@@ -94,15 +94,34 @@ test("fund transfer: settles between two accounts after confirmation", async ({
   await page.waitForURL(/\/core\/fund-transfer\/list/);
 });
 
-test("fund transfer: refuses the same account on both sides", async ({
+/**
+ * The form refuses a transfer to the sender's own account twice over: the
+ * receiver's account list disables it, and the schema rejects it if it arrives
+ * anyway. The schema half is a unit test (`dual-party-form.test.tsx`) because
+ * the UI half makes it unreachable by hand — which is what this asserts.
+ */
+test("fund transfer: the sender's account cannot be chosen as receiver", async ({
   page,
 }) => {
   await page.goto("/core/fund-transfer/register");
   await pickClient(page, 0, 0);
-  await pickClient(page, 1, 0);
-  await clickNext(page);
 
-  await expect(page.getByText(t("validation.sameAccount"))).toBeVisible();
+  const sender = visible(page.getByLabel(labelRe("fields.account"))).nth(0);
+  const chosen = await sender
+    .locator("option:checked")
+    .textContent();
+
+  // Same client on the receiving side, so the sender's account is in its list.
+  const search = visible(
+    page.getByPlaceholder(t("common.searchPlaceholder")),
+  ).nth(1);
+  await search.click();
+  await visible(page.getByRole("listbox")).getByRole("option").first().click();
+
+  const receiver = visible(page.getByLabel(labelRe("fields.account"))).nth(1);
+  await expect(
+    receiver.locator("option", { hasText: chosen!.trim() }),
+  ).toBeDisabled();
 });
 
 test("CEFT: shows the applied rate and the converted amount", async ({
