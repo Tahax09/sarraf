@@ -9,6 +9,10 @@ export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
         className,
       )}
       {...props}
+      // Hook for the print stylesheet: a card must not be split across a page
+      // fold, and it loses its shadow on paper. Set after the spread so it is
+      // on every card — the printed layout does not depend on a caller.
+      data-card=""
     />
   );
 }

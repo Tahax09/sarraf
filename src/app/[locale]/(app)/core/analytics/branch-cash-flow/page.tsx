@@ -4,18 +4,16 @@ import { useTranslations } from "next-intl";
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
-  FileDown,
   ListOrdered,
   Scale,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
 import { HeaderStatBar } from "@/components/shared/header-stat-bar";
 import { DataTable, type Column } from "@/components/shared/data-table";
+import { ExportActions } from "@/components/shared/export-actions";
 import { CategoryBarChart } from "@/components/charts";
 import { useBranchFlow } from "@/lib/api/hooks";
-import { downloadCsv } from "@/lib/export";
 import { formatCount, formatNumber } from "@/lib/format";
 import type { BranchFlow } from "@/lib/api/types";
 
@@ -23,7 +21,6 @@ import type { BranchFlow } from "@/lib/api/types";
 export default function BranchCashFlowPage() {
   const t = useTranslations("analytics");
   const tf = useTranslations("fields");
-  const tc = useTranslations("common");
   const tStats = useTranslations("stats");
   const ts = useTranslations("sections");
   const tDashboard = useTranslations("dashboard");
@@ -102,32 +99,36 @@ export default function BranchCashFlowPage() {
       <PageHeader
         title={t("branchCashFlowTitle")}
         actions={
-          <Button
-            variant="secondary"
-            disabled={rows.length === 0}
-            onClick={() =>
-              downloadCsv(
-                "branch-cash-flow",
-                [
-                  tf("branch"),
-                  tStats("count"),
-                  tDashboard("trendDeposits"),
-                  tDashboard("trendWithdrawals"),
-                  tStats("netFlow"),
-                ],
-                rows.map((row) => [
-                  row.branchName,
-                  row.operations,
-                  row.deposits,
-                  row.withdrawals,
-                  row.netFlow,
-                ]),
-              )
-            }
-          >
-            <FileDown className="size-4" aria-hidden />
-            {tc("exportExcel")}
-          </Button>
+          <ExportActions
+            filename="branch-cash-flow"
+            title={t("branchCashFlowTitle")}
+            print={false}
+            rows={rows}
+            columns={[
+              { header: tf("branch"), value: (row) => row.branchName, width: 28 },
+              {
+                header: tStats("count"),
+                value: (row) => row.operations,
+                type: "number",
+                format: "#,##0",
+              },
+              {
+                header: tDashboard("trendDeposits"),
+                value: (row) => row.deposits,
+                type: "number",
+              },
+              {
+                header: tDashboard("trendWithdrawals"),
+                value: (row) => row.withdrawals,
+                type: "number",
+              },
+              {
+                header: tStats("netFlow"),
+                value: (row) => row.netFlow,
+                type: "number",
+              },
+            ]}
+          />
         }
       />
 

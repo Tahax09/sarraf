@@ -2,7 +2,8 @@
   "app": {
     "name": "Saraf",
     "tagline": "Admin Panel",
-    "copyright": "© {year} Saraf. All rights reserved. Designed with care."
+    "copyright": "© {year} Saraf. All rights reserved. Designed with care.",
+    "generatedAt": "Generated {datetime}"
   },
   "common": {
     "search": "Search",

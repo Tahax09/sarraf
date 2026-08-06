@@ -10,6 +10,7 @@ import { SidebarNav } from "./sidebar";
 import { UserMenu } from "./user-menu";
 import { AppShortcuts } from "./app-shortcuts";
 import { AppFooter } from "./app-footer";
+import { PrintLetterhead } from "./print-letterhead";
 import { AccessibilityTrigger } from "./accessibility-center";
 import { GlobalSearch, GlobalSearchTrigger } from "./global-search";
 import {
@@ -144,6 +145,9 @@ function Shell({ children }: { children: ReactNode }) {
             tabIndex={-1}
             className="min-w-0 flex-1 px-3 pt-4 pb-8 focus:outline-none sm:px-5"
           >
+            {/* Masthead for the printed page only. Here rather than in each
+                report so no printable page can be published without it. */}
+            <PrintLetterhead />
             {children}
           </main>
 

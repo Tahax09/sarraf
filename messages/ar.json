@@ -2,7 +2,8 @@
   "app": {
     "name": "صرّاف",
     "tagline": "لوحة الإدارة",
-    "copyright": "© {year} صرّاف. جميع الحقوق محفوظة. صُمّم بعناية."
+    "copyright": "© {year} صرّاف. جميع الحقوق محفوظة. صُمّم بعناية.",
+    "generatedAt": "أُنشئ في {datetime}"
   },
   "common": {
     "search": "بحث",

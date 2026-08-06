@@ -5,20 +5,17 @@ import { useTranslations } from "next-intl";
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
-  FileDown,
   ListOrdered,
-  Printer,
   Scale,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { TextInput } from "@/components/ui/field";
 import { PageHeader } from "@/components/shared/page-header";
 import { HeaderStatBar } from "@/components/shared/header-stat-bar";
 import { DataTable, type Column } from "@/components/shared/data-table";
+import { ExportActions } from "@/components/shared/export-actions";
 import { CompositionDonut, TrendAreaChart } from "@/components/charts";
 import { useReport } from "@/lib/api/hooks";
-import { downloadCsv, printToPdf } from "@/lib/export";
 import { formatCount, formatDate, formatNumber } from "@/lib/format";
 import type { BranchFlow, ReportSnapshot } from "@/lib/api/types";
 
@@ -153,7 +150,6 @@ function TrailingCard({ trailing }: { trailing: ReportSnapshot["trailing"] }) {
 export default function ReportsPage() {
   const t = useTranslations("reports");
   const tf = useTranslations("fields");
-  const tc = useTranslations("common");
   const tStats = useTranslations("stats");
   const tAnalytics = useTranslations("analytics");
   const tDashboard = useTranslations("dashboard");
@@ -219,26 +215,6 @@ export default function ReportsPage() {
     },
   ];
 
-  function exportExcel() {
-    downloadCsv(
-      `report-${date}`,
-      [
-        tf("branch"),
-        tStats("count"),
-        tDashboard("trendDeposits"),
-        tDashboard("trendWithdrawals"),
-        tStats("netFlow"),
-      ],
-      branches.map((row) => [
-        row.branchName,
-        row.operations,
-        row.deposits,
-        row.withdrawals,
-        row.netFlow,
-      ]),
-    );
-  }
-
   return (
     <div className="space-y-4">
       <PageHeader
@@ -247,24 +223,37 @@ export default function ReportsPage() {
           query.data ? t("snapshotFor", { date: formatDate(date) }) : undefined
         }
         actions={
-          <div className="print:hidden flex gap-2">
-            <Button
-              variant="secondary"
-              onClick={exportExcel}
-              disabled={branches.length === 0}
-            >
-              <FileDown className="size-4" aria-hidden />
-              {tc("exportExcel")}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={printToPdf}
-              disabled={branches.length === 0}
-            >
-              <Printer className="size-4" aria-hidden />
-              {tc("exportPdf")}
-            </Button>
-          </div>
+          <ExportActions
+            filename={`report-${date}`}
+            title={t("title")}
+            sheetName={t("perBranch")}
+            meta={[t("snapshotFor", { date: formatDate(date) })]}
+            rows={branches}
+            columns={[
+              { header: tf("branch"), value: (row) => row.branchName, width: 28 },
+              {
+                header: tStats("count"),
+                value: (row) => row.operations,
+                type: "number",
+                format: "#,##0",
+              },
+              {
+                header: tDashboard("trendDeposits"),
+                value: (row) => row.deposits,
+                type: "number",
+              },
+              {
+                header: tDashboard("trendWithdrawals"),
+                value: (row) => row.withdrawals,
+                type: "number",
+              },
+              {
+                header: tStats("netFlow"),
+                value: (row) => row.netFlow,
+                type: "number",
+              },
+            ]}
+          />
         }
       />
 

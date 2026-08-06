@@ -337,12 +337,88 @@ bdi {
     display: none !important;
   }
 
+  /*
+   * The light palette, forced.
+   *
+   * The rule this replaced was `background: #fff; color: #000` on the body,
+   * which does not reach anything that sets its own colour — a dark-mode
+   * operator printing a report got dark cards on white paper, and near-white
+   * text inside them. Re-declaring the surface tokens on `:root` overrides the
+   * dark block for the print media type only, so every component follows
+   * without one of them having to know it is being printed. Semantic colours
+   * (success, danger, accent) are untouched: they clear 4.5:1 on white already,
+   * and a red negative figure has to stay red on paper.
+   */
+  :root,
+  :root[data-theme="dark"] {
+    --color-bg: #ffffff;
+    --color-surface: #ffffff;
+    --color-surface-muted: #ffffff;
+    --color-border: #c9ccc9;
+    --color-border-strong: #9aa09a;
+    --color-fg: #1c1e1c;
+    --color-fg-muted: #454945;
+    --color-fg-subtle: #454945;
+  }
+
+  /* Ink, not backgrounds: a printer should not be asked to flood a page. */
   body {
     background: #fff;
-    color: #000;
   }
 
   main {
     padding: 0 !important;
+  }
+
+  @page {
+    /* Browsers default to ~0.4in and a header/footer band the user controls;
+       this is a document margin, not an attempt to fight the dialog. */
+    margin: 12mm;
+  }
+
+  /*
+   * A table crossing a page break keeps its column headings. Without this the
+   * second page of a branch breakdown is five unlabelled columns of figures,
+   * which is the single most common complaint about printed reports.
+   */
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+
+  /* Sort affordances are controls, and paper has no controls. The only icons
+     in a table head are the sort arrows, so this reaches nothing else. */
+  thead svg {
+    display: none;
+  }
+
+  /* Nothing splits across the fold: not a row, not a card, not a heading from
+     the content it introduces. */
+  tr,
+  img {
+    break-inside: avoid;
+  }
+
+  [data-card],
+  h1,
+  h2,
+  h3 {
+    break-inside: avoid;
+  }
+
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+  }
+
+  /* Borders survive: the card outlines are how the printed page keeps its
+     structure once the tinted surfaces are gone. */
+  [data-card] {
+    border-color: #c9ccc9 !important;
+    box-shadow: none !important;
   }
 }

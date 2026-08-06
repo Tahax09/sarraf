@@ -2,12 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { FileDown, LayoutList, ListOrdered } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { LayoutList, ListOrdered } from "lucide-react";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
 import { HeaderStatBar } from "@/components/shared/header-stat-bar";
 import { DataTable, type Column } from "@/components/shared/data-table";
+import { ExportActions } from "@/components/shared/export-actions";
 import { FilterBar } from "@/components/shared/filter-bar";
 import { DetailRow, DetailSection } from "@/components/shared/detail-drawer";
 import { useClientNameText } from "@/components/shared/cells";
@@ -16,7 +16,6 @@ import { useAllOperations, useBranches } from "@/lib/api/hooks";
 import { useLabels } from "@/lib/labels";
 import { useTableQuery } from "@/lib/use-table-query";
 import { useFilters, type FilterDef } from "@/lib/filters";
-import { downloadCsv } from "@/lib/export";
 import { formatAmount, formatCount, formatDateTime } from "@/lib/format";
 import type { LedgerEntry, OperationType } from "@/lib/api/types";
 
@@ -226,40 +225,50 @@ export default function AllOperationsPage() {
       <PageHeader
         title={t("allOperationsTitle")}
         actions={
-          <Button
-            variant="secondary"
-            disabled={rows.length === 0}
-            onClick={() =>
-              downloadCsv(
-                "all-operations",
-                [
-                  tf("reference"),
-                  tf("client"),
-                  tf("accountNumber"),
-                  tf("type"),
-                  tf("branch"),
-                  tf("amount"),
-                  tf("currency"),
-                  tf("fee"),
-                  tf("date"),
-                ],
-                rows.map((row) => [
-                  row.reference,
-                  clientName(row.clientName, row.clientNameEn),
-                  row.accountNumber,
-                  labels.ledgerEvent(row.event),
-                  row.branchName,
-                  row.amount,
-                  row.currency,
-                  row.feeAmount ?? "",
-                  row.createdAt,
-                ]),
-              )
-            }
-          >
-            <FileDown className="size-4" aria-hidden />
-            {tc("exportPage")}
-          </Button>
+          <ExportActions
+            filename="all-operations"
+            title={t("allOperationsTitle")}
+            excelLabel={tc("exportPage")}
+            // No print button: the page is a working surface — a filter bar and
+            // two sampled charts — not a document. The Reports page is where a
+            // printable snapshot lives.
+            print={false}
+            meta={[
+              tc("showing", {
+                from: formatCount(firstRow),
+                to: formatCount(lastRow),
+                total: formatCount(total),
+              }),
+            ]}
+            rows={rows}
+            columns={[
+              { header: tf("reference"), value: (row) => row.reference, width: 20 },
+              {
+                header: tf("client"),
+                value: (row) => clientName(row.clientName, row.clientNameEn),
+                width: 26,
+              },
+              // Text, not a number: an account number is an identifier, and
+              // Excel would eat its leading zero and round its 16th digit.
+              { header: tf("accountNumber"), value: (row) => row.accountNumber, width: 22 },
+              { header: tf("type"), value: (row) => labels.ledgerEvent(row.event), width: 22 },
+              { header: tf("branch"), value: (row) => row.branchName, width: 22 },
+              {
+                header: tf("amount"),
+                value: (row) => row.amount,
+                type: "number",
+                format: "#,##0.000",
+              },
+              { header: tf("currency"), value: (row) => row.currency, width: 10 },
+              {
+                header: tf("fee"),
+                value: (row) => row.feeAmount ?? null,
+                type: "number",
+                format: "#,##0.000",
+              },
+              { header: tf("date"), value: (row) => formatDateTime(row.createdAt), width: 20 },
+            ]}
+          />
         }
       />
 

@@ -63,6 +63,33 @@ describe("route permission coverage", () => {
     });
   });
 
+  it("guards a detail route that appears in no menu", () => {
+    // The sweep above only sees routes with a `page.tsx` of their own, so a
+    // dynamic segment — a client profile at `/core/clients/<id>` — is invisible
+    // to it. Without the explicit prefix rule it would be reachable by anyone
+    // signed in.
+    expect(resolveRoutePermission("/core/clients/4821")).toMatchObject({
+      module: "clients",
+      action: "view",
+    });
+  });
+
+  it("is not fooled by a path that merely starts with a guarded prefix", () => {
+    // Prefix matching is on segment boundaries, not on characters: a future
+    // `/core/clientsomething` must resolve on its own merits rather than
+    // inheriting — or accidentally satisfying — the client rule.
+    expect(resolveRoutePermission("/core/clientsomething")?.prefix).not.toBe(
+      "/core/clients",
+    );
+  });
+
+  it("orders the table from longest prefix to shortest", () => {
+    // The longest-prefix guarantee above is a property of this ordering, and
+    // `.sort()` is easy to lose in a refactor of the array literal.
+    const lengths = ROUTE_PERMISSIONS.map((route) => route.prefix.length);
+    expect(lengths).toEqual([...lengths].sort((a, b) => b - a));
+  });
+
   it("ignores a trailing slash", () => {
     expect(resolveRoutePermission("/core/users/")).toMatchObject({
       module: "users",
