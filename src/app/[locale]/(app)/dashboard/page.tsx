@@ -39,22 +39,31 @@ export default function DashboardPage() {
       <div className="flex items-start gap-4">
         <div className="min-w-0 flex-1 space-y-4">
           <DashboardKpiCards />
+          {/* Below `xl` the rail folds into the content column, alerts included,
+              so the reading order stays figures → actions → alerts. */}
           <QuickActionsPanel />
-          <AlertsCard />
+          <div className="xl:hidden">
+            <AlertsCard />
+          </div>
           <TrendsCard />
 
           <div className="grid gap-4 lg:grid-cols-2">
             <CurrencyBalancesCard />
-            <PricingSummaryCard />
+            <RecentOperationsCard />
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
             <TopClientsCard />
-            <RecentOperationsCard />
+            <PricingSummaryCard />
           </div>
         </div>
 
-        <QuickActionsRail className="w-60 shrink-0" />
+        <div className="hidden w-72 shrink-0 space-y-4 xl:block">
+          <QuickActionsRail />
+          {/* Alerts sit under the actions they usually lead to: the queue an
+              alert counts is the queue a quick action opens. */}
+          <AlertsCard />
+        </div>
       </div>
     </div>
   );

@@ -160,7 +160,7 @@ export function QuickActionsRail({ className }: { className?: string }) {
       className={cn("hidden xl:block", className)}
     >
       {shortcuts}
-      <div className="sticky top-4 space-y-2 rounded-card border border-border bg-surface-muted p-3">
+      <div className="space-y-2 rounded-card border border-border bg-surface-muted p-3">
         <p className="flex items-center gap-2 px-1 text-xs font-medium text-fg-muted">
           <Zap className="size-3.5 shrink-0" aria-hidden />
           {t("quickActions")}
