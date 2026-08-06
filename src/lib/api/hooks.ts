@@ -186,6 +186,8 @@ export function useSaveClient() {
       nameEn: string | null;
       phone: string;
       email: string | null;
+      nationalityCode: string | null;
+      address: string | null;
     }) => apiFetch<Client>(endpoints.client(id), { method: "PATCH", body }),
     onSuccess: (client) => {
       qc.invalidateQueries({ queryKey: qk.client(client.id) });

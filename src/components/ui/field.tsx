@@ -12,6 +12,11 @@ import {
 import { useTranslations } from "next-intl";
 import { Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  DEFAULT_COUNTRY_ISO,
+  DEFAULT_DIAL_CODE,
+  countryFlag,
+} from "@/lib/format";
 
 /**
  * Every control shares one focus treatment: a real, offset outline rather than
@@ -89,12 +94,20 @@ export type TextInputProps = InputHTMLAttributes<HTMLInputElement> & {
   label: ReactNode;
   error?: string;
   hint?: ReactNode;
-  /** Force LTR presentation for amounts, phones, IBANs and IDs. */
+  /** An amount or a count: one run, laid out with the rest of the page. */
   numeric?: boolean;
+  /**
+   * A phone, IBAN or reference: several runs whose order carries meaning, so
+   * the value is pinned left-to-right rather than following the page.
+   */
+  identifier?: boolean;
 };
 
 export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
-  function TextInput({ label, error, hint, numeric, className, ...props }, ref) {
+  function TextInput(
+    { label, error, hint, numeric, identifier, className, ...props },
+    ref,
+  ) {
     const autoId = useId();
     const id = props.id ?? autoId;
     const messageId = `${id}-message`;
@@ -111,7 +124,12 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
           ref={ref}
           id={id}
           aria-invalid={error ? true : undefined}
-          className={cn(CONTROL, numeric && "numeric", className)}
+          className={cn(
+            CONTROL,
+            numeric && "numeric",
+            identifier && "identifier",
+            className,
+          )}
           {...props}
           aria-describedby={describedBy(
             messageId,
@@ -120,6 +138,79 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
             props["aria-describedby"],
           )}
         />
+      </Field>
+    );
+  },
+);
+
+/**
+ * A phone field that shows the country it dials.
+ *
+ * The prefix is fixed and not editable. Every number this panel holds is
+ * Libyan, and the operator types the part that varies — the same nine digits
+ * they read off a form — while the `+218` stays on screen so what is being
+ * stored is never in doubt.
+ *
+ * `identifier` on the wrapper, not on the input alone: the country code and the
+ * national number are two runs whose order carries meaning, so the pair is
+ * pinned left-to-right and the prefix stays at the number's head in Arabic as
+ * well. The label and any error line keep the page's direction, because they
+ * are prose.
+ *
+ * Whatever is typed goes through `normalizePhone` before it is sent, so a
+ * leading zero or a pasted `+218` costs nothing.
+ */
+export const PhoneInput = forwardRef<HTMLInputElement, TextInputProps>(
+  function PhoneInput({ label, error, hint, className, ...props }, ref) {
+    const autoId = useId();
+    const id = props.id ?? autoId;
+    const messageId = `${id}-message`;
+    const prefixId = `${id}-prefix`;
+
+    return (
+      <Field
+        label={label}
+        error={error}
+        hint={hint}
+        required={props.required}
+        htmlFor={id}
+        messageId={messageId}
+      >
+        <div
+          className={cn(
+            CONTROL,
+            "identifier flex items-center gap-2 py-0 ps-0",
+            "focus-within:border-accent focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent",
+            className,
+          )}
+        >
+          <span
+            id={prefixId}
+            className="flex shrink-0 items-center gap-1.5 self-stretch border-e border-border px-3 text-sm text-fg-muted"
+          >
+            <span aria-hidden>{countryFlag(DEFAULT_COUNTRY_ISO)}</span>
+            {`+${DEFAULT_DIAL_CODE}`}
+          </span>
+          <input
+            ref={ref}
+            id={id}
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel-national"
+            aria-invalid={error ? true : undefined}
+            className="min-w-0 flex-1 bg-transparent py-2 pe-3 text-sm text-fg outline-none placeholder:text-fg-subtle"
+            {...props}
+            // The country code is read as part of the field rather than left as
+            // decoration next to it.
+            aria-describedby={describedBy(
+              messageId,
+              error,
+              hint,
+              [props["aria-describedby"], prefixId].filter(Boolean).join(" ") ||
+                undefined,
+            )}
+          />
+        </div>
       </Field>
     );
   },

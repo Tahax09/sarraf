@@ -179,7 +179,7 @@ export function TransferList<T extends TransferOperation>({
                 <DetailRow
                   label={t("createdAt")}
                   value={formatDateTime(row.createdAt)}
-                  numeric
+                  identifier
                 />
               </DetailSection>
 
@@ -196,7 +196,7 @@ export function TransferList<T extends TransferOperation>({
                 <DetailRow
                   label={t("phone")}
                   value={formatPhone(row.clientPhone)}
-                  numeric
+                  identifier
                 />
                 <DetailRow
                   label={t("accountNumber")}
@@ -218,7 +218,7 @@ export function TransferList<T extends TransferOperation>({
                 <DetailRow
                   label={t("phone")}
                   value={formatPhone(row.receiverClientPhone)}
-                  numeric
+                  identifier
                 />
                 <DetailRow
                   label={t("accountNumber")}

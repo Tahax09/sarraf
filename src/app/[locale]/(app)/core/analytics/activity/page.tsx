@@ -64,6 +64,8 @@ export default function ActivityPage() {
       key: "event",
       header: tf("type"),
       primary: true,
+      sortKey: true,
+      sortValue: (row) => labels.ledgerEvent(row.event),
       cell: (row) => (
         <span className="flex min-w-0 flex-col">
           <span className="truncate text-sm">{labels.ledgerEvent(row.event)}</span>
@@ -76,14 +78,17 @@ export default function ActivityPage() {
     {
       key: "actor",
       header: tf("username"),
+      sortKey: true,
       cell: (row) => row.actor,
     },
     {
       key: "createdAt",
       header: tf("timestamp"),
       align: "end",
+      // ISO strings, so the plain string order is chronological order.
+      sortKey: true,
       cell: (row) => (
-        <span className="numeric text-xs text-fg-muted">
+        <span className="identifier text-xs text-fg-muted">
           {formatDateTime(row.createdAt)}
         </span>
       ),

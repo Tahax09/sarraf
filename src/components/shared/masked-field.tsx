@@ -45,7 +45,9 @@ export function MaskedField({
 
   return (
     <span className={cn("inline-flex items-center gap-2", className)}>
-      <span className="numeric break-all">{shown}</span>
+      {/* An IBAN is grouped in fours and an account number can carry a prefix:
+          the run order is part of the value, so it is pinned, not inherited. */}
+      <span className="identifier break-all">{shown}</span>
       <button
         type="button"
         aria-label={

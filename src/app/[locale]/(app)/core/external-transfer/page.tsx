@@ -55,7 +55,7 @@ export default function ExternalTransferPage() {
             <DetailRow
               label={tf("beneficiaryPhone")}
               value={formatPhone(row.beneficiary.phone)}
-              numeric
+              identifier
             />
           ) : null}
           <DetailRow

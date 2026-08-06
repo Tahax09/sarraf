@@ -146,6 +146,7 @@ export function DetailItem({
   label,
   value,
   numeric,
+  identifier,
   /** Long values — an IBAN, an address — take the full row instead of a column. */
   wide,
   /** Sits under the value: a unit, a qualifier, the thing the figure counts. */
@@ -153,23 +154,29 @@ export function DetailItem({
 }: {
   label: ReactNode;
   value: ReactNode;
+  /** An amount or a count: one run, laid out with the rest of the page. */
   numeric?: boolean;
+  /**
+   * A phone, IBAN, reference or timestamp: several runs whose order carries
+   * meaning, so it is pinned left-to-right instead of following the page.
+   */
+  identifier?: boolean;
   wide?: boolean;
   hint?: ReactNode;
 }) {
   return (
     <div className={cn("min-w-0", wide && "sm:col-span-2 lg:col-span-3")}>
       <dt className="text-xs text-fg-muted">{label}</dt>
-      <dd
-        className={cn("mt-1 text-sm break-words text-fg", numeric && "numeric")}
-      >
+      <dd className="mt-1 text-sm break-words text-fg">
         {/*
-         * `<bdi>` for the same reason the drawer uses it: every value is record
-         * data — an IBAN, a reference, a Latin name — read against an Arabic
-         * label, and each needs its own direction without dragging the column
-         * with it.
+         * Isolated always, re-directed only when the value is segmented — see
+         * `DetailRow`. The isolation is what keeps a Latin name or a reference
+         * from leaking its edges into the Arabic label beside it; the direction
+         * belongs to the page.
          */}
-        <bdi>{value}</bdi>
+        <bdi className={cn(numeric && "numeric", identifier && "identifier")}>
+          {value}
+        </bdi>
         {hint ? (
           <span className="mt-0.5 block text-xs font-normal text-fg-subtle">
             {hint}

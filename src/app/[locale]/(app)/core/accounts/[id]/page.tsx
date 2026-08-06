@@ -87,7 +87,7 @@ export default function AccountProfilePage() {
       key: "date",
       header: tf("date"),
       cell: (row) => (
-        <span className="numeric text-sm">{formatDateTime(row.createdAt)}</span>
+        <span className="identifier text-sm">{formatDateTime(row.createdAt)}</span>
       ),
     },
     {
@@ -258,7 +258,7 @@ export default function AccountProfilePage() {
           <DetailItem
             label={tf("phone")}
             value={formatPhone(account.clientPhone)}
-            numeric
+            identifier
           />
           <DetailItem label={tf("clientId")} value={account.clientId} numeric />
         </DetailGrid>

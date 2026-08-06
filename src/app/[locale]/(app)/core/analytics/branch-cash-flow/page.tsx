@@ -46,12 +46,14 @@ export default function BranchCashFlowPage() {
       key: "branch",
       header: tf("branch"),
       primary: true,
+      sortKey: "branchName",
       cell: (row) => row.branchName,
     },
     {
       key: "operations",
       header: tStats("count"),
       align: "end",
+      sortKey: true,
       cell: (row) => (
         <span className="numeric text-sm">{formatCount(row.operations)}</span>
       ),
@@ -60,6 +62,7 @@ export default function BranchCashFlowPage() {
       key: "deposits",
       header: tDashboard("trendDeposits"),
       align: "end",
+      sortKey: true,
       cell: (row) => (
         <span className="numeric text-sm">{formatNumber(row.deposits, 0)}</span>
       ),
@@ -68,6 +71,7 @@ export default function BranchCashFlowPage() {
       key: "withdrawals",
       header: tDashboard("trendWithdrawals"),
       align: "end",
+      sortKey: true,
       cell: (row) => (
         <span className="numeric text-sm">
           {formatNumber(row.withdrawals, 0)}
@@ -78,6 +82,7 @@ export default function BranchCashFlowPage() {
       key: "netFlow",
       header: tStats("netFlow"),
       align: "end",
+      sortKey: true,
       cell: (row) => (
         <span
           className={

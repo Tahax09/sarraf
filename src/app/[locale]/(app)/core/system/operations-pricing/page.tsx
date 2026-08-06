@@ -30,11 +30,15 @@ export default function OperationsPricingPage() {
       key: "operation",
       header: t("operation"),
       primary: true,
+      sortKey: true,
+      sortValue: (row) => labels.operationType(row.operation),
       cell: (row) => labels.operationType(row.operation),
     },
     {
       key: "hasFee",
       header: tf("hasFee"),
+      sortKey: true,
+      sortValue: (row) => (row.hasFee ? 1 : 0),
       cell: (row) => (
         <Badge tone={row.hasFee ? "info" : "success"}>
           {row.hasFee ? t("paid") : t("free")}
@@ -45,6 +49,10 @@ export default function OperationsPricingPage() {
       key: "fee",
       header: tf("fee"),
       align: "end",
+      sortKey: true,
+      // A percentage and a flat amount are not comparable figures, so the
+      // ordering is on the number as entered — which is what the column shows.
+      sortValue: (row) => (row.hasFee ? (row.feeValue ?? 0) : 0),
       // §7: no fee figure is shown for operations that carry none.
       cell: (row) =>
         row.hasFee && row.feeValue ? (

@@ -99,6 +99,14 @@ export type Client = {
   nameEn: string | null;
   phone: string;
   email: string | null;
+  /**
+   * ISO 3166-1 alpha-2, not a name: the country register already holds both
+   * spellings, so storing the code lets the panel label it in whichever
+   * language it is being read in rather than pinning one at capture time.
+   */
+  nationalityCode: string | null;
+  /** Residential address as written on the KYC record, in one free-text line. */
+  address: string | null;
   accountsCount: number;
   createdAt: string;
 };

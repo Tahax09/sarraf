@@ -7,7 +7,15 @@
  * globals.css), including inside the Arabic RTL layout.
  */
 
-const DEFAULT_COUNTRY_CODE = "218"; // Libya
+/**
+ * The country every number in this panel belongs to. Exported so a phone field
+ * can show the prefix it is going to store rather than restating it.
+ */
+export const DEFAULT_DIAL_CODE = "218";
+/** ISO 3166-1 alpha-2 for the same country — what the flag is drawn from. */
+export const DEFAULT_COUNTRY_ISO = "LY";
+
+const DEFAULT_COUNTRY_CODE = DEFAULT_DIAL_CODE; // Libya
 const LOCALE_FOR_NUMBERS = "en-US"; // Latin digits in both UI languages.
 
 export function normalizePhone(raw: string | null | undefined): string | null {
@@ -37,6 +45,18 @@ export function formatPhone(raw: string | null | undefined): string {
     return `+${DEFAULT_COUNTRY_CODE} ${national}`;
   }
   return `+${DEFAULT_COUNTRY_CODE} ${national.slice(0, 2)} ${national.slice(2, 5)} ${national.slice(5)}`;
+}
+
+/**
+ * The part of a stored number a phone field edits: the national digits, without
+ * the country code the field already shows as a fixed prefix. Anything that is
+ * not a recognisable number comes back as it was, so a field never silently
+ * empties a value it could not parse.
+ */
+export function nationalPhone(raw: string | null | undefined): string {
+  const normalized = normalizePhone(raw);
+  if (!normalized) return raw ?? "";
+  return normalized.slice(DEFAULT_COUNTRY_CODE.length);
 }
 
 export function isValidPhone(raw: string | null | undefined): boolean {

@@ -73,20 +73,29 @@ export default function CurrenciesPage() {
   });
 
   const columns: Column<Currency>[] = [
-    { key: "name", header: tf("name"), primary: true, cell: (row) => row.name },
+    {
+      key: "name",
+      header: tf("name"),
+      primary: true,
+      sortKey: true,
+      cell: (row) => row.name,
+    },
     {
       key: "alpha",
       header: t("alphabeticCode"),
+      sortKey: "alphabeticCode",
       cell: (row) => <span className="numeric text-sm">{row.alphabeticCode}</span>,
     },
     {
       key: "numeric",
       header: t("numericCode"),
+      sortKey: "numericCode",
       cell: (row) => <span className="numeric text-sm">{row.numericCode}</span>,
     },
     {
       key: "precision",
       header: t("precision"),
+      sortKey: true,
       align: "end",
       cell: (row) => <span className="numeric text-sm">{row.precision}</span>,
     },

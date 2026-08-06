@@ -123,7 +123,7 @@ export function ClientAccountPicker({
                     }}
                   >
                     <span className="text-sm text-fg">{client.name}</span>
-                    <span className="numeric text-xs text-fg-muted">
+                    <span className="identifier text-xs text-fg-muted">
                       {formatPhone(client.phone)}
                     </span>
                   </button>

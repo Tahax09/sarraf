@@ -134,6 +134,24 @@ export const currencies: Currency[] = Array.from({ length: 170 }, (_, i) => {
 
 const ACTIVE_CURRENCIES = ["LYD", "USD", "EUR", "GBP", "TND"] as const;
 
+/** Street and district names, so an address reads like one rather than a slug. */
+const STREETS = [
+  "شارع عمر المختار",
+  "شارع الجمهورية",
+  "شارع النصر",
+  "شارع طرابلس",
+  "شارع البحر",
+  "شارع الصريم",
+];
+const DISTRICTS = [
+  "حي الأندلس",
+  "حي النوفليين",
+  "باب بن غشير",
+  "قرقارش",
+  "الظهرة",
+  "سيدي خليفة",
+];
+
 export const clients: Client[] = Array.from({ length: 46 }, (_, i) => ({
   id: `cli_${1000 + i}`,
   ...bilingualName(i % 5 !== 4),
@@ -145,6 +163,20 @@ export const clients: Client[] = Array.from({ length: 46 }, (_, i) => ({
         ? `+2189${intBetween(10, 99)}${intBetween(100000, 999999)}`
         : `9${intBetween(10, 99)}${intBetween(100000, 999999)}`,
   email: i % 4 === 0 ? null : `client${i}@example.ly`,
+  // Mostly Libyan, with a spread of the correspondent countries the branches
+  // actually deal with — and every seventh record missing one, because a KYC
+  // file with a blank field is the case the drawer has to render too.
+  nationalityCode:
+    i % 7 === 6 ? null : ["LY", "LY", "LY", "TN", "EG", "TR", "IT"][i % 7],
+  // Indexed off `i`, not drawn from `rand()`. The generator is seeded and every
+  // later fixture — account numbers, balances, operation amounts — comes out of
+  // the same stream, so a draw added here would silently rewrite all of them.
+  address:
+    i % 6 === 5
+      ? null
+      : `${STREETS[i % STREETS.length]}، ${DISTRICTS[(i * 3) % DISTRICTS.length]}، ${
+          branches[i % branches.length].city
+        }`,
   accountsCount: intBetween(1, 3),
   createdAt: isoAgo(intBetween(30, 800)),
 }));

@@ -50,9 +50,20 @@ export default function BranchesPage() {
   }
 
   const columns: Column<Branch>[] = [
-    { key: "name", header: tf("name"), primary: true, cell: (row) => row.name },
-    { key: "city", header: tf("city"), cell: (row) => row.city },
-    { key: "region", header: tf("region"), cell: (row) => row.region },
+    {
+      key: "name",
+      header: tf("name"),
+      primary: true,
+      sortKey: true,
+      cell: (row) => row.name,
+    },
+    { key: "city", header: tf("city"), sortKey: true, cell: (row) => row.city },
+    {
+      key: "region",
+      header: tf("region"),
+      sortKey: true,
+      cell: (row) => row.region,
+    },
     {
       key: "actions",
       header: tc("actions"),

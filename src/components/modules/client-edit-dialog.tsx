@@ -7,14 +7,21 @@ import { z } from "zod";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
-import { TextInput } from "@/components/ui/field";
+import { PhoneInput, TextInput } from "@/components/ui/field";
+import {
+  isValidPhone,
+  nationalPhone,
+  normalizePhone,
+} from "@/lib/format";
+import { CountryPicker } from "@/components/shared/country-picker";
 import { useSaveClient } from "@/lib/api/hooks";
 import type { Client } from "@/lib/api/types";
 
 /**
  * Edits the fields the panel legitimately owns on a client record: the two
- * names, the phone and the email. Everything else on a client — its id, its
- * account count, when it was opened — belongs to the backend and is never sent.
+ * names, the phone, the email, the nationality and the address. Everything else
+ * on a client — its id, its account count, when it was opened — belongs to the
+ * backend and is never sent.
  */
 export function ClientEditDialog({
   client,
@@ -34,14 +41,28 @@ export function ClientEditDialog({
   const schema = z.object({
     name: z.string().min(2, tv("required")),
     nameEn: z.string(),
-    phone: z.string().min(6, tv("invalidPhone")),
+    // Validated on the normalised number, not the typed one: the field shows a
+    // `+218` prefix and takes the national part, so what the operator types is
+    // only part of what gets stored.
+    phone: z.string().refine(isValidPhone, tv("invalidPhone")),
     email: z.union([z.literal(""), z.string().email(tv("invalidEmail"))]),
+    // Optional on purpose: the two fields postdate the register, and a client
+    // onboarded before them must still be editable without inventing a value.
+    nationalityCode: z.string(),
+    address: z.string(),
   });
   type Values = z.infer<typeof schema>;
 
   const form = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", nameEn: "", phone: "", email: "" },
+    defaultValues: {
+      name: "",
+      nameEn: "",
+      phone: "",
+      email: "",
+      nationalityCode: "",
+      address: "",
+    },
   });
 
   const { reset } = form;
@@ -52,8 +73,10 @@ export function ClientEditDialog({
     reset({
       name: client.name,
       nameEn: client.nameEn ?? "",
-      phone: client.phone,
+      phone: nationalPhone(client.phone),
       email: client.email ?? "",
+      nationalityCode: client.nationalityCode ?? "",
+      address: client.address ?? "",
     });
   }, [client, reset]);
 
@@ -75,8 +98,10 @@ export function ClientEditDialog({
                 id: client.id,
                 name: values.name,
                 nameEn: values.nameEn.trim() || null,
-                phone: values.phone,
+                phone: normalizePhone(values.phone) ?? values.phone,
                 email: values.email.trim() || null,
+                nationalityCode: values.nationalityCode || null,
+                address: values.address.trim() || null,
               });
               onClose();
             })}
@@ -98,11 +123,9 @@ export function ClientEditDialog({
           error={form.formState.errors.nameEn?.message}
           {...form.register("nameEn")}
         />
-        <TextInput
+        <PhoneInput
           label={tf("phone")}
           required
-          type="tel"
-          inputMode="tel"
           error={form.formState.errors.phone?.message}
           {...form.register("phone")}
         />
@@ -112,6 +135,25 @@ export function ClientEditDialog({
           inputMode="email"
           error={form.formState.errors.email?.message}
           {...form.register("email")}
+        />
+
+        <div className="sm:col-span-2">
+          <CountryPicker
+            label={tf("nationality")}
+            required={false}
+            value={form.watch("nationalityCode")}
+            onChange={(code) => form.setValue("nationalityCode", code)}
+            error={form.formState.errors.nationalityCode?.message}
+          />
+        </div>
+
+        {/* One line, full width: a street, a district and a city do not fit in
+            half a dialog, and wrapping them mid-address reads as two fields. */}
+        <TextInput
+          label={tf("address")}
+          className="sm:col-span-2"
+          error={form.formState.errors.address?.message}
+          {...form.register("address")}
         />
       </form>
     </Dialog>

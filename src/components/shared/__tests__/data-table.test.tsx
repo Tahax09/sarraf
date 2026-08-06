@@ -25,6 +25,48 @@ function columns(anyFee: boolean): Column<Row>[] {
 }
 
 describe("DataTable", () => {
+  it("sorts its own rows when the caller does not own the ordering", async () => {
+    const user = userEvent.setup();
+    const sortable: Column<Row>[] = [
+      {
+        key: "name",
+        header: "الاسم",
+        primary: true,
+        sortKey: true,
+        cell: (row) => row.name,
+      },
+      {
+        key: "amount",
+        header: "المبلغ",
+        sortKey: true,
+        cell: (row) => row.amount,
+      },
+    ];
+    renderWithProviders(
+      <DataTable
+        columns={sortable}
+        rows={rows}
+        getRowId={(row) => row.id}
+        caption="t"
+      />,
+    );
+
+    const amounts = () =>
+      screen
+        .getAllByRole("row")
+        .slice(1)
+        .map((row) => within(row).getAllByRole("cell").at(-1)?.textContent);
+
+    // Given order, untouched, until a header is clicked.
+    expect(amounts()).toEqual(["1200", "300"]);
+
+    await user.click(screen.getByRole("button", { name: /المبلغ/ }));
+    expect(amounts()).toEqual(["300", "1200"]);
+
+    await user.click(screen.getByRole("button", { name: /المبلغ/ }));
+    expect(amounts()).toEqual(["1200", "300"]);
+  });
+
   it("drops the fee column entirely when no row carries a fee (§7 item 9)", () => {
     renderWithProviders(
       <DataTable

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export type TabItem<T extends string = string> = {
@@ -27,6 +27,23 @@ export function Tabs<T extends string>({
   className?: string;
 }) {
   const listRef = useRef<HTMLDivElement>(null);
+
+  /*
+   * Keep the selected tab on screen.
+   *
+   * The strip scrolls sideways once there are more tabs than fit, which on a
+   * phone is most of them, and the selected one is regularly outside the
+   * visible run — restored from a previous visit, or reached with the arrow
+   * keys. A reader then sees a panel of rows with nothing marked as selected.
+   * `nearest` only scrolls when it has to, so a tab already in view stays put
+   * and the strip does not jump on every render.
+   */
+  useEffect(() => {
+    const selected = listRef.current?.querySelector<HTMLElement>(
+      '[role="tab"][aria-selected="true"]',
+    );
+    selected?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [value]);
 
   function move(delta: number) {
     const index = items.findIndex((i) => i.value === value);

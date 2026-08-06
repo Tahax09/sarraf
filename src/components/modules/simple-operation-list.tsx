@@ -237,7 +237,7 @@ export function SimpleOperationList({
                 <DetailRow
                   label={t("createdAt")}
                   value={formatDateTime(row.createdAt)}
-                  numeric
+                  identifier
                 />
               </DetailSection>
 
@@ -254,7 +254,7 @@ export function SimpleOperationList({
                 <DetailRow
                   label={t("phone")}
                   value={formatPhone(row.clientPhone)}
-                  numeric
+                  identifier
                 />
                 <DetailRow
                   label={t("accountNumber")}

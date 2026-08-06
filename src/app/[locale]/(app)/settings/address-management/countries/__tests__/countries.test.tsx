@@ -21,7 +21,11 @@ describe("countries register (Round 2 §6)", () => {
     renderWithProviders(<CountriesPage />);
     const table = within(await screen.findByRole("table"));
     expect(
-      screen.getByRole("columnheader", { name: message("countries.nameEn") }),
+      // Substring: the header now carries its sort control, whose accessible
+      // name appends the action to the column name.
+      screen.getByRole("columnheader", {
+        name: new RegExp(message("countries.nameEn")),
+      }),
     ).toBeInTheDocument();
     expect(await table.findByText("Tunisia")).toBeInTheDocument();
     // The Arabic name stays its own column rather than sharing a cell.

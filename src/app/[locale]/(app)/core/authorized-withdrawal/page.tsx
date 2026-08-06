@@ -27,7 +27,7 @@ export default function AuthorizedWithdrawalPage() {
         <span className="flex flex-col">
           <span className="truncate text-sm text-fg">{row.beneficiary.name}</span>
           {row.beneficiary.phone ? (
-            <span className="numeric text-xs text-fg-muted">
+            <span className="identifier text-xs text-fg-muted">
               {formatPhone(row.beneficiary.phone)}
             </span>
           ) : null}
@@ -40,7 +40,7 @@ export default function AuthorizedWithdrawalPage() {
             <DetailRow
               label={tf("beneficiaryPhone")}
               value={formatPhone(row.beneficiary.phone)}
-              numeric
+              identifier
             />
           ) : null}
         </DetailSection>

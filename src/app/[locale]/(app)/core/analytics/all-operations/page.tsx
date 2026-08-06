@@ -209,7 +209,7 @@ export default function AllOperationsPage() {
       align: "end",
       sortKey: "createdAt",
       cell: (row) => (
-        <span className="numeric text-xs text-fg-muted">
+        <span className="identifier text-xs text-fg-muted">
           {formatDateTime(row.createdAt)}
         </span>
       ),
@@ -404,7 +404,7 @@ export default function AllOperationsPage() {
               <DetailRow
                 label={tf("date")}
                 value={formatDateTime(row.createdAt)}
-                numeric
+                identifier
               />
             </DetailSection>
           )}

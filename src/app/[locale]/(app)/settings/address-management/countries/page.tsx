@@ -112,6 +112,7 @@ export default function CountriesPage() {
     {
       key: "name",
       header: t("nameAr"),
+      sortKey: true,
       primary: true,
       cell: (row) => (
         <span className="flex items-center gap-2">
@@ -123,21 +124,27 @@ export default function CountriesPage() {
     {
       key: "nameEn",
       header: t("nameEn"),
+      sortKey: true,
       cell: (row) => row.nameEn,
     },
     {
       key: "code",
       header: t("code"),
+      sortKey: true,
       cell: (row) => <span className="numeric text-sm">{row.code}</span>,
     },
     {
       key: "continent",
       header: t("continent"),
+      sortKey: true,
+      // By the label on screen, so the order matches what is being read.
+      sortValue: (row) => labels.continent(row.continent),
       cell: (row) => labels.continent(row.continent),
     },
     {
       key: "phoneCode",
       header: t("phoneCode"),
+      sortKey: true,
       hidden: !anyPhoneCode,
       cell: (row) => (
         // The `+` is added once, here — the stored value is digits only.

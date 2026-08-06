@@ -7,7 +7,7 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { ArrowDown, ArrowUp, ChevronsUpDown, Rows2, Rows3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCount } from "@/lib/format";
@@ -31,10 +31,17 @@ export type Column<T> = {
   /** Omit from the mobile card body (e.g. the actions column, rendered apart). */
   hideOnCard?: boolean;
   /**
-   * Field the backend orders by. Present means the header is a sort control;
-   * defaults to `key` when set to `true`.
+   * Present means the header is a sort control; `true` means "order by this
+   * column's own key". When the caller passes `onSortChange` this is the field
+   * name the backend orders by; otherwise the table orders the rows it holds.
    */
   sortKey?: string | true;
+  /**
+   * What to compare when the table sorts its own rows. Needed only when the
+   * column shows something the row does not carry under `sortKey` — a computed
+   * total, a nested field, or a label looked up from a code.
+   */
+  sortValue?: (row: T) => string | number | null | undefined;
 };
 
 /**
@@ -85,6 +92,12 @@ export type DataTableProps<T> = {
   pageSizeOptions?: number[];
   /** Leading row-number column. On whenever the table paginates. */
   numbered?: boolean;
+  /**
+   * Ordering owned by the caller, because the backend does the ordering. Leave
+   * both out and any column with a `sortKey` still sorts — the table keeps the
+   * state and orders the rows it was handed, which is what a register that
+   * arrives whole needs.
+   */
   sort?: SortState;
   onSortChange?: (sort: SortState) => void;
   caption?: string;
@@ -97,6 +110,51 @@ export type DataTableProps<T> = {
 };
 
 const DEFAULT_PAGE_SIZES = [...PAGE_SIZES];
+
+/**
+ * Orders the rows the table was handed, for registers that arrive whole.
+ *
+ * Numbers compare as numbers and everything else through a collator for the
+ * language on screen, which is what makes an Arabic name register sort the way
+ * an Arabic reader expects rather than by code point. ISO timestamps sort
+ * correctly as strings, so dates need nothing of their own.
+ *
+ * Blanks sort last in both directions. A row missing the value is not "before
+ * everything" — it is the row with nothing to say, and it belongs at the end
+ * whichever way the column is pointing.
+ */
+function sortRows<T>(
+  rows: T[],
+  sort: SortState,
+  columns: Column<T>[],
+  locale: string,
+): T[] {
+  if (!sort) return rows;
+  const column = columns.find(
+    (col) => (col.sortKey === true ? col.key : col.sortKey) === sort.key,
+  );
+  const read = (row: T) =>
+    column?.sortValue
+      ? column.sortValue(row)
+      : (row as Record<string, unknown>)[sort.key];
+
+  const collator = new Intl.Collator(locale, { numeric: true });
+  const factor = sort.direction === "asc" ? 1 : -1;
+
+  return [...rows].sort((a, b) => {
+    const left = read(a);
+    const right = read(b);
+    const leftEmpty = left === null || left === undefined || left === "";
+    const rightEmpty = right === null || right === undefined || right === "";
+    if (leftEmpty || rightEmpty) {
+      return leftEmpty && rightEmpty ? 0 : leftEmpty ? 1 : -1;
+    }
+    if (typeof left === "number" && typeof right === "number") {
+      return (left - right) * factor;
+    }
+    return collator.compare(String(left), String(right)) * factor;
+  });
+}
 
 export type Density = "comfortable" | "compact";
 
@@ -222,7 +280,6 @@ function SortableHeader({
     <button
       type="button"
       onClick={onClick}
-      aria-label={label}
       className={cn(
         "inline-flex items-center gap-1 rounded-sm text-xs font-medium",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
@@ -230,6 +287,13 @@ function SortableHeader({
       )}
     >
       {children}
+      {/*
+       * The column name stays in the button's accessible name and the action is
+       * appended to it. As an `aria-label` the action replaced the name, so a
+       * screen reader announced a row of buttons all called "sort ascending"
+       * with nothing to say which column each one ordered.
+       */}
+      <span className="sr-only">{label}</span>
       <Icon className="size-3.5 shrink-0" aria-hidden />
     </button>
   );
@@ -261,6 +325,7 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   const t = useTranslations("common");
   const tt = useTranslations("table");
+  const locale = useLocale();
   const [selected, setSelected] = useState<T | null>(null);
   const [clientPageSize, setClientPageSize] = useState(initialPageSize);
   const [requestedPage, setRequestedPage] = useState(1);
@@ -280,6 +345,31 @@ export function DataTable<T>({
     [columns],
   );
 
+  /*
+   * Who does the ordering.
+   *
+   * A register that pages on the server has to sort there too — page 3 of an
+   * unsorted set reordered in the browser is three pages of nonsense — so when
+   * the caller passes `onSortChange` the table only reports the click.
+   *
+   * Everything else arrives whole: settings registers, a client's accounts, the
+   * rows behind a dashboard card. Those used to have no sorting at all, because
+   * wiring each one to a query it does not make was more than the feature was
+   * worth. The table sorts them itself instead, off the same `sortKey` the
+   * server-backed columns declare, so a column becomes sortable by saying so
+   * once and the page does not care which half of the arrangement it is in.
+   */
+  const serverSorted = Boolean(onSortChange);
+  const [localSort, setLocalSort] = useState<SortState>(null);
+  const activeSort = serverSorted ? sort : localSort;
+  const applySort = onSortChange ?? setLocalSort;
+
+  const orderedRows = useMemo(
+    () =>
+      serverSorted ? rows : sortRows(rows, localSort, visibleColumns, locale),
+    [serverSorted, rows, localSort, visibleColumns, locale],
+  );
+
   // In client mode a filter or tab change replaces the row set: go back to the
   // first page rather than stranding the reader on one that no longer exists.
   // Server mode owns its own page number, so it is left alone.
@@ -294,7 +384,10 @@ export function DataTable<T>({
   const page = server ? server.page : Math.min(requestedPage, pageCount);
   const offset = paging ? (page - 1) * pageSize : 0;
   // The server already sent exactly one page; only client mode slices.
-  const pageRows = server || !paginate ? rows : rows.slice(offset, offset + pageSize);
+  const pageRows =
+    server || !paginate
+      ? orderedRows
+      : orderedRows.slice(offset, offset + pageSize);
 
   const goToPage = (next: number) => {
     if (server) server.onPageChange(next);
@@ -365,7 +458,7 @@ export function DataTable<T>({
               ) : null}
               {visibleColumns.map((col) => {
                 const sortKey = sortableColumn(col);
-                const active = Boolean(sortKey) && sort?.key === sortKey;
+                const active = Boolean(sortKey) && activeSort?.key === sortKey;
                 return (
                   <th
                     key={col.key}
@@ -374,7 +467,7 @@ export function DataTable<T>({
                       !sortKey
                         ? undefined
                         : active
-                          ? sort?.direction === "asc"
+                          ? activeSort?.direction === "asc"
                             ? "ascending"
                             : "descending"
                           : "none"
@@ -386,16 +479,16 @@ export function DataTable<T>({
                       col.headerClassName,
                     )}
                   >
-                    {sortKey && onSortChange ? (
+                    {sortKey ? (
                       <SortableHeader
                         active={active}
-                        direction={sort?.direction ?? "asc"}
+                        direction={activeSort?.direction ?? "asc"}
                         label={
-                          active && sort?.direction === "asc"
+                          active && activeSort?.direction === "asc"
                             ? tt("sortDesc")
                             : tt("sortAsc")
                         }
-                        onClick={() => onSortChange(nextSort(sort, sortKey))}
+                        onClick={() => applySort(nextSort(activeSort, sortKey))}
                       >
                         {col.header}
                       </SortableHeader>

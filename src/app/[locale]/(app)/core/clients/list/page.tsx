@@ -13,6 +13,7 @@ import { FilterBar } from "@/components/shared/filter-bar";
 import { DetailRow, DetailSection } from "@/components/shared/detail-drawer";
 import {
   ClientNameText,
+  CountryName,
   PhoneText,
   useClientNameText,
 } from "@/components/shared/cells";
@@ -29,6 +30,7 @@ export default function ClientsPage() {
   const tf = useTranslations("fields");
   const tc = useTranslations("common");
   const tStats = useTranslations("stats");
+  const ts = useTranslations("sections");
   const clientName = useClientNameText();
   const { can } = usePermission();
   const [editing, setEditing] = useState<Client | null>(null);
@@ -156,36 +158,66 @@ export default function ClientsPage() {
               ) : null}
             </>
           )}
-          renderDetail={(row) => {
-            return (
-              <>
-                <DetailSection title={tc("details")}>
-                  <DetailRow label={tf("entryId")} value={row.id} numeric />
-                  <DetailRow label={tf("name")} value={row.name} />
-                  <DetailRow
-                    label={tf("nameEn")}
-                    value={row.nameEn ?? tc("notAvailable")}
-                  />
-                  <DetailRow
-                    label={tf("phone")}
-                    value={formatPhone(row.phone)}
-                    numeric
-                  />
-                  <DetailRow
-                    label={tf("email")}
-                    value={row.email ?? tc("notAvailable")}
-                  />
-                  <DetailRow
-                    label={tf("createdAt")}
-                    value={formatDateTime(row.createdAt)}
-                    numeric
-                  />
-                </DetailSection>
+          /*
+           * Three sections rather than one list of everything. A drawer opened
+           * from a register is answering one of three questions — is this the
+           * right person, how do I reach them, what is on file — and grouping
+           * the rows that way is faster to scan than a flat run of labels.
+           *
+           * Both names get their own row. They are not a translation of one
+           * another: one is what the identity document says and the other is
+           * what a SWIFT message or a correspondent bank will show, and an
+           * operator matching a document against the screen needs to see the
+           * form they are holding, not whichever one the page's language picked.
+           */
+          renderDetail={(row) => (
+            <>
+              <DetailSection title={ts("identity")}>
+                <DetailRow label={tf("nameAr")} value={row.name} />
+                <DetailRow
+                  label={tf("nameEn")}
+                  value={row.nameEn ?? tc("notAvailable")}
+                />
+                <DetailRow
+                  label={tf("nationality")}
+                  value={<CountryName code={row.nationalityCode} />}
+                />
+              </DetailSection>
 
-                <ClientAccounts clientId={row.id} />
-              </>
-            );
-          }}
+              <DetailSection title={ts("contactInformation")}>
+                <DetailRow
+                  label={tf("phone")}
+                  value={formatPhone(row.phone)}
+                  identifier
+                />
+                <DetailRow
+                  label={tf("email")}
+                  value={row.email ?? tc("notAvailable")}
+                  identifier={Boolean(row.email)}
+                />
+                <DetailRow
+                  label={tf("address")}
+                  value={row.address ?? tc("notAvailable")}
+                />
+              </DetailSection>
+
+              <DetailSection title={ts("recordInformation")}>
+                <DetailRow label={tf("entryId")} value={row.id} identifier />
+                <DetailRow
+                  label={tf("createdAt")}
+                  value={formatDateTime(row.createdAt)}
+                  identifier
+                />
+                <DetailRow
+                  label={ts("accounts")}
+                  value={formatCount(row.accountsCount)}
+                  numeric
+                />
+              </DetailSection>
+
+              <ClientAccounts clientId={row.id} />
+            </>
+          )}
         />
       </Card>
 

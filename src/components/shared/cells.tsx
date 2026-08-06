@@ -4,7 +4,8 @@ import { useCallback, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { statusTone, useLabels } from "@/lib/labels";
-import { formatAmount, formatDateTime, formatPhone } from "@/lib/format";
+import { countryFlag, formatAmount, formatDateTime, formatPhone } from "@/lib/format";
+import { useCountries } from "@/lib/api/hooks";
 import type { Fee } from "@/lib/api/types";
 
 /**
@@ -100,7 +101,7 @@ export function ClientCell({
             <span aria-hidden>·</span>
           </>
         ) : null}
-        <span className="numeric shrink-0">{formatPhone(phone)}</span>
+        <span className="identifier shrink-0">{formatPhone(phone)}</span>
       </span>
     </span>
   );
@@ -138,7 +139,7 @@ export function AmountCell({
 
 export function DateCell({ value }: { value: string }) {
   return (
-    <span className="numeric text-xs text-fg-muted">
+    <span className="identifier text-xs text-fg-muted">
       {formatDateTime(value)}
     </span>
   );
@@ -151,7 +152,7 @@ export function StatusCell({ status }: { status: string }) {
 }
 
 export function PhoneText({ value }: { value: string | null }) {
-  return <span className="numeric">{formatPhone(value)}</span>;
+  return <span className="identifier">{formatPhone(value)}</span>;
 }
 
 /**
@@ -169,6 +170,34 @@ export function TransferCell({ from, to }: { from: ReactNode; to: ReactNode }) {
         →
       </span>
       <bdi className="min-w-0 truncate">{to}</bdi>
+    </span>
+  );
+}
+
+/**
+ * A nationality, resolved from its ISO code to the name in the reading
+ * language. The register carries both spellings, so a client record stores the
+ * code and the label is chosen here rather than frozen at capture time.
+ *
+ * The flag leads because it is the fastest thing to scan down a column, but it
+ * is `aria-hidden`: a flag is not a country name, and the name follows it.
+ */
+export function CountryName({ code }: { code: string | null | undefined }) {
+  const locale = useLocale();
+  const tc = useTranslations("common");
+  const countries = useCountries();
+
+  if (!code) return <>{tc("notAvailable")}</>;
+
+  const country = (countries.data ?? []).find((item) => item.code === code);
+  // Still loading, or a code the register does not carry: the code itself is
+  // more use than a dash, and it is what the backend holds.
+  if (!country) return <>{code}</>;
+
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span aria-hidden>{countryFlag(country.code)}</span>
+      <bdi>{locale === "ar" ? country.name : country.nameEn}</bdi>
     </span>
   );
 }

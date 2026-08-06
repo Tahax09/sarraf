@@ -30,6 +30,22 @@ export function SidebarNav({
 
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
+  /*
+   * Each navigation starts the groups over: the one holding the open page is
+   * expanded, the rest are as they were by default.
+   *
+   * Without this, a group the operator collapsed earlier stayed collapsed after
+   * they navigated into it — reached through search or a link from another
+   * page, the current page had no entry on screen and the sidebar gave no clue
+   * where in the tree they were. A manual toggle is about the page being read
+   * now, so it lasts exactly that long.
+   */
+  const [seenPath, setSeenPath] = useState(pathname);
+  if (seenPath !== pathname) {
+    setSeenPath(pathname);
+    setCollapsed({});
+  }
+
   return (
     <nav aria-label={t("mainNavigation")} className="space-y-1 p-3">
       {navGroups.map((group) => {

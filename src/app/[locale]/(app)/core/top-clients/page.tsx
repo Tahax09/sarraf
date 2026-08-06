@@ -30,6 +30,7 @@ export default function TopClientsPage() {
       key: "client",
       header: tf("client"),
       primary: true,
+      sortKey: "name",
       cell: (row) => (
         <ClientCell name={row.name} nameEn={row.nameEn} phone={row.phone} />
       ),
@@ -38,6 +39,7 @@ export default function TopClientsPage() {
       key: "balance",
       header: tf("balance"),
       align: "end",
+      sortKey: true,
       cell: (row) => (
         <span className="numeric text-sm font-medium">
           {formatAmount(row.balance, row.currency)}
@@ -48,6 +50,7 @@ export default function TopClientsPage() {
       key: "operations",
       header: t("operationsCount"),
       align: "end",
+      sortKey: true,
       cell: (row) => (
         <span className="numeric text-sm">{formatCount(row.operations)}</span>
       ),

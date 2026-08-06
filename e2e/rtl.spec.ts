@@ -128,8 +128,13 @@ for (const { locale, prefix, dir } of [
         const out: string[] = [];
         // `.numeric` and `<bdi>` are the two isolation carriers; `td`/`dd` get
         // it from the element rule. All three inherit direction, none set it.
+        //
+        // `.identifier` is the one thing that does set it, and on purpose: a
+        // phone, an IBAN or a timestamp is several runs whose order is part of
+        // the value. It and anything inside it is exempt.
         const selector = "td, dd, bdi, .numeric";
         for (const el of Array.from(document.querySelectorAll(selector))) {
+          if (el.closest(".identifier")) continue;
           const text = (el.textContent ?? "").trim();
           if (!text) continue;
           const style = getComputedStyle(el);

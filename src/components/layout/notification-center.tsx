@@ -159,7 +159,7 @@ export function NotificationCenter() {
                           ) : null}
                           <time
                             dateTime={notification.createdAt}
-                            className="numeric mt-1 block text-[11px] text-fg-subtle"
+                            className="identifier mt-1 block text-[11px] text-fg-subtle"
                           >
                             {formatDateTime(notification.createdAt)}
                           </time>

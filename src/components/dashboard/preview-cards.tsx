@@ -126,7 +126,7 @@ export function RecentOperationsCard() {
       header: tf("date"),
       align: "end",
       cell: (row) => (
-        <span className="numeric text-xs text-fg-muted">
+        <span className="identifier text-xs text-fg-muted">
           {formatDateTime(row.createdAt)}
         </span>
       ),

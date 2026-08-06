@@ -24,7 +24,7 @@ import {
   RecordHeader,
   RecordSection,
 } from "@/components/shared/detail-page";
-import { useClientNameText } from "@/components/shared/cells";
+import { CountryName, useClientNameText } from "@/components/shared/cells";
 import { MaskedField } from "@/components/shared/masked-field";
 import { ClientEditDialog } from "@/components/modules/client-edit-dialog";
 import { useAccounts, useClient } from "@/lib/api/hooks";
@@ -140,7 +140,7 @@ export default function ClientProfilePage() {
         eyebrow={t("profile")}
         title={clientName(client.name, client.nameEn)}
         meta={[
-          <span key="phone" className="numeric">
+          <span key="phone" className="identifier">
             {formatPhone(client.phone)}
           </span>,
           client.email,
@@ -195,16 +195,23 @@ export default function ClientProfilePage() {
 
       <RecordSection title={ts("clientInformation")}>
         <DetailGrid>
-          <DetailItem label={tf("name")} value={client.name} />
+          {/* Both names, each on its own line. One is what the identity
+              document says, the other is what a correspondent bank will show —
+              neither is a translation of the other, so neither is dropped. */}
+          <DetailItem label={tf("nameAr")} value={client.name} />
           <DetailItem
             label={tf("nameEn")}
             value={client.nameEn ?? tc("notAvailable")}
           />
-          <DetailItem label={tf("entryId")} value={client.id} numeric />
+          <DetailItem
+            label={tf("nationality")}
+            value={<CountryName code={client.nationalityCode} />}
+          />
+          <DetailItem label={tf("entryId")} value={client.id} identifier />
           <DetailItem
             label={tf("createdAt")}
             value={formatDateTime(client.createdAt)}
-            numeric
+            identifier
           />
         </DetailGrid>
       </RecordSection>
@@ -214,11 +221,17 @@ export default function ClientProfilePage() {
           <DetailItem
             label={tf("phone")}
             value={formatPhone(client.phone)}
-            numeric
+            identifier
           />
           <DetailItem
             label={tf("email")}
             value={client.email ?? tc("notAvailable")}
+            identifier={Boolean(client.email)}
+          />
+          <DetailItem
+            label={tf("address")}
+            value={client.address ?? tc("notAvailable")}
+            wide
           />
         </DetailGrid>
       </RecordSection>

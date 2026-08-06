@@ -103,10 +103,15 @@ function AccountInfo() {
   }
 
   const user = me.data;
-  const rows: { label: string; value: string; numeric?: boolean }[] = [
+  const rows: {
+    label: string;
+    value: string;
+    numeric?: boolean;
+    identifier?: boolean;
+  }[] = [
     { label: tf("name"), value: user.name },
     { label: tf("username"), value: user.username, numeric: true },
-    { label: tf("phone"), value: formatPhone(user.phone), numeric: true },
+    { label: tf("phone"), value: formatPhone(user.phone), identifier: true },
     { label: tf("userType"), value: labels.userType(user.userType) },
     { label: tf("roles"), value: user.roleNames.join("، ") },
     { label: tf("defaultBranch"), value: user.defaultBranchName },
@@ -130,13 +135,15 @@ function AccountInfo() {
               className="flex items-baseline justify-between gap-4 py-2"
             >
               <dt className="text-xs text-fg-muted">{row.label}</dt>
-              <dd
-                className={cn(
-                  "text-sm text-fg",
-                  row.numeric && "numeric",
-                )}
-              >
-                {row.value || tc("notAvailable")}
+              <dd className="text-sm text-fg">
+                <bdi
+                  className={cn(
+                    row.numeric && "numeric",
+                    row.identifier && "identifier",
+                  )}
+                >
+                  {row.value || tc("notAvailable")}
+                </bdi>
               </dd>
             </div>
           ))}
@@ -312,7 +319,7 @@ function SessionsCard() {
       header: t("lastActive"),
       align: "end",
       cell: (row) => (
-        <span className="numeric text-xs text-fg-muted">
+        <span className="identifier text-xs text-fg-muted">
           {formatDateTime(row.lastActiveAt)}
         </span>
       ),

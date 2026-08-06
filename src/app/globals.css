@@ -189,6 +189,28 @@ body {
 }
 
 /*
+ * Identifiers, which is a different thing from numbers.
+ *
+ * An amount is one run of characters: `1,234.56` reads the same way whichever
+ * direction surrounds it, so it inherits the page's. An identifier is several
+ * runs with a space between them — `+218 91 389 2023`, `LY83 0020 0100 0000`,
+ * `2026-08-05, 14:30` — and a right-to-left base direction orders those runs
+ * right to left, so the country code moves to the end and the IBAN's leading
+ * pair moves to the far side. The characters are all still there; they are in
+ * an order that says something else.
+ *
+ * So this one does force `direction: ltr`, and it is the only thing that does.
+ * Not a style preference: the segment order is part of what the value means.
+ * Applied to an inline span, never a cell — the block keeps the page's
+ * alignment, and only the run order inside it is pinned.
+ */
+.identifier {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
  * Every cell of every register is its own bidi context.
  *
  * A row mixes an Arabic client name with a Latin bank name, an email, a

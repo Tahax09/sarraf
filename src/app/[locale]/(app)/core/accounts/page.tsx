@@ -252,7 +252,7 @@ export default function AccountsPage() {
                 <DetailRow
                   label={tf("phone")}
                   value={formatPhone(row.clientPhone)}
-                  numeric
+                  identifier
                 />
               </DetailSection>
             </>

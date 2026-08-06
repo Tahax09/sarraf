@@ -1,20 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
-import { useLocale, useTranslations } from "next-intl";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { LogOut, Moon, Sun, User as UserIcon, Languages } from "lucide-react";
-import { Link, usePathname, useRouter } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { useTheme } from "@/components/providers/theme-provider";
-import { locales, type Locale } from "@/i18n/routing";
+import { locales } from "@/i18n/routing";
+import {
+  LOCALE_NAMES,
+  useLocaleSwitch,
+} from "@/components/shared/locale-switcher";
 import { apiFetch } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
 import { cn } from "@/lib/utils";
-
-const LOCALE_NAMES: Record<Locale, string> = {
-  ar: "العربية",
-  en: "English",
-};
 
 export function UserMenu({
   name,
@@ -24,13 +22,12 @@ export function UserMenu({
   username: string;
 }) {
   const t = useTranslations("user");
-  const locale = useLocale() as Locale;
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const router = useRouter();
+  // The menu keeps its own markup — `menuitemradio` is what belongs inside a
+  // menu, and the sign-in page's segmented control is not a menu — but the
+  // navigation itself is shared.
+  const { locale, pending, switchLocale } = useLocaleSwitch();
   const { theme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
-  const [pending, startTransition] = useTransition();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,14 +51,6 @@ export function UserMenu({
     .slice(0, 2)
     .map((part) => part[0])
     .join("");
-
-  function switchLocale(next: Locale) {
-    const query = searchParams.toString();
-    startTransition(() => {
-      // Switching language re-renders the whole shell in the other direction.
-      router.replace(`${pathname}${query ? `?${query}` : ""}`, { locale: next });
-    });
-  }
 
   return (
     <div ref={ref} className="relative">
@@ -147,9 +136,25 @@ export function UserMenu({
               await apiFetch<void>(endpoints.logout, { method: "POST" }).catch(
                 () => undefined,
               );
-              // The reason is what stops the sign-in form reading as a session
-              // that dropped on its own.
-              router.push("/login?reason=signedOut");
+              /*
+               * A full page load, not a client navigation.
+               *
+               * Two reasons, and either alone would be enough. Everything this
+               * session cached — client names, balances, the query cache —
+               * lives in memory that a client navigation carries across; a
+               * document load is what actually ends the session on this
+               * machine. And the CSP nonce belongs to the document: the sign-in
+               * page injects the Turnstile script with the nonce it was
+               * rendered with, so reaching it without a new document hands the
+               * script a nonce the enforced policy has never heard of and the
+               * challenge is blocked with nothing on screen to say why.
+               *
+               * The reason is what stops the sign-in form reading as a session
+               * that dropped on its own.
+               */
+              window.location.assign(
+                new URL("/login?reason=signedOut", window.location.origin),
+              );
             }}
             className="flex w-full items-center gap-2 border-t border-border px-3 py-2 text-sm text-danger hover:bg-danger-soft"
           >

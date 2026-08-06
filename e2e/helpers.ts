@@ -31,7 +31,9 @@ export function visible(locator: Locator): Locator {
 export async function login(page: Page) {
   await page.goto("/login");
   // Guards against a stray dev server from another project holding the port.
-  await expect(page.getByRole("heading", { name: t("app.name") })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: t("auth.welcomeTitle") }),
+  ).toBeVisible();
   await page.getByLabel(labelRe("auth.username")).fill("admin");
   await page.getByLabel(labelRe("auth.password")).fill("admin");
   await page.getByRole("button", { name: t("auth.signInCta") }).click();

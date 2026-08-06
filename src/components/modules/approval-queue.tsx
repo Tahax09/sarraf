@@ -416,13 +416,13 @@ function QueueTable<T extends QueueOperation>({
               <DetailRow
                 label={t("createdAt")}
                 value={formatDateTime(row.createdAt)}
-                numeric
+                identifier
               />
               {row.expiresAt ? (
                 <DetailRow
                   label={t("expiresAt")}
                   value={formatDateTime(row.expiresAt)}
-                  numeric
+                  identifier
                 />
               ) : null}
               {row.cancelledReason ? (
@@ -446,7 +446,7 @@ function QueueTable<T extends QueueOperation>({
               <DetailRow
                 label={t("phone")}
                 value={formatPhone(row.clientPhone)}
-                numeric
+                identifier
               />
               <DetailRow
                 label={t("accountNumber")}

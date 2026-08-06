@@ -63,27 +63,31 @@ export function DetailRow({
   label,
   value,
   numeric,
+  identifier,
 }: {
   label: ReactNode;
   value: ReactNode;
+  /** An amount or a count: one run, laid out with the rest of the page. */
   numeric?: boolean;
+  /**
+   * A phone, IBAN, reference or timestamp: several runs whose order carries
+   * meaning, so it is pinned left-to-right instead of following the page.
+   */
+  identifier?: boolean;
 }) {
   return (
     <div className="flex items-start justify-between gap-4 px-3 py-2.5">
       <dt className="text-xs text-fg-muted">{label}</dt>
-      <dd
-        className={cn(
-          "min-w-0 text-end text-sm break-words text-fg",
-          numeric && "numeric",
-        )}
-      >
+      <dd className="min-w-0 text-end text-sm break-words text-fg">
         {/*
-         * Every value here is record data — an amount, an IBAN, a reference, a
-         * client name — read against an Arabic label. `<bdi>` gives each one its
-         * own direction without moving the column: the isolation is on the
-         * inline content, so the row keeps aligning to the page's end edge.
+         * The value is isolated, never re-directed: the row aligns to the page's
+         * end edge and an Arabic name stays Arabic. Only `identifier` values pin
+         * their run order, and they do it on this inner span so the alignment of
+         * the row above is untouched.
          */}
-        <bdi>{value}</bdi>
+        <bdi className={cn(numeric && "numeric", identifier && "identifier")}>
+          {value}
+        </bdi>
       </dd>
     </div>
   );

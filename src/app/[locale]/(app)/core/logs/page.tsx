@@ -107,7 +107,7 @@ export default function LogsPage() {
       sortKey: "createdAt",
       // Every entry carries a timestamp — no blank cells here.
       cell: (row) => (
-        <span className="numeric text-xs text-fg-muted">
+        <span className="identifier text-xs text-fg-muted">
           {formatDateTime(row.createdAt)}
         </span>
       ),
@@ -181,7 +181,7 @@ export default function LogsPage() {
               <DetailRow
                 label={tf("timestamp")}
                 value={formatDateTime(row.createdAt)}
-                numeric
+                identifier
               />
               <DetailRow label={tf("message")} value={row.message} />
             </DetailSection>

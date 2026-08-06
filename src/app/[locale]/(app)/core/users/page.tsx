@@ -10,7 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
-import { Field, SelectInput, TextInput } from "@/components/ui/field";
+import {
+  Field,
+  PhoneInput,
+  SelectInput,
+  TextInput,
+} from "@/components/ui/field";
 import { PageHeader } from "@/components/shared/page-header";
 import { HeaderStatBar } from "@/components/shared/header-stat-bar";
 import { DataTable, type Column } from "@/components/shared/data-table";
@@ -26,7 +31,12 @@ import {
   useUsers,
 } from "@/lib/api/hooks";
 import { useLabels } from "@/lib/labels";
-import { formatCount, isValidPhone } from "@/lib/format";
+import {
+  formatCount,
+  isValidPhone,
+  nationalPhone,
+  normalizePhone,
+} from "@/lib/format";
 import type { User } from "@/lib/api/types";
 
 /** Backend user-type codes; the visible labels come from the dictionary. */
@@ -51,30 +61,46 @@ export default function UsersPage() {
   const [resetting, setResetting] = useState<User | null>(null);
 
   const columns: Column<User>[] = [
-    { key: "name", header: tf("name"), primary: true, cell: (row) => row.name },
+    {
+      key: "name",
+      header: tf("name"),
+      primary: true,
+      sortKey: true,
+      cell: (row) => row.name,
+    },
     {
       key: "username",
       header: tf("username"),
+      sortKey: true,
       cell: (row) => <span className="numeric text-sm">{row.username}</span>,
     },
     {
       key: "phone",
       header: tf("phone"),
+      sortKey: true,
       cell: (row) => <PhoneText value={row.phone} />,
     },
     {
       key: "roles",
       header: tf("roles"),
+      sortKey: true,
+      // Ordered by the names as read, not by the id list behind them.
+      sortValue: (row) => row.roleNames.join("، "),
       cell: (row) => row.roleNames.join("، ") || tc("notAvailable"),
     },
     {
       key: "branch",
       header: tf("defaultBranch"),
+      sortKey: "defaultBranchName",
       cell: (row) => row.defaultBranchName,
     },
     {
       key: "active",
       header: tf("status"),
+      sortKey: true,
+      // Groups the register into active and deactivated, which is the reason
+      // anyone sorts this column.
+      sortValue: (row) => (row.active ? 1 : 0),
       cell: (row) => (
         <Badge tone={row.active ? "success" : "neutral"}>
           {row.active ? tf("active") : tf("inactive")}
@@ -258,7 +284,7 @@ function UserDialog({
     defaultValues: {
       name: user?.name ?? "",
       username: user?.username ?? "",
-      phone: user?.phone ?? "",
+      phone: nationalPhone(user?.phone),
       userType: user?.userType ?? userTypes[0]?.code ?? "",
       roleIds: user?.roleIds ?? [],
       defaultBranchId: user?.defaultBranchId ?? "",
@@ -280,7 +306,13 @@ function UserDialog({
           <Button
             loading={save.isPending}
             onClick={form.handleSubmit(async (values) => {
-              await save.mutateAsync({ id: user?.id, ...values });
+              await save.mutateAsync({
+                id: user?.id,
+                ...values,
+                // The field takes the national part; the register stores the
+                // full number.
+                phone: normalizePhone(values.phone) ?? values.phone,
+              });
               onClose();
             })}
           >
@@ -303,11 +335,9 @@ function UserDialog({
           error={form.formState.errors.username?.message}
           {...form.register("username")}
         />
-        <TextInput
+        <PhoneInput
           label={tf("phone")}
           required
-          numeric
-          inputMode="tel"
           error={form.formState.errors.phone?.message}
           {...form.register("phone")}
         />
