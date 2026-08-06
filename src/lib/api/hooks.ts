@@ -45,7 +45,9 @@ export const qk = {
   me: ["me"] as const,
   dashboard: (part: string) => ["dashboard", part] as const,
   clients: (params?: QueryParams) => ["clients", params ?? {}] as const,
+  client: (id: string) => ["clients", "one", id] as const,
   accounts: (params?: QueryParams) => ["accounts", params ?? {}] as const,
+  account: (id: string) => ["accounts", "one", id] as const,
   operations: (kind: string, params?: QueryParams) =>
     ["operations", kind, params ?? {}] as const,
   exchangeRate: (from: string, to: string) => ["exchange-rate", from, to] as const,
@@ -143,6 +145,80 @@ export const useClients = (params: QueryParams, opts?: Opts<Paged<Client>>) =>
 
 export const useAccounts = (params: QueryParams, opts?: Opts<Paged<Account>>) =>
   usePagedQuery<Account>(qk.accounts(params), endpoints.accounts, params, opts);
+
+/**
+ * One client or one account, for the profile pages the registers open into.
+ *
+ * Fetched by id rather than handed down from the row that was clicked: a
+ * profile reached from a bookmark, a search result or a browser reload must
+ * show the same record as one reached from the register.
+ */
+export const useClient = (id: string, opts?: Opts<Client>) =>
+  useQuery({
+    queryKey: qk.client(id),
+    queryFn: get<Client>(endpoints.client(id)),
+    enabled: Boolean(id),
+    ...opts,
+  });
+
+export const useAccount = (id: string, opts?: Opts<Account>) =>
+  useQuery({
+    queryKey: qk.account(id),
+    queryFn: get<Account>(endpoints.account(id)),
+    enabled: Boolean(id),
+    ...opts,
+  });
+
+/**
+ * Edits to a client's own details. Only the KYC name pair and the contact
+ * fields are sent: identifiers, balances and the account list are the
+ * backend's, and the panel has no business proposing changes to them.
+ */
+export function useSaveClient() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      ...body
+    }: {
+      id: string;
+      name: string;
+      nameEn: string | null;
+      phone: string;
+      email: string | null;
+    }) => apiFetch<Client>(endpoints.client(id), { method: "PATCH", body }),
+    onSuccess: (client) => {
+      qc.invalidateQueries({ queryKey: qk.client(client.id) });
+      // The denormalized client name rides along on accounts and operations, so
+      // every register that carries it is refetched rather than left stale.
+      qc.invalidateQueries({ queryKey: ["clients"] });
+      qc.invalidateQueries({ queryKey: ["accounts"] });
+    },
+  });
+}
+
+/**
+ * Edits to an account's own details — the branch it is booked at and its type.
+ * The number, the IBAN, the currency and the balance are never editable here:
+ * they are set at opening or moved by an operation, not by a form.
+ */
+export function useSaveAccount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      ...body
+    }: {
+      id: string;
+      type: string;
+      branchId: string;
+    }) => apiFetch<Account>(endpoints.account(id), { method: "PATCH", body }),
+    onSuccess: (account) => {
+      qc.invalidateQueries({ queryKey: qk.account(account.id) });
+      qc.invalidateQueries({ queryKey: ["accounts"] });
+    },
+  });
+}
 
 // --------------------------------------------------------- money movement
 export const useWithdrawals = (params: QueryParams) =>

@@ -1,13 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import { Plus } from "lucide-react";
+import { Coins, Plus } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
-import { HeaderStatBar } from "@/components/shared/header-stat-bar";
+import { HeaderStatBar, STAT_COLORS } from "@/components/shared/header-stat-bar";
 import { DataTable, type Column } from "@/components/shared/data-table";
 import {
   DetailRow,
@@ -62,11 +62,17 @@ export function SimpleOperationList({
   registerHref,
   useData,
   showIban = false,
+  statIcon,
+  statColor = "var(--color-accent)",
 }: {
   title: string;
   amountLabel: string;
   registerHref: string;
   useData: (params: QueryParams) => ListQuery;
+  /** Icon on the record-count card — the module's own, as in the sidebar. */
+  statIcon?: ReactNode;
+  /** Colour of that card's icon tile. See `HeaderStat.color`. */
+  statColor?: string;
   /**
    * Withdrawals are settled against the account's IBAN, so the register shows
    * it beside the account number. Deposits are taken over the counter and do
@@ -180,11 +186,15 @@ export function SimpleOperationList({
             label: tStats("count"),
             value: formatCount(total),
             numeric: true,
+            icon: statIcon,
+            color: statColor,
           },
-          ...totalsByCurrency.map(([currency, sum]) => ({
+          ...totalsByCurrency.map(([currency, sum], index) => ({
             label: `${tStats("pageTotal")} — ${isolate(currency)}`,
             value: formatAmount(sum, currency),
             numeric: true,
+            icon: <Coins className="size-4" aria-hidden />,
+            color: STAT_COLORS[index % STAT_COLORS.length],
           })),
         ]}
       />

@@ -1,7 +1,13 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { FileDown } from "lucide-react";
+import {
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  FileDown,
+  ListOrdered,
+  Scale,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
@@ -125,24 +131,29 @@ export default function BranchCashFlowPage() {
             label: tStats("count"),
             value: formatCount(totals.operations),
             numeric: true,
+            icon: <ListOrdered className="size-4" aria-hidden />,
+            color: "var(--color-accent)",
           },
           {
             label: tDashboard("trendDeposits"),
             value: formatNumber(totals.deposits, 0),
             numeric: true,
             tone: "success",
+            icon: <ArrowDownToLine className="size-4" aria-hidden />,
           },
           {
             label: tDashboard("trendWithdrawals"),
             value: formatNumber(totals.withdrawals, 0),
             numeric: true,
             tone: "danger",
+            icon: <ArrowUpFromLine className="size-4" aria-hidden />,
           },
           {
             label: tStats("netFlow"),
             value: formatNumber(totals.netFlow, 0),
             numeric: true,
             tone: totals.netFlow < 0 ? "danger" : "success",
+            icon: <Scale className="size-4" aria-hidden />,
           },
         ]}
       />

@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
-import { Plus } from "lucide-react";
+import { Coins, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
@@ -127,6 +127,8 @@ export default function CurrenciesPage() {
             label: tStats("count"),
             value: formatCount(query.data?.length ?? 0),
             numeric: true,
+            icon: <Coins className="size-4" aria-hidden />,
+            color: "var(--color-accent)",
           },
         ]}
       />

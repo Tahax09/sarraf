@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { ShieldCheck } from "lucide-react";
 import { ApprovalQueue } from "@/components/modules/approval-queue";
 import { DetailRow, DetailSection } from "@/components/shared/detail-drawer";
 import { useAuthorizedWithdrawals } from "@/lib/api/hooks";
@@ -19,6 +20,8 @@ export default function AuthorizedWithdrawalPage() {
       registerHref="/core/authorized-withdrawal/register"
       kind="authorized-withdrawals"
       useData={useAuthorizedWithdrawals}
+      statIcon={<ShieldCheck className="size-4" aria-hidden />}
+      statColor="var(--color-chart-withdrawal)"
       beneficiaryHeader={tf("beneficiary")}
       renderBeneficiaryCell={(row) => (
         <span className="flex flex-col">

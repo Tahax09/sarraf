@@ -21,7 +21,10 @@ export const endpoints = {
   },
 
   clients: "/clients",
+  /** One client — the profile page, and the target of an edit. */
+  client: (id: string) => `/clients/${id}`,
   accounts: "/accounts",
+  account: (id: string) => `/accounts/${id}`,
   accountBalance: (accountId: string) => `/accounts/${accountId}/balance`,
 
   withdrawals: "/operations/withdrawals",

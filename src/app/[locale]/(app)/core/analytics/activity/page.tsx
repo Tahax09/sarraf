@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
+import { Activity, CalendarDays, CalendarRange } from "lucide-react";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
 import { HeaderStatBar } from "@/components/shared/header-stat-bar";
@@ -98,11 +99,15 @@ export default function ActivityPage() {
             label: t("totalActivities"),
             value: formatCount(totalActivities),
             numeric: true,
+            icon: <Activity className="size-4" aria-hidden />,
+            color: "var(--color-accent)",
           },
           {
             label: t("sevenDayBreakdown"),
             value: formatCount(inWindow),
             numeric: true,
+            icon: <CalendarRange className="size-4" aria-hidden />,
+            color: "var(--color-chart-4)",
           },
           {
             label: tStats("today"),
@@ -110,6 +115,8 @@ export default function ActivityPage() {
               breakdown[breakdown.length - 1]?.count ?? 0,
             ),
             numeric: true,
+            icon: <CalendarDays className="size-4" aria-hidden />,
+            color: "var(--color-chart-6)",
           },
         ]}
       />

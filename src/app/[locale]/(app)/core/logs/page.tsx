@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
+import { CircleAlert, ScrollText, TriangleAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
@@ -123,18 +124,22 @@ export default function LogsPage() {
             label: tStats("count"),
             value: formatCount(total),
             numeric: true,
+            icon: <ScrollText className="size-4" aria-hidden />,
+            color: "var(--color-accent)",
           },
           {
             label: t("levelError"),
             value: formatCount(errorCount.data?.total ?? 0),
             numeric: true,
             tone: "danger",
+            icon: <CircleAlert className="size-4" aria-hidden />,
           },
           {
             label: t("levelWarning"),
             value: formatCount(warningCount.data?.total ?? 0),
             numeric: true,
             tone: "warning",
+            icon: <TriangleAlert className="size-4" aria-hidden />,
           },
         ]}
       />

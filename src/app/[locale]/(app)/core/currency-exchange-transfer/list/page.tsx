@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { ArrowLeftRight } from "lucide-react";
 import { TransferList } from "@/components/modules/transfer-list";
 import { DetailRow, DetailSection } from "@/components/shared/detail-drawer";
 import { useCeftOperations } from "@/lib/api/hooks";
@@ -17,6 +18,8 @@ export default function CeftListPage() {
       amountLabel={tf("sentAmount")}
       registerHref="/core/currency-exchange-transfer/register"
       useData={useCeftOperations}
+      statIcon={<ArrowLeftRight className="size-4" aria-hidden />}
+      statColor="var(--color-chart-exchange)"
       // §7: the two amount columns are distinctly labelled — sent vs. converted.
       amountColumns={[
         {

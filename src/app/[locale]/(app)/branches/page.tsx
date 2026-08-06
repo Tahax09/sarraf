@@ -91,7 +91,7 @@ export default function BranchesPage() {
             value: formatCount(query.data?.length ?? 0),
             numeric: true,
             icon: <Building2 className="size-4" aria-hidden />,
-            iconTone: "accent",
+            color: "var(--color-accent)",
           },
         ]}
       />

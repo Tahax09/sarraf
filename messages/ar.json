@@ -27,6 +27,7 @@
     "delete": "حذف",
     "details": "التفاصيل",
     "view": "عرض",
+    "viewFull": "عرض التفاصيل الكاملة",
     "actions": "الإجراءات",
     "approve": "اعتماد",
     "reject": "رفض",
@@ -326,7 +327,8 @@
     "today": "اليوم",
     "yesterday": "أمس",
     "netFlow": "صافي التدفق",
-    "pageTotal": "إجمالي الصفحة"
+    "pageTotal": "إجمالي الصفحة",
+    "pageAccounts": "الحسابات في هذه الصفحة"
   },
   "masked": {
     "revealLabel": "إظهار {field}",
@@ -427,10 +429,15 @@
     "title": "العملاء",
     "filterByName": "الاسم",
     "filterByEmail": "البريد الإلكتروني",
-    "filterByPhone": "رقم الهاتف"
+    "filterByPhone": "رقم الهاتف",
+    "profile": "ملف العميل",
+    "edit": "تعديل بيانات العميل"
   },
   "accounts": {
-    "title": "الحسابات"
+    "title": "الحسابات",
+    "profile": "ملف الحساب",
+    "edit": "تعديل الحساب",
+    "recentOperations": "أحدث العمليات"
   },
   "withdrawal": {
     "listTitle": "عمليات السحب",

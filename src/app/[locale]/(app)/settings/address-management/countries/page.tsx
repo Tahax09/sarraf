@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
-import { Plus } from "lucide-react";
+import { Globe, Map, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
@@ -195,6 +195,8 @@ export default function CountriesPage() {
             label: tStats("count"),
             value: formatCount(query.data?.length ?? 0),
             numeric: true,
+            icon: <Globe className="size-4" aria-hidden />,
+            color: "var(--color-accent)",
           },
           {
             label: t("continent"),
@@ -202,6 +204,8 @@ export default function CountriesPage() {
               new Set((query.data ?? []).map((c) => c.continent)).size,
             ),
             numeric: true,
+            icon: <Map className="size-4" aria-hidden />,
+            color: "var(--color-chart-6)",
           },
         ]}
       />

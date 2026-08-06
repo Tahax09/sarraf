@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { ArrowLeftRight, Users } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Tabs } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/shared/page-header";
@@ -63,6 +64,8 @@ export default function TopClientsPage() {
             label: tStats("count"),
             value: formatCount(rows.length),
             numeric: true,
+            icon: <Users className="size-4" aria-hidden />,
+            color: "var(--color-accent)",
           },
           {
             label: t("operationsCount"),
@@ -70,6 +73,8 @@ export default function TopClientsPage() {
               rows.reduce((sum, row) => sum + row.operations, 0),
             ),
             numeric: true,
+            icon: <ArrowLeftRight className="size-4" aria-hidden />,
+            color: "var(--color-chart-4)",
           },
         ]}
       />

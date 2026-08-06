@@ -2,13 +2,13 @@
 
 import { useMemo, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import { Plus } from "lucide-react";
+import { Coins, Plus } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { TextInput } from "@/components/ui/field";
 import { PageHeader } from "@/components/shared/page-header";
-import { HeaderStatBar } from "@/components/shared/header-stat-bar";
+import { HeaderStatBar, STAT_COLORS } from "@/components/shared/header-stat-bar";
 import { DataTable, type Column } from "@/components/shared/data-table";
 import { DetailRow, DetailSection } from "@/components/shared/detail-drawer";
 import {
@@ -45,10 +45,16 @@ export function TransferList<T extends TransferOperation>({
   useData,
   amountColumns,
   renderExtraDetail,
+  statIcon,
+  statColor = "var(--color-accent)",
 }: {
   title: string;
   amountLabel: string;
   registerHref: string;
+  /** Icon on the record-count card — the module's own, as in the sidebar. */
+  statIcon?: ReactNode;
+  /** Colour of that card's icon tile. See `HeaderStat.color`. */
+  statColor?: string;
   useData: (params: QueryParams) => {
     data?: Paged<T>;
     isLoading: boolean;
@@ -119,11 +125,15 @@ export function TransferList<T extends TransferOperation>({
             label: tStats("count"),
             value: formatCount(total),
             numeric: true,
+            icon: statIcon,
+            color: statColor,
           },
-          ...totals.map(([currency, sum]) => ({
+          ...totals.map(([currency, sum], index) => ({
             label: `${tStats("pageTotal")} — ${isolate(currency)}`,
             value: formatAmount(sum, currency),
             numeric: true,
+            icon: <Coins className="size-4" aria-hidden />,
+            color: STAT_COLORS[index % STAT_COLORS.length],
           })),
         ]}
       />

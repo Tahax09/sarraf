@@ -78,6 +78,38 @@ describe("DataTable", () => {
     expect(await screen.findByText("8f2c9d1e4a")).toBeInTheDocument();
   });
 
+  it("renders drawer actions and closes the drawer when one of them asks", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <DataTable
+        columns={columns(false)}
+        rows={rows}
+        getRowId={(row) => row.id}
+        caption="t"
+        detailTitle={(row) => row.name}
+        renderDetail={(row) => (
+          <DetailSection title="d">
+            <DetailRow label="id" value={row.id} numeric />
+          </DetailSection>
+        )}
+        detailFooter={(row, close) => (
+          <button type="button" onClick={close}>
+            {`edit ${row.name}`}
+          </button>
+        )}
+      />,
+    );
+
+    const table = screen.getByRole("table");
+    await user.click(within(table).getByText("شركة النور"));
+
+    // The action opening a dialog of its own has to be able to dismiss the
+    // drawer first, or two modals fight over the focus trap.
+    const action = await screen.findByRole("button", { name: "edit شركة النور" });
+    await user.click(action);
+    expect(screen.queryByText("8f2c9d1e4a")).not.toBeInTheDocument();
+  });
+
   it("pages at 10 rows and keeps numbering running across pages", async () => {
     const user = userEvent.setup();
     const many: Row[] = Array.from({ length: 23 }, (_, index) => ({

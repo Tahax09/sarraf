@@ -2,7 +2,14 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { FileDown, Printer } from "lucide-react";
+import {
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  FileDown,
+  ListOrdered,
+  Printer,
+  Scale,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { TextInput } from "@/components/ui/field";
@@ -266,24 +273,29 @@ export default function ReportsPage() {
             label: tStats("count"),
             value: formatCount(totals?.operations ?? 0),
             numeric: true,
+            icon: <ListOrdered className="size-4" aria-hidden />,
+            color: "var(--color-accent)",
           },
           {
             label: tDashboard("trendDeposits"),
             value: formatNumber(totals?.deposits ?? 0, 0),
             numeric: true,
             tone: "success",
+            icon: <ArrowDownToLine className="size-4" aria-hidden />,
           },
           {
             label: tDashboard("trendWithdrawals"),
             value: formatNumber(totals?.withdrawals ?? 0, 0),
             numeric: true,
             tone: "danger",
+            icon: <ArrowUpFromLine className="size-4" aria-hidden />,
           },
           {
             label: tStats("netFlow"),
             value: formatNumber(totals?.netFlow ?? 0, 0),
             numeric: true,
             tone: (totals?.netFlow ?? 0) < 0 ? "danger" : "success",
+            icon: <Scale className="size-4" aria-hidden />,
           },
         ]}
       />

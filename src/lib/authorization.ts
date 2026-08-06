@@ -33,6 +33,15 @@ export type RoutePermission = {
  */
 const EXPLICIT_ROUTES: RoutePermission[] = [
   {
+    // The client register lives at `/core/clients/list`, so a client profile at
+    // `/core/clients/<id>` matches no nav entry and would otherwise be reachable
+    // by anyone signed in.
+    prefix: "/core/clients",
+    module: "clients",
+    action: "view",
+    labelKey: "clients",
+  },
+  {
     prefix: "/core/withdrawal/register",
     module: "withdrawal",
     action: "create",

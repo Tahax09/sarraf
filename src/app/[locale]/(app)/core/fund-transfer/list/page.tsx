@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { Repeat } from "lucide-react";
 import { TransferList } from "@/components/modules/transfer-list";
 import { AmountCell } from "@/components/shared/cells";
 import { useFundTransfers } from "@/lib/api/hooks";
@@ -16,6 +17,8 @@ export default function FundTransferListPage() {
       amountLabel={tf("transferAmount")}
       registerHref="/core/fund-transfer/register"
       useData={useFundTransfers}
+      statIcon={<Repeat className="size-4" aria-hidden />}
+      statColor="var(--color-chart-4)"
       amountColumns={[
         {
           key: "amount",

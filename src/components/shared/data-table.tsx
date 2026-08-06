@@ -64,6 +64,12 @@ export type DataTableProps<T> = {
   /** Detail-drawer content. Raw IDs and secondary fields belong here. */
   renderDetail?: (row: T) => ReactNode;
   detailTitle?: (row: T) => ReactNode;
+  /**
+   * Actions pinned to the bottom of the drawer — "open the full record",
+   * "edit". `close` dismisses the drawer, so an action that opens a dialog of
+   * its own does not stack two modals on top of each other.
+   */
+  detailFooter?: (row: T, close: () => void) => ReactNode;
   /** Row-level actions, rendered in a trailing cell and on the mobile card. */
   renderActions?: (row: T) => ReactNode;
   /**
@@ -241,6 +247,7 @@ export function DataTable<T>({
   emptyAction,
   renderDetail,
   detailTitle,
+  detailFooter,
   renderActions,
   paginate = true,
   pagination,
@@ -589,6 +596,11 @@ export function DataTable<T>({
           open={selected !== null}
           onClose={() => setSelected(null)}
           title={selected && detailTitle ? detailTitle(selected) : t("details")}
+          footer={
+            selected && detailFooter
+              ? detailFooter(selected, () => setSelected(null))
+              : undefined
+          }
         >
           {selected ? renderDetail(selected) : null}
         </DetailDrawer>

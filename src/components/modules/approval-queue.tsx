@@ -2,11 +2,11 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import { Check, Plus, X } from "lucide-react";
+import { Check, Coins, Plus, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Button, buttonStyles } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
-import { HeaderStatBar } from "@/components/shared/header-stat-bar";
+import { HeaderStatBar, STAT_COLORS } from "@/components/shared/header-stat-bar";
 import { StatusTabbedList } from "@/components/shared/status-tabbed-list";
 import { DataTable, type Column } from "@/components/shared/data-table";
 import { DetailRow, DetailSection } from "@/components/shared/detail-drawer";
@@ -71,11 +71,17 @@ export function ApprovalQueue<T extends QueueOperation>({
   approveBody,
   cancelTitle,
   approveTitle,
+  statIcon,
+  statColor = "var(--color-accent)",
 }: {
   title: string;
   amountLabel: string;
   registerHref: string;
   kind: "authorized-withdrawals" | "external-transfers";
+  /** Icon on the record-count card — the module's own, as in the sidebar. */
+  statIcon?: ReactNode;
+  /** Colour of that card's icon tile when nothing is waiting. */
+  statColor?: string;
   useData: (params: QueryParams) => {
     data?: Paged<T>;
     isLoading: boolean;
@@ -133,6 +139,8 @@ export function ApprovalQueue<T extends QueueOperation>({
             beneficiaryHeader={beneficiaryHeader}
             renderBeneficiaryCell={renderBeneficiaryCell}
             renderBeneficiaryDetail={renderBeneficiaryDetail}
+            statIcon={statIcon}
+            statColor={statColor}
             onAction={(row, action) => setConfirming({ row, action })}
           />
         )}
@@ -222,6 +230,8 @@ function QueueTable<T extends QueueOperation>({
   beneficiaryHeader,
   renderBeneficiaryCell,
   renderBeneficiaryDetail,
+  statIcon,
+  statColor,
   onAction,
 }: {
   status: QueueTab;
@@ -237,6 +247,8 @@ function QueueTable<T extends QueueOperation>({
   beneficiaryHeader: ReactNode;
   renderBeneficiaryCell: (row: T) => ReactNode;
   renderBeneficiaryDetail: (row: T) => ReactNode;
+  statIcon?: ReactNode;
+  statColor?: string;
   onAction: (row: T, action: "approve" | "cancel") => void;
 }) {
   const t = useTranslations("fields");
@@ -357,11 +369,18 @@ function QueueTable<T extends QueueOperation>({
             value: formatCount(total),
             numeric: true,
             tone: pending ? "warning" : "default",
+            icon: statIcon,
+            // Waiting work is amber whatever the module's own colour is: the
+            // reserve tab holding records is the one figure on this page an
+            // operator has to act on.
+            color: pending ? "var(--color-warning)" : statColor,
           },
-          ...totals.map(([currency, sum]) => ({
+          ...totals.map(([currency, sum], index) => ({
             label: `${tStats("pageTotal")} — ${isolate(currency)}`,
             value: formatAmount(sum, currency),
             numeric: true,
+            icon: <Coins className="size-4" aria-hidden />,
+            color: STAT_COLORS[index % STAT_COLORS.length],
           })),
         ]}
       />

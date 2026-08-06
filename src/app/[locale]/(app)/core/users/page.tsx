@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
-import { Plus } from "lucide-react";
+import { Plus, UserCheck, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -143,6 +143,8 @@ export default function UsersPage() {
             label: tStats("count"),
             value: formatCount(query.data?.length ?? 0),
             numeric: true,
+            icon: <Users className="size-4" aria-hidden />,
+            color: "var(--color-accent)",
           },
           {
             label: tf("active"),
@@ -151,6 +153,7 @@ export default function UsersPage() {
             ),
             numeric: true,
             tone: "success",
+            icon: <UserCheck className="size-4" aria-hidden />,
           },
         ]}
       />

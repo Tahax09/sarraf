@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { Send } from "lucide-react";
 import { ApprovalQueue } from "@/components/modules/approval-queue";
 import { DetailRow, DetailSection } from "@/components/shared/detail-drawer";
 import { MaskedField } from "@/components/shared/masked-field";
@@ -24,6 +25,8 @@ export default function ExternalTransferPage() {
       registerHref="/core/external-transfer/register"
       kind="external-transfers"
       useData={useExternalTransfers}
+      statIcon={<Send className="size-4" aria-hidden />}
+      statColor="var(--color-chart-6)"
       beneficiaryHeader={tf("bankName")}
       renderBeneficiaryCell={(row) => (
         <span className="flex min-w-0 flex-col">

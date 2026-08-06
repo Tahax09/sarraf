@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { FileDown } from "lucide-react";
+import { FileDown, LayoutList, ListOrdered } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
@@ -269,6 +269,8 @@ export default function AllOperationsPage() {
             label: tStats("count"),
             value: formatCount(total),
             numeric: true,
+            icon: <ListOrdered className="size-4" aria-hidden />,
+            color: "var(--color-accent)",
           },
           {
             label: tc("showing", {
@@ -278,6 +280,8 @@ export default function AllOperationsPage() {
             }),
             value: formatCount(rows.length),
             numeric: true,
+            icon: <LayoutList className="size-4" aria-hidden />,
+            color: "var(--color-chart-4)",
           },
         ]}
       />

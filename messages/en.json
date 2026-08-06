@@ -27,6 +27,7 @@
     "delete": "Delete",
     "details": "Details",
     "view": "View",
+    "viewFull": "View full details",
     "actions": "Actions",
     "approve": "Approve",
     "reject": "Reject",
@@ -326,7 +327,8 @@
     "today": "Today",
     "yesterday": "Yesterday",
     "netFlow": "Net flow",
-    "pageTotal": "Page total"
+    "pageTotal": "Page total",
+    "pageAccounts": "Accounts on this page"
   },
   "masked": {
     "revealLabel": "Reveal {field}",
@@ -427,10 +429,15 @@
     "title": "Clients",
     "filterByName": "Name",
     "filterByEmail": "Email",
-    "filterByPhone": "Phone"
+    "filterByPhone": "Phone",
+    "profile": "Client profile",
+    "edit": "Edit client"
   },
   "accounts": {
-    "title": "Accounts"
+    "title": "Accounts",
+    "profile": "Account profile",
+    "edit": "Edit account",
+    "recentOperations": "Recent operations"
   },
   "withdrawal": {
     "listTitle": "Withdrawals",

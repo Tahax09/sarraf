@@ -1,7 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import { Pencil, Users, Wallet } from "lucide-react";
+import { Link } from "@/i18n/navigation";
+import { Button, buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
 import { HeaderStatBar } from "@/components/shared/header-stat-bar";
@@ -13,7 +16,9 @@ import {
   PhoneText,
   useClientNameText,
 } from "@/components/shared/cells";
+import { ClientEditDialog } from "@/components/modules/client-edit-dialog";
 import { useAccounts, useClients } from "@/lib/api/hooks";
+import { usePermission } from "@/lib/use-permission";
 import { formatAmount, formatCount, formatDateTime, formatPhone } from "@/lib/format";
 import { useTableQuery } from "@/lib/use-table-query";
 import { useFilters, type FilterDef } from "@/lib/filters";
@@ -25,6 +30,8 @@ export default function ClientsPage() {
   const tc = useTranslations("common");
   const tStats = useTranslations("stats");
   const clientName = useClientNameText();
+  const { can } = usePermission();
+  const [editing, setEditing] = useState<Client | null>(null);
 
   const filterDefs: FilterDef[] = [
     { key: "name", type: "text", label: t("filterByName") },
@@ -45,6 +52,12 @@ export default function ClientsPage() {
   const query = useClients(table.params);
   const rows = useMemo(() => query.data?.items ?? [], [query.data]);
   const total = query.data?.total ?? 0;
+  // Rows on screen, not the whole register — the backend publishes no aggregate
+  // over the result set, and the label says "page" for that reason.
+  const pageAccounts = useMemo(
+    () => rows.reduce((sum, row) => sum + row.accountsCount, 0),
+    [rows],
+  );
 
   const columns: Column<Client>[] = [
     {
@@ -86,6 +99,17 @@ export default function ClientsPage() {
             label: tStats("count"),
             value: formatCount(total),
             numeric: true,
+            icon: <Users className="size-4" aria-hidden />,
+            color: "var(--color-accent)",
+          },
+          {
+            // Accounts held by the clients on this page — the register's own
+            // count answers "how many clients", not "how much banking".
+            label: tStats("pageAccounts"),
+            value: formatCount(pageAccounts),
+            numeric: true,
+            icon: <Wallet className="size-4" aria-hidden />,
+            color: "var(--color-chart-deposit)",
           },
         ]}
       />
@@ -111,6 +135,27 @@ export default function ClientsPage() {
           sort={table.sort}
           onSortChange={table.setSort}
           detailTitle={(row) => clientName(row.name, row.nameEn)}
+          detailFooter={(row, close) => (
+            <>
+              <Link
+                href={`/core/clients/${row.id}`}
+                className={buttonStyles({ variant: "secondary" })}
+              >
+                {tc("viewFull")}
+              </Link>
+              {can("clients", "create") ? (
+                <Button
+                  onClick={() => {
+                    close();
+                    setEditing(row);
+                  }}
+                >
+                  <Pencil className="size-4" aria-hidden />
+                  {tc("edit")}
+                </Button>
+              ) : null}
+            </>
+          )}
           renderDetail={(row) => {
             return (
               <>
@@ -143,6 +188,12 @@ export default function ClientsPage() {
           }}
         />
       </Card>
+
+      <ClientEditDialog
+        client={editing}
+        open={editing !== null}
+        onClose={() => setEditing(null)}
+      />
     </div>
   );
 }

@@ -19,6 +19,10 @@ type FixtureRequest = {
 const state = {
   authorizedWithdrawals: [...db.authorizedWithdrawals],
   externalTransfers: [...db.externalTransfers],
+  // Editable in fixture mode, so a name or a branch changed in the panel is
+  // still changed after navigating away — the same thing a backend would do.
+  clients: [...db.clients],
+  accounts: [...db.accounts],
   operationRules: { ...db.operationRules },
   currencies: [...db.currencies],
   countries: [...db.countries],
@@ -196,6 +200,40 @@ export async function fixtureFetch<T>(
       target.cancelledReason = reason;
       return target as T;
     }
+    // Client and account edits. Only the fields the forms send are written —
+    // identifiers, balances and IBANs are not editable from the panel, so a
+    // body carrying one would be ignored here exactly as the backend ignores it.
+    if (p.startsWith("/clients/") && method === "PATCH") {
+      const client = state.clients.find((c) => c.id === p.split("/").at(-1));
+      if (!client) throw new ApiError("Client not found", 404);
+      const payload = body as {
+        name: string;
+        nameEn: string | null;
+        phone: string;
+        email: string | null;
+      };
+      Object.assign(client, payload);
+      // The name is denormalized onto every account and operation the client
+      // owns, so the copies move with it.
+      for (const account of state.accounts) {
+        if (account.clientId !== client.id) continue;
+        account.clientName = client.name;
+        account.clientNameEn = client.nameEn;
+        account.clientPhone = client.phone;
+      }
+      return client as T;
+    }
+    if (p.startsWith("/accounts/") && method === "PATCH") {
+      const account = state.accounts.find((a) => a.id === p.split("/").at(-1));
+      if (!account) throw new ApiError("Account not found", 404);
+      const payload = body as { type: string; branchId: string };
+      account.type = payload.type;
+      account.branchId = payload.branchId;
+      account.branchName =
+        state.branches.find((b) => b.id === payload.branchId)?.name ??
+        account.branchName;
+      return account as T;
+    }
     if (p === "/settings/operation-rules") {
       state.operationRules = {
         ...state.operationRules,
@@ -252,7 +290,7 @@ export async function fixtureFetch<T>(
       const id = p.split("/").at(-1)!;
       if (method === "DELETE") {
         // Mirrors the backend guard: a currency in use cannot be removed.
-        const inUse = db.accounts.some(
+        const inUse = state.accounts.some(
           (a) =>
             a.currency ===
             state.currencies.find((c) => c.id === id)?.alphabeticCode,
@@ -370,8 +408,8 @@ export async function fixtureFetch<T>(
 
     case "/dashboard/summary":
       return {
-        totalClients: db.clients.length,
-        totalAccounts: db.accounts.length,
+        totalClients: state.clients.length,
+        totalAccounts: state.accounts.length,
         todayOperations: db.ledger.filter(
           (l) => l.createdAt.slice(0, 10) === new Date().toISOString().slice(0, 10),
         ).length,
@@ -392,8 +430,8 @@ export async function fixtureFetch<T>(
       return db.currencyBalances as T;
     case "/dashboard/top-clients": {
       const mode = params?.mode ?? "balance";
-      const enriched = db.clients.map((c) => {
-        const owned = db.accounts.filter((a) => a.clientId === c.id);
+      const enriched = state.clients.map((c) => {
+        const owned = state.accounts.filter((a) => a.clientId === c.id);
         return {
           ...c,
           balance: Number(owned.reduce((s, a) => s + a.balance, 0).toFixed(3)),
@@ -410,7 +448,7 @@ export async function fixtureFetch<T>(
       return db.ledger.slice(0, 8) as T;
 
     case "/clients": {
-      const filtered = db.clients.filter(
+      const filtered = state.clients.filter(
         (c) =>
           // Either spelling answers a name filter: the register is bilingual.
           (matches(c.name, params?.name) ||
@@ -422,7 +460,7 @@ export async function fixtureFetch<T>(
     }
 
     case "/accounts": {
-      const filtered = db.accounts.filter(
+      const filtered = state.accounts.filter(
         (a) =>
           (matches(a.clientName, params?.name) ||
             matches(a.clientNameEn ?? "", params?.name)) &&
@@ -434,6 +472,24 @@ export async function fixtureFetch<T>(
       );
       return paginate(filtered, params) as T;
     }
+
+    default:
+      break;
+  }
+
+  // One client or one account, by id — the profile pages.
+  if (p.startsWith("/clients/")) {
+    const client = state.clients.find((c) => c.id === p.split("/").at(-1));
+    if (!client) throw new ApiError("Client not found", 404);
+    return client as T;
+  }
+  if (p.startsWith("/accounts/") && !p.endsWith("/balance")) {
+    const account = state.accounts.find((a) => a.id === p.split("/").at(-1));
+    if (!account) throw new ApiError("Account not found", 404);
+    return account as T;
+  }
+
+  switch (p) {
 
     case "/operations/withdrawals":
       return paginate(searchOperations(db.withdrawals, params), params) as T;

@@ -23,11 +23,16 @@ export type HeaderStat = {
   value: ReactNode;
   /** Lucide icon element — rendered in a tinted square ahead of the figure. */
   icon?: ReactNode;
+  /**
+   * Colour of the icon tile, as a theme variable — the same treatment the
+   * Dashboard's KPI cards use, so a figure is recognised by its colour before
+   * its label is read. Decoration only: it repeats what the icon and the label
+   * already say, and never carries meaning on its own.
+   */
+  color?: string;
   /** Values that are amounts/counts render LTR with tabular figures. */
   numeric?: boolean;
   tone?: "default" | "success" | "danger" | "warning" | "accent";
-  /** Tints the icon square alone; falls back to `tone`. Keeps figures neutral. */
-  iconTone?: "default" | "success" | "danger" | "warning" | "accent";
   delta?: StatDelta;
 };
 
@@ -39,12 +44,25 @@ const TONES: Record<NonNullable<HeaderStat["tone"]>, string> = {
   accent: "text-accent",
 };
 
-const ICON_TONES: Record<NonNullable<HeaderStat["tone"]>, string> = {
-  default: "bg-surface-muted text-fg-muted",
-  success: "bg-success-soft text-success",
-  danger: "bg-danger-soft text-danger",
-  warning: "bg-warning-soft text-warning",
-  accent: "bg-accent-soft text-accent",
+/**
+ * Palette for a run of same-kind figures — the per-currency page totals every
+ * register carries. Cycled by position so two totals side by side never share a
+ * colour; the colour distinguishes cards, it does not stand for a currency.
+ */
+export const STAT_COLORS = [
+  "var(--color-chart-exchange)",
+  "var(--color-chart-deposit)",
+  "var(--color-chart-4)",
+  "var(--color-chart-6)",
+];
+
+/** Icon tile colour when a stat names none — matches the figure's own tone. */
+const TONE_COLORS: Record<NonNullable<HeaderStat["tone"]>, string> = {
+  default: "var(--color-fg-muted)",
+  success: "var(--color-success)",
+  danger: "var(--color-danger)",
+  warning: "var(--color-warning)",
+  accent: "var(--color-accent)",
 };
 
 /**
@@ -76,17 +94,21 @@ function DeltaIndicator({ delta }: { delta: StatDelta }) {
 /**
  * Standard count/total summary above every list and queue page — one component
  * so the treatment is identical across modules.
+ *
+ * Each figure is its own card, matching the Dashboard's KPI row: a register's
+ * summary and the overview it was reached from should not look like two
+ * different kinds of thing. Cards are separated rather than sharing one panel,
+ * so a figure reads as a figure and not as a cell in a table.
  */
 /**
- * Columns for the number of figures actually supplied. A fixed four-column grid
- * left the unfilled cells showing the border colour behind them, which read as
- * an empty panel rather than as spacing.
+ * Columns for the number of figures actually supplied, so a row of two does not
+ * stretch each card across half the page.
  */
 const COLUMNS: Record<number, string> = {
   1: "grid-cols-1",
-  2: "grid-cols-2",
-  3: "grid-cols-2 sm:grid-cols-3",
-  4: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4",
+  2: "grid-cols-1 sm:grid-cols-2",
+  3: "grid-cols-1 sm:grid-cols-3",
+  4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
 };
 
 export function HeaderStatBar({
@@ -99,36 +121,45 @@ export function HeaderStatBar({
   return (
     <dl
       className={cn(
-        "grid gap-px overflow-hidden rounded-card border border-border bg-border",
+        "grid gap-3",
         COLUMNS[Math.min(stats.length, 4)] ?? COLUMNS[4],
         className,
       )}
     >
       {stats.map((stat, index) => (
-        <div key={index} className="flex items-center gap-3 bg-surface px-4 py-3">
+        <div
+          key={index}
+          className="flex items-start gap-3 rounded-card border border-border bg-surface p-4"
+        >
           {stat.icon ? (
             <span
               aria-hidden
-              className={cn(
-                "flex size-9 shrink-0 items-center justify-center rounded-lg",
-                ICON_TONES[stat.iconTone ?? stat.tone ?? "default"],
-              )}
+              className="flex size-9 shrink-0 items-center justify-center rounded-lg"
+              // The tint is the icon's own colour at low opacity, mixed rather
+              // than written down: one value per card stays right in both
+              // themes, and a flat wash keeps the no-gradients rule.
+              style={{
+                color: stat.color ?? TONE_COLORS[stat.tone ?? "default"],
+                backgroundColor: `color-mix(in srgb, ${
+                  stat.color ?? TONE_COLORS[stat.tone ?? "default"]
+                } 14%, transparent)`,
+              }}
             >
               {stat.icon}
             </span>
           ) : null}
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <dt className="text-xs text-fg-muted">{stat.label}</dt>
             <dd
               className={cn(
-                "mt-1 text-lg font-semibold",
+                "mt-1 text-xl font-semibold",
                 stat.numeric && "numeric",
                 TONES[stat.tone ?? "default"],
               )}
             >
               {/* Isolated: a figure carrying a Latin currency code must not be
               re-ordered by the Arabic label above it. */}
-          <bdi>{stat.value}</bdi>
+              <bdi className="block truncate">{stat.value}</bdi>
               {stat.delta ? <DeltaIndicator delta={stat.delta} /> : null}
             </dd>
           </div>

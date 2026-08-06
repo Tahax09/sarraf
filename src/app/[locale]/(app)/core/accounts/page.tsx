@@ -1,16 +1,21 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import { Coins, Pencil, Wallet } from "lucide-react";
+import { Link } from "@/i18n/navigation";
+import { Button, buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/page-header";
-import { HeaderStatBar } from "@/components/shared/header-stat-bar";
+import { HeaderStatBar, STAT_COLORS } from "@/components/shared/header-stat-bar";
 import { DataTable, type Column } from "@/components/shared/data-table";
 import { FilterBar } from "@/components/shared/filter-bar";
 import { DetailRow, DetailSection } from "@/components/shared/detail-drawer";
 import { ClientCell, ClientNameText } from "@/components/shared/cells";
 import { MaskedField } from "@/components/shared/masked-field";
+import { AccountEditDialog } from "@/components/modules/account-edit-dialog";
 import { useAccounts, useBranches, useCurrencies } from "@/lib/api/hooks";
+import { usePermission } from "@/lib/use-permission";
 import { useLabels } from "@/lib/labels";
 import { formatAmount, formatCount, formatPhone, isolate } from "@/lib/format";
 import { useTableQuery } from "@/lib/use-table-query";
@@ -23,6 +28,8 @@ export default function AccountsPage() {
   const tc = useTranslations("common");
   const tStats = useTranslations("stats");
   const labels = useLabels();
+  const { can } = usePermission();
+  const [editing, setEditing] = useState<Account | null>(null);
 
   const currencies = useCurrencies();
   const branches = useBranches();
@@ -141,11 +148,15 @@ export default function AccountsPage() {
             label: tStats("count"),
             value: formatCount(total),
             numeric: true,
+            icon: <Wallet className="size-4" aria-hidden />,
+            color: "var(--color-accent)",
           },
-          ...totals.map(([currency, sum]) => ({
+          ...totals.map(([currency, sum], index) => ({
             label: `${tStats("pageTotal")} — ${isolate(currency)}`,
             value: formatAmount(sum, currency),
             numeric: true,
+            icon: <Coins className="size-4" aria-hidden />,
+            color: STAT_COLORS[index % STAT_COLORS.length],
           })),
         ]}
       />
@@ -176,6 +187,27 @@ export default function AccountsPage() {
           sort={table.sort}
           onSortChange={table.setSort}
           detailTitle={(row) => row.number}
+          detailFooter={(row, close) => (
+            <>
+              <Link
+                href={`/core/accounts/${row.id}`}
+                className={buttonStyles({ variant: "secondary" })}
+              >
+                {tc("viewFull")}
+              </Link>
+              {can("accounts", "create") ? (
+                <Button
+                  onClick={() => {
+                    close();
+                    setEditing(row);
+                  }}
+                >
+                  <Pencil className="size-4" aria-hidden />
+                  {tc("edit")}
+                </Button>
+              ) : null}
+            </>
+          )}
           renderDetail={(row) => (
             <>
               <DetailSection title={tc("details")}>
@@ -227,6 +259,12 @@ export default function AccountsPage() {
           )}
         />
       </Card>
+
+      <AccountEditDialog
+        account={editing}
+        open={editing !== null}
+        onClose={() => setEditing(null)}
+      />
     </div>
   );
 }
