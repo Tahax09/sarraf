@@ -390,6 +390,9 @@ export function CategoryBarChart({
   xKey,
   series,
   stacked = false,
+  legend = true,
+  tooltipLabel,
+  minTickGap,
   ...state
 }: ChartStateProps & {
   data: Record<string, unknown>[];
@@ -400,18 +403,24 @@ export function CategoryBarChart({
    * leave them grouped when the comparison is series against series.
    */
   stacked?: boolean;
+  /** Off for a single series, where the legend only repeats the card title. */
+  legend?: boolean;
+  /** Turns the terse axis value into the full label shown on hover. */
+  tooltipLabel?: (value: unknown) => string;
+  minTickGap?: number;
 }) {
   const rtl = useRtl();
   const last = series.length - 1;
   return (
     <ChartFrame {...state} empty={data.length === 0}>
       <BarChart data={data} margin={chartMargin(rtl)}>
-        <CartesianAxes xKey={xKey} rtl={rtl} />
+        <CartesianAxes xKey={xKey} rtl={rtl} minTickGap={minTickGap} />
         <Tooltip
           {...tooltipProps(rtl)}
+          labelFormatter={tooltipLabel}
           cursor={{ fill: "var(--color-surface-muted)" }}
         />
-        <Legend {...legendProps(rtl)} />
+        {legend ? <Legend {...legendProps(rtl)} /> : null}
         {series.map((s, index) => (
           <Bar
             key={s.key}

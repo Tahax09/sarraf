@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "Saraf",
-    "tagline": "Admin Panel"
+    "tagline": "Admin Panel",
+    "copyright": "© {year} Saraf. All rights reserved."
   },
   "common": {
     "search": "Search",
@@ -399,11 +400,15 @@
     "rangeLabel": "Time range",
     "rangeDays": "{days}d",
     "trendDay": "Day {day}",
-    "trendDepositsDescription": "Daily deposit volume across the selected range",
-    "trendWithdrawalsDescription": "Daily withdrawal volume across the selected range",
-    "trendExchangeDescription": "Daily currency exchange volume across the selected range",
     "trendFigures": "Daily figures",
     "trendEmpty": "No activity in this range",
+    "chartTypeLabel": "Chart type",
+    "chartTypeLine": "Line chart",
+    "chartTypeBar": "Bar chart",
+    "trendComparison": "Operations compared",
+    "trendComparisonDescription": "Deposits, withdrawals and exchange on the same axes",
+    "trendSeriesLabel": "Series shown",
+    "trendNoSeries": "Choose at least one series",
     "vsPreviousDay": "vs yesterday",
     "quickActions": "Quick actions",
     "quickDeposit": "New deposit",

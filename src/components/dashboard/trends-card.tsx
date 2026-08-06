@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { ChartSpline } from "lucide-react";
+import { ChartColumn, ChartLine, ChartSpline } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { EmptyState, ErrorState, Skeleton } from "@/components/ui/states";
 import { DataTable } from "@/components/shared/data-table";
-import { TrendAreaChart } from "@/components/charts";
+import { CategoryBarChart, TrendLineChart } from "@/components/charts";
 import { usePermission } from "@/lib/use-permission";
 import { useTrends } from "@/lib/api/hooks";
 import { formatCount, formatDate } from "@/lib/format";
@@ -19,41 +19,47 @@ const TREND_RANGES = [7, 30, 60, 90] as const;
 type TrendRange = (typeof TREND_RANGES)[number];
 
 /**
- * One card per series (§R3-4). Each carries the operation type it summarises so
- * its "view all" action lands on the register already narrowed to the same
- * records the chart drew — the figure clicked is the figure shown.
+ * How the same points are drawn. A line reads the shape of a period; bars read
+ * one day against the next. Which one an operator wants is a matter of the
+ * question they arrived with, so it is theirs to choose rather than ours to
+ * decide — the figures underneath do not change either way.
+ */
+const CHART_TYPES = ["line", "bar"] as const;
+type ChartType = (typeof CHART_TYPES)[number];
+
+const CHART_TYPE_ICONS = { line: ChartLine, bar: ChartColumn } as const;
+
+/**
+ * The three series the Dashboard tracks. Each carries the operation type it
+ * summarises, so that when the chart is narrowed to one of them the register
+ * link can be narrowed to the same records — the figure clicked is the figure
+ * shown.
  */
 const SERIES = [
   {
     key: "deposits",
     labelKey: "trendDeposits",
-    descriptionKey: "trendDepositsDescription",
     color: "var(--color-chart-deposit)",
     type: "deposit",
   },
   {
     key: "withdrawals",
     labelKey: "trendWithdrawals",
-    descriptionKey: "trendWithdrawalsDescription",
     color: "var(--color-chart-withdrawal)",
     type: "withdrawal",
   },
   {
     key: "exchange",
     labelKey: "trendExchange",
-    descriptionKey: "trendExchangeDescription",
     color: "var(--color-chart-exchange)",
     type: "currencyExchangeTransfer",
   },
 ] as const satisfies readonly {
   key: keyof Omit<TrendPoint, "date">;
   labelKey: string;
-  descriptionKey: string;
   color: string;
   type: OperationType;
 }[];
-
-type Series = (typeof SERIES)[number];
 
 /**
  * A radiogroup, not a tablist: these buttons filter one set of charts rather
@@ -84,10 +90,54 @@ function TrendRangeSelector({
             onClick={() => onChange(days)}
             className={cn(
               "numeric rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
-              selected ? "bg-surface text-accent" : "text-fg-muted hover:text-fg",
+              selected
+                ? "bg-surface text-accent"
+                : "text-fg-muted hover:text-fg",
             )}
           >
             {t("rangeDays", { days: formatCount(days) })}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Same control, for the drawing style. Icon-only: the shapes say it faster
+ *  than the words, and the accessible name carries the word. */
+function ChartTypeSelector({
+  value,
+  onChange,
+}: {
+  value: ChartType;
+  onChange: (value: ChartType) => void;
+}) {
+  const t = useTranslations("dashboard");
+  return (
+    <div
+      role="radiogroup"
+      aria-label={t("chartTypeLabel")}
+      className="flex gap-0.5 rounded-lg border border-border bg-surface-muted p-0.5"
+    >
+      {CHART_TYPES.map((type) => {
+        const selected = type === value;
+        const Icon = CHART_TYPE_ICONS[type];
+        return (
+          <button
+            key={type}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            aria-label={t(type === "line" ? "chartTypeLine" : "chartTypeBar")}
+            onClick={() => onChange(type)}
+            className={cn(
+              "rounded-md px-2.5 py-1 transition-colors",
+              selected
+                ? "bg-surface text-accent"
+                : "text-fg-muted hover:text-fg",
+            )}
+          >
+            <Icon className="size-4" aria-hidden />
           </button>
         );
       })}
@@ -104,22 +154,11 @@ function rangeOf(points: TrendPoint[]): { from: string; to: string } | null {
 }
 
 /**
- * One series, with its own title, description, action and states.
- *
- * Every card reads the same query — deduped by the query cache — but renders
- * its own outcome, so a card is never left blank next to two that drew.
+ * The one query behind the section, shaped for drawing. Both the chart and the
+ * figures table read it; the query cache serves them from a single fetch.
  */
-function TrendChartCard({
-  series,
-  days,
-}: {
-  series: Series;
-  days: TrendRange;
-}) {
-  const t = useTranslations("dashboard");
-  const permission = usePermission();
+function useTrendPoints(days: TrendRange) {
   const query = useTrends(days);
-
   const points = (query.data ?? []).map((point, index) => ({
     ...point,
     // The axis carries the day's place in the range; the full date is on hover,
@@ -128,87 +167,46 @@ function TrendChartCard({
     fullDate: formatDate(point.date),
   }));
   const dateForDay = new Map(points.map((p) => [p.day, p.fullDate]));
-  const range = rangeOf(query.data ?? []);
-
-  // A series can be flat at zero while the others move — that is an empty card,
-  // not an empty dashboard, and a flat line at the axis says nothing.
-  const empty =
-    points.length === 0 || points.every((point) => point[series.key] === 0);
-
-  const href = range
-    ? `/core/analytics/all-operations?type=${series.type}&dateFrom=${range.from}&dateTo=${range.to}`
-    : "/core/analytics/all-operations";
-
-  return (
-    <Card>
-      <CardHeader
-        title={t(series.labelKey)}
-        description={t(series.descriptionKey)}
-        action={
-          permission.can("analytics") ? (
-            <Link
-              href={href}
-              className="rounded-md px-1 text-xs font-medium text-accent hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-            >
-              {t("viewAll")}
-            </Link>
-          ) : null
-        }
-      />
-      <CardBody>
-        {query.isLoading ? (
-          <Skeleton className="h-[180px] w-full" />
-        ) : query.isError ? (
-          <ErrorState onRetry={() => query.refetch()} />
-        ) : empty ? (
-          <EmptyState
-            icon={<ChartSpline className="size-5" />}
-            title={t("trendEmpty")}
-          />
-        ) : (
-          <TrendAreaChart
-            data={points}
-            xKey="day"
-            dataKey={series.key}
-            color={series.color}
-            height={180}
-            tooltipLabel={(value) =>
-              dateForDay.get(Number(value)) ?? String(value)
-            }
-          />
-        )}
-      </CardBody>
-    </Card>
-  );
+  return {
+    query,
+    points,
+    range: rangeOf(query.data ?? []),
+    tooltipLabel: (value: unknown) =>
+      dateForDay.get(Number(value)) ?? String(value),
+  };
 }
 
 /**
- * The trends — one place only (§7 item 3), one card per series rather than a
- * single block carrying three charts, so each has room for its own title,
- * description and states.
+ * The trends — one place only (§7 item 3). All three series share one pair of
+ * axes rather than one card each: the question a dashboard is opened with is
+ * how the three moved *against each other*, which no amount of looking between
+ * separate cards answers well.
  *
- * The range is chosen once for the section: three selectors would let an
- * operator compare a 7-day deposit chart with a 90-day withdrawal chart without
- * noticing.
+ * Three controls, all of them the operator's: the range, the drawing style, and
+ * which series are on show. None of them changes a figure — the table below
+ * carries the same numbers whatever is selected.
  */
 export function TrendsCard() {
   const t = useTranslations("dashboard");
   const [days, setDays] = useState<TrendRange>(30);
+  const [chartType, setChartType] = useState<ChartType>("line");
 
   return (
-    <section aria-label={t("trendsRange", { days: formatCount(days) })} className="space-y-3">
+    <section
+      aria-label={t("trendsRange", { days: formatCount(days) })}
+      className="space-y-3"
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-sm font-semibold text-fg sm:text-base">
           {t("trendsRange", { days: formatCount(days) })}
         </h2>
-        <TrendRangeSelector value={days} onChange={setDays} />
+        <div className="flex flex-wrap items-center gap-2">
+          <ChartTypeSelector value={chartType} onChange={setChartType} />
+          <TrendRangeSelector value={days} onChange={setDays} />
+        </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        {SERIES.map((series) => (
-          <TrendChartCard key={series.key} series={series} days={days} />
-        ))}
-      </div>
+      <TrendComparisonCard days={days} chartType={chartType} />
 
       {/* Accessible fallback: the same points as an exact-figures table. */}
       <Card>
@@ -216,6 +214,145 @@ export function TrendsCard() {
         <TrendTable days={days} />
       </Card>
     </section>
+  );
+}
+
+/**
+ * The chart itself, with the set of series on show under the operator's
+ * control: all three is the comparison, but two of them is often the question —
+ * deposits against withdrawals, with exchange out of the way.
+ *
+ * The filter is presentational. It picks what is drawn from points already
+ * fetched, so toggling a series costs nothing and never refetches.
+ */
+function TrendComparisonCard({
+  days,
+  chartType,
+}: {
+  days: TrendRange;
+  chartType: ChartType;
+}) {
+  const t = useTranslations("dashboard");
+  const permission = usePermission();
+  const { query, points, range, tooltipLabel } = useTrendPoints(days);
+  const [hidden, setHidden] = useState<readonly string[]>([]);
+
+  const shown = SERIES.filter((series) => !hidden.includes(series.key));
+  const chartSeries = shown.map((series) => ({
+    key: series.key,
+    label: t(series.labelKey),
+    color: series.color,
+  }));
+
+  const toggle = (key: string) =>
+    setHidden((current) =>
+      current.includes(key)
+        ? current.filter((k) => k !== key)
+        : [...current, key],
+    );
+
+  // The register, narrowed to what is on screen: the drawn window always, and
+  // the operation type too when the filter has left exactly one series — the
+  // records the chart is showing are then the records the link opens.
+  const params = new URLSearchParams();
+  if (shown.length === 1) params.set("type", shown[0].type);
+  if (range) {
+    params.set("dateFrom", range.from);
+    params.set("dateTo", range.to);
+  }
+  const href = `/core/analytics/all-operations${params.size ? `?${params}` : ""}`;
+
+  return (
+    <Card>
+      <CardHeader
+        title={t("trendComparison")}
+        description={t("trendComparisonDescription")}
+        action={
+          <div className="flex flex-wrap items-center gap-3">
+            <div
+              role="group"
+              aria-label={t("trendSeriesLabel")}
+              className="flex flex-wrap gap-1.5"
+            >
+              {SERIES.map((series) => {
+                const on = !hidden.includes(series.key);
+                return (
+                  <button
+                    key={series.key}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => toggle(series.key)}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+                      "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                      on
+                        ? "border-border bg-surface-muted text-fg"
+                        : "border-dashed border-border text-fg-subtle hover:text-fg-muted",
+                    )}
+                  >
+                    {/* The swatch is the only tie between a chip and its line, so
+                      it keeps its colour when the series is off — dimmed, not
+                      recoloured, or the chip stops naming which line it hides. */}
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "size-2.5 shrink-0 rounded-[2px] transition-opacity",
+                        on ? "opacity-100" : "opacity-30",
+                      )}
+                      style={{ backgroundColor: series.color }}
+                    />
+                    {t(series.labelKey)}
+                  </button>
+                );
+              })}
+            </div>
+
+            {permission.can("analytics") ? (
+              <Link
+                href={href}
+                className="rounded-md px-1 text-xs font-medium text-accent hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                {t("viewAll")}
+              </Link>
+            ) : null}
+          </div>
+        }
+      />
+      <CardBody>
+        {query.isLoading ? (
+          <Skeleton className="h-[260px] w-full" />
+        ) : query.isError ? (
+          <ErrorState onRetry={() => query.refetch()} />
+        ) : shown.length === 0 ? (
+          <EmptyState
+            icon={<ChartSpline className="size-5" />}
+            title={t("trendNoSeries")}
+          />
+        ) : points.length === 0 ? (
+          <EmptyState
+            icon={<ChartSpline className="size-5" />}
+            title={t("trendEmpty")}
+          />
+        ) : chartType === "bar" ? (
+          <CategoryBarChart
+            data={points}
+            xKey="day"
+            series={chartSeries}
+            height={260}
+            minTickGap={24}
+            tooltipLabel={tooltipLabel}
+          />
+        ) : (
+          <TrendLineChart
+            data={points}
+            xKey="day"
+            series={chartSeries}
+            height={260}
+            tooltipLabel={tooltipLabel}
+          />
+        )}
+      </CardBody>
+    </Card>
   );
 }
 

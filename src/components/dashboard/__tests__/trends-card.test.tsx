@@ -11,13 +11,25 @@ jest.mock("@/lib/use-permission", () => ({
   usePermission: () => ({ ready: true, failed: false, can: () => true }),
 }));
 
-// The drawing surface needs a real layout to render; the cards' titles,
-// descriptions, actions and states are what this file is about.
-jest.mock("@/components/charts", () => ({
-  TrendAreaChart: ({ dataKey }: { dataKey: string }) => (
-    <div data-testid={`chart-${dataKey}`} />
-  ),
-}));
+// The drawing surface needs a real layout to render; the section's controls,
+// the series it hands the chart, and its states are what this file is about.
+jest.mock("@/components/charts", () => {
+  // Declared inside the factory: jest hoists this call above the file body.
+  const drawn = (testId: string) => {
+    const Chart = ({ series }: { series: { key: string }[] }) => (
+      <div
+        data-testid={testId}
+        data-series={series.map((s) => s.key).join(",")}
+      />
+    );
+    Chart.displayName = testId;
+    return Chart;
+  };
+  return {
+    TrendLineChart: drawn("line-chart"),
+    CategoryBarChart: drawn("bar-chart"),
+  };
+});
 
 let trends: {
   data?: { date: string; deposits: number; withdrawals: number; exchange: number }[];
@@ -29,8 +41,8 @@ jest.mock("@/lib/api/hooks", () => ({
 }));
 
 const points = [
-  { date: "2026-07-01", deposits: 120, withdrawals: 80, exchange: 0 },
-  { date: "2026-07-02", deposits: 140, withdrawals: 60, exchange: 0 },
+  { date: "2026-07-01", deposits: 120, withdrawals: 80, exchange: 10 },
+  { date: "2026-07-02", deposits: 140, withdrawals: 60, exchange: 20 },
 ];
 
 describe("TrendsCard", () => {
@@ -38,38 +50,78 @@ describe("TrendsCard", () => {
     trends = { data: points, isLoading: false, isError: false };
   });
 
-  it("gives every series its own card, description and register link", () => {
+  it("draws every series on one chart", () => {
     renderWithProviders(<TrendsCard />);
 
-    const deposits = screen
-      .getByRole("heading", { name: message("dashboard.trendDeposits") })
-      .closest("div")!.parentElement!.parentElement!;
-    expect(
-      within(deposits).getByText(message("dashboard.trendDepositsDescription")),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId("line-chart")).toHaveAttribute(
+      "data-series",
+      "deposits,withdrawals,exchange",
+    );
+  });
 
-    const link = within(deposits).getByRole("link", {
-      name: message("dashboard.viewAll"),
+  it("switches the drawing between a line and bars", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<TrendsCard />);
+
+    const group = screen.getByRole("radiogroup", {
+      name: message("dashboard.chartTypeLabel"),
     });
-    // Narrowed to the same records the chart drew — type and the drawn window.
-    expect(link).toHaveAttribute(
+    await user.click(
+      within(group).getByRole("radio", {
+        name: message("dashboard.chartTypeBar"),
+      }),
+    );
+
+    expect(screen.getByTestId("bar-chart")).toBeInTheDocument();
+    expect(screen.queryByTestId("line-chart")).not.toBeInTheDocument();
+  });
+
+  it("hides a series without refetching, and narrows the register link to the last one left", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<TrendsCard />);
+
+    const group = screen.getByRole("group", {
+      name: message("dashboard.trendSeriesLabel"),
+    });
+    for (const key of ["trendWithdrawals", "trendExchange"]) {
+      await user.click(
+        within(group).getByRole("button", { name: message(`dashboard.${key}`) }),
+      );
+    }
+
+    expect(screen.getByTestId("line-chart")).toHaveAttribute(
+      "data-series",
+      "deposits",
+    );
+    // One series on show, so the link opens exactly the records that were drawn.
+    expect(
+      screen.getByRole("link", { name: message("dashboard.viewAll") }),
+    ).toHaveAttribute(
       "href",
       "/core/analytics/all-operations?type=deposit&dateFrom=2026-07-01&dateTo=2026-07-02",
     );
   });
 
-  it("shows an empty state for a flat series while the others still draw", () => {
+  it("asks for a series rather than drawing empty axes", async () => {
+    const user = userEvent.setup();
     renderWithProviders(<TrendsCard />);
 
-    expect(screen.getByTestId("chart-deposits")).toBeInTheDocument();
-    expect(screen.getByTestId("chart-withdrawals")).toBeInTheDocument();
-    expect(screen.queryByTestId("chart-exchange")).not.toBeInTheDocument();
+    const group = screen.getByRole("group", {
+      name: message("dashboard.trendSeriesLabel"),
+    });
+    for (const key of ["trendDeposits", "trendWithdrawals", "trendExchange"]) {
+      await user.click(
+        within(group).getByRole("button", { name: message(`dashboard.${key}`) }),
+      );
+    }
+
     expect(
-      screen.getByText(message("dashboard.trendEmpty")),
+      screen.getByText(message("dashboard.trendNoSeries")),
     ).toBeInTheDocument();
+    expect(screen.queryByTestId("line-chart")).not.toBeInTheDocument();
   });
 
-  it("changes the range for every card at once", async () => {
+  it("changes the range for the whole section at once", async () => {
     const user = userEvent.setup();
     renderWithProviders(<TrendsCard />);
 
