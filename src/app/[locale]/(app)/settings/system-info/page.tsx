@@ -168,11 +168,19 @@ function LogoDropzone({
           <Upload className="size-6 text-fg-subtle" aria-hidden />
         )}
         <p className="text-xs text-fg-muted">{t("logoDrop")}</p>
+        {/* The button below is the control; this input is the mechanism it
+            clicks. `sr-only` hides it from sight but not from a screen reader,
+            which was meeting an unlabelled file input and a button that did the
+            same job. Taken out of both the accessibility tree and the tab order
+            together — `aria-hidden` alone on something focusable is the worse
+            bug, a tab stop nothing can describe. */}
         <input
           ref={inputRef}
           type="file"
           accept="image/*"
           className="sr-only"
+          aria-hidden
+          tabIndex={-1}
           onChange={(event) => read(event.target.files?.[0])}
         />
         <Button

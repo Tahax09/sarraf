@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useRef, type KeyboardEvent, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export type Segment<T extends string> = {
@@ -22,6 +22,12 @@ export type Segment<T extends string> = {
  * them: the language choice on the sign-in page, where a menu labelled in a
  * language you cannot read is no help, and the sign-in method, where the point
  * is knowing the other way in exists.
+ *
+ * Keyboard behaviour is the radiogroup pattern, not the button-list one: the
+ * group is a single tab stop landing on the selected option, and the arrows
+ * move between options and select as they go. Left and right follow the
+ * reading direction — in Arabic, `ArrowLeft` advances — because the arrow that
+ * points at the next option is the one the operator will press.
  */
 export function SegmentedControl<T extends string>({
   segments,
@@ -41,8 +47,56 @@ export function SegmentedControl<T extends string>({
   /** Fixed content at the reading-start edge, inside the frame. */
   leading?: ReactNode;
 }) {
+  const groupRef = useRef<HTMLDivElement>(null);
+
+  function move(from: number, delta: number) {
+    // Wraps, as the pattern requires: the last option's "next" is the first.
+    const next = (from + delta + segments.length) % segments.length;
+    const target = segments[next];
+    if (!target) return;
+    onChange(target.value);
+    // Selection follows focus here — the options are cheap to switch between
+    // and nothing is submitted by choosing one — so focus has to follow too,
+    // or the reader is left announcing an option that is no longer current.
+    groupRef.current
+      ?.querySelectorAll<HTMLButtonElement>('[role="radio"]')
+      [next]?.focus();
+  }
+
+  function onKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    // The nearest declared direction, not the computed one: direction is set by
+    // the `dir` attribute the locale layout puts on `<html>`, and reading the
+    // attribute gives the same answer in a browser and under jsdom, where
+    // computed style does not inherit through it.
+    const declared =
+      event.currentTarget.closest("[dir]")?.getAttribute("dir") ??
+      document.documentElement.dir;
+    const forward = declared === "rtl" ? -1 : 1;
+    const step: Record<string, number> = {
+      ArrowRight: forward,
+      ArrowLeft: -forward,
+      ArrowDown: 1,
+      ArrowUp: -1,
+    };
+    if (event.key in step) {
+      event.preventDefault();
+      move(index, step[event.key]!);
+      return;
+    }
+    if (event.key === "Home" || event.key === "End") {
+      event.preventDefault();
+      move(event.key === "Home" ? -1 : 0, event.key === "Home" ? 1 : -1);
+    }
+  }
+
+  // A radiogroup with nothing selected still needs a way in, so the first
+  // option holds the tab stop until one is.
+  const selectedIndex = segments.findIndex((segment) => segment.value === value);
+  const tabStop = selectedIndex === -1 ? 0 : selectedIndex;
+
   return (
     <div
+      ref={groupRef}
       role="radiogroup"
       aria-label={ariaLabel}
       className={cn(
@@ -51,7 +105,7 @@ export function SegmentedControl<T extends string>({
       )}
     >
       {leading}
-      {segments.map((segment) => {
+      {segments.map((segment, index) => {
         const selected = segment.value === value;
         return (
           <button
@@ -60,6 +114,8 @@ export function SegmentedControl<T extends string>({
             role="radio"
             aria-checked={selected}
             disabled={disabled}
+            tabIndex={index === tabStop ? 0 : -1}
+            onKeyDown={(event) => onKeyDown(event, index)}
             onClick={() => onChange(segment.value)}
             className={cn(
               "flex flex-1 items-center justify-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-colors",

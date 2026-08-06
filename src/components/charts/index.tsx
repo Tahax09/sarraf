@@ -1,8 +1,14 @@
 "use client";
 
-import { lazy, Suspense, type ComponentProps } from "react";
+import { lazy, Suspense, type ComponentType } from "react";
 import { Skeleton } from "@/components/ui/states";
 import type * as Impl from "./charts";
+import type {
+  CategoryBarChartProps,
+  CompositionDonutProps,
+  TrendAreaChartProps,
+  TrendLineChartProps,
+} from "./charts";
 
 /**
  * The public face of the chart module. Call sites import from here and get the
@@ -19,9 +25,19 @@ import type * as Impl from "./charts";
  * `SERIES_COLORS` comes from `./palette` instead: it is a list of CSS
  * variables, and routing it through the lazy boundary would pull the library
  * back in for no reason.
+ *
+ * Each wrapper restates its generic instead of deriving props from the lazy
+ * handle. `React.lazy` is typed over a *concrete* component, so anything
+ * derived through it collapses the row parameter to its constraint and every
+ * `xKey` at every call site becomes `never` — which is what forced the
+ * `as unknown as Record<string, unknown>[]` casts these charts used to need at
+ * six call sites. Each handle is cast straight back to the generic signature it
+ * was loaded from, so the erasure is undone once, here, rather than worked
+ * around everywhere it surfaces.
  */
 
 export { SERIES_COLORS } from "./palette";
+export type { Series } from "./charts";
 
 /** Reserves the finished chart's footprint so the card does not jump. */
 function ChartPlaceholder({ height = 240 }: { height?: number }) {
@@ -37,20 +53,23 @@ function ChartPlaceholder({ height = 240 }: { height?: number }) {
 const load = () => import("./charts");
 
 const TrendAreaChartImpl = lazy(() =>
-  load().then((m) => ({ default: m.TrendAreaChart })),
-);
-const TrendLineChartImpl = lazy(() =>
-  load().then((m) => ({ default: m.TrendLineChart })),
-);
-const CompositionDonutImpl = lazy(() =>
-  load().then((m) => ({ default: m.CompositionDonut })),
-);
-const CategoryBarChartImpl = lazy(() =>
-  load().then((m) => ({ default: m.CategoryBarChart })),
-);
+  load().then((m) => ({ default: m.TrendAreaChart as ComponentType<Record<string, unknown>> })),
+) as unknown as typeof Impl.TrendAreaChart;
 
-export function TrendAreaChart(
-  props: ComponentProps<typeof Impl.TrendAreaChart>,
+const TrendLineChartImpl = lazy(() =>
+  load().then((m) => ({ default: m.TrendLineChart as ComponentType<Record<string, unknown>> })),
+) as unknown as typeof Impl.TrendLineChart;
+
+const CompositionDonutImpl = lazy(() =>
+  load().then((m) => ({ default: m.CompositionDonut as ComponentType<Record<string, unknown>> })),
+) as unknown as typeof Impl.CompositionDonut;
+
+const CategoryBarChartImpl = lazy(() =>
+  load().then((m) => ({ default: m.CategoryBarChart as ComponentType<Record<string, unknown>> })),
+) as unknown as typeof Impl.CategoryBarChart;
+
+export function TrendAreaChart<Row extends object>(
+  props: TrendAreaChartProps<Row>,
 ) {
   return (
     <Suspense fallback={<ChartPlaceholder height={props.height} />}>
@@ -59,8 +78,8 @@ export function TrendAreaChart(
   );
 }
 
-export function TrendLineChart(
-  props: ComponentProps<typeof Impl.TrendLineChart>,
+export function TrendLineChart<Row extends object>(
+  props: TrendLineChartProps<Row>,
 ) {
   return (
     <Suspense fallback={<ChartPlaceholder height={props.height} />}>
@@ -69,8 +88,8 @@ export function TrendLineChart(
   );
 }
 
-export function CompositionDonut(
-  props: ComponentProps<typeof Impl.CompositionDonut>,
+export function CompositionDonut<Row extends object>(
+  props: CompositionDonutProps<Row>,
 ) {
   return (
     <Suspense fallback={<ChartPlaceholder height={props.height} />}>
@@ -79,8 +98,8 @@ export function CompositionDonut(
   );
 }
 
-export function CategoryBarChart(
-  props: ComponentProps<typeof Impl.CategoryBarChart>,
+export function CategoryBarChart<Row extends object>(
+  props: CategoryBarChartProps<Row>,
 ) {
   return (
     <Suspense fallback={<ChartPlaceholder height={props.height} />}>

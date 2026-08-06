@@ -152,7 +152,14 @@ export function Turnstile({
           was handed, right-to-left included, so the box follows the page like
           everything else on it rather than sitting left-aligned in an Arabic
           form. */}
-      <div ref={containerRef} id={id} className="min-h-[65px]" />
+      {/* Marked so the accessibility sweep can exclude it: the challenge draws
+          in a cross-origin iframe whose markup is Cloudflare's, not ours. */}
+      <div
+        ref={containerRef}
+        id={id}
+        data-turnstile=""
+        className="min-h-[65px]"
+      />
 
       {status === "failed" ? (
         <p

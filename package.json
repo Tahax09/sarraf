@@ -11,7 +11,9 @@
     "test:watch": "jest --watch",
     "test:e2e": "playwright test",
     "typecheck": "tsc --noEmit",
-    "check:messages": "node scripts/check-messages.mjs"
+    "check:messages": "node scripts/check-messages.mjs",
+    "test:coverage": "jest --coverage",
+    "test:e2e:a11y": "playwright test --project=a11y"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.7.1",
@@ -29,6 +31,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@jest/globals": "^30.4.1",
     "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",

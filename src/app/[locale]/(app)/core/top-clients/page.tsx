@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ArrowLeftRight, Users } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Tabs } from "@/components/ui/tabs";
+import { TabPanel, Tabs } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/shared/page-header";
 import { HeaderStatBar } from "@/components/shared/header-stat-bar";
 import { DataTable, type Column } from "@/components/shared/data-table";
@@ -92,6 +92,11 @@ export default function TopClientsPage() {
           onChange={setMode}
           ariaLabel={t("title")}
         />
+        {/* The table is the tabs' panel and has to say so. Without it the tab
+            advertised `aria-controls="tabpanel-balance"` and nothing in the
+            document carried that id, so a reader offered to jump to the
+            controlled region and arrived nowhere. */}
+        <TabPanel value={mode}>
         <DataTable
           columns={columns}
           rows={rows}
@@ -123,6 +128,7 @@ export default function TopClientsPage() {
             </DetailSection>
           )}
         />
+        </TabPanel>
       </Card>
     </div>
   );

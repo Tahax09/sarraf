@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Turnstile, isTurnstileEnabled } from "@/components/auth/turnstile";
 import { ApiError, apiFetch, usingFixtures } from "@/lib/api/client";
+import { safeRedirect } from "@/lib/safe-redirect";
 import { secureFlag } from "@/lib/cookies";
 import { formatYear, isValidPhone, normalizePhone } from "@/lib/format";
 import { endpoints } from "@/lib/api/endpoints";
@@ -122,7 +123,7 @@ export function LoginForm({ nonce }: { nonce?: string }) {
 
   const finish = () => {
     if (usingFixtures) setFixtureSessionCookie();
-    router.push(searchParams.get("from") ?? "/dashboard");
+    router.push(safeRedirect(searchParams.get("from")));
   };
 
   const submitCredentials = form.handleSubmit(async (values) => {

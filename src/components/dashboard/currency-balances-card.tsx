@@ -48,7 +48,8 @@ export function CurrencyBalancesCard() {
       <CardHeader title={t("currencyBalances")} />
       <CardBody>
         <CompositionDonut
-          data={rows as unknown as Record<string, unknown>[]}
+          data={rows}
+          figures="adjacent"
           nameKey="currency"
           valueKey="total"
           loading={query.isLoading}

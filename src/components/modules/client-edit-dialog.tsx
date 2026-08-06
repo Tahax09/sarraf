@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
@@ -66,6 +66,16 @@ export function ClientEditDialog({
   });
 
   const { reset } = form;
+  /*
+   * `useWatch`, not `form.watch()`. The latter returns a fresh function on
+   * every render, which the React Compiler cannot memoize, so it bails out of
+   * optimising this component entirely. `useWatch` subscribes through the
+   * control and returns a value.
+   */
+  const nationalityCode = useWatch({
+    control: form.control,
+    name: "nationalityCode",
+  });
   // The dialog outlives the row it was opened from, so the form is refilled
   // whenever a different client is handed to it.
   useEffect(() => {
@@ -141,7 +151,7 @@ export function ClientEditDialog({
           <CountryPicker
             label={tf("nationality")}
             required={false}
-            value={form.watch("nationalityCode")}
+            value={nationalityCode ?? ""}
             onChange={(code) => form.setValue("nationalityCode", code)}
             error={form.formState.errors.nationalityCode?.message}
           />

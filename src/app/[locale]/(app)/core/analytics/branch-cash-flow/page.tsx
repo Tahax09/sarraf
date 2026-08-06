@@ -176,7 +176,8 @@ export default function BranchCashFlowPage() {
         <CardHeader title={t("branchComparison")} />
         <CardBody>
           <CategoryBarChart
-            data={rows as unknown as Record<string, unknown>[]}
+            data={rows}
+            figures="adjacent"
             xKey="branchName"
             series={[
               {

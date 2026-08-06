@@ -153,6 +153,28 @@ function CartesianAxes({
   );
 }
 
+/**
+ * The chart's numbers, as text. Rendered for screen readers only, because the
+ * drawing itself is `aria-hidden`: several hundred unlabelled SVG nodes are not
+ * a text alternative, and recharts' tooltips are mouse-only, so the figures a
+ * sighted reader gets on hover have no keyboard path at all.
+ *
+ * Built by each chart from the props it already has, so the alternative cannot
+ * drift from what was drawn — and cannot be forgotten. A card that already
+ * shows the same numbers in a visible table passes `figures="adjacent"` instead,
+ * which is the only way to opt out and says why in the diff.
+ */
+type FiguresTable = {
+  caption: string;
+  /* Whole units, matching the visible tables these charts sit beside and the
+     donut's own tooltip: an operation count read as "40.000" is worse than no
+     table at all. */
+  /** Heads the first column, the one naming each row. */
+  rowHeader: string;
+  columns: string[];
+  rows: { label: string; values: string[] }[];
+};
+
 type ChartStateProps = {
   height?: number;
   /** Nothing to draw yet — shows a skeleton the size of the finished chart. */
@@ -161,11 +183,42 @@ type ChartStateProps = {
   error?: boolean;
   onRetry?: () => void;
   /**
-   * One sentence describing what the chart shows, announced to screen readers
-   * in place of the SVG. Omit it when an exact-figures table sits alongside.
+   * Set when a visible table on the same card already lists these figures, so
+   * the reader is not read the same numbers twice.
    */
-  summary?: string;
+  figures?: "adjacent";
 };
+
+/** One `<td>` per series value, one `<th scope="row">` naming the row. */
+function ScreenReaderFigures({ table }: { table: FiguresTable }) {
+  return (
+    <table className="sr-only">
+      <caption>{table.caption}</caption>
+      <thead>
+        <tr>
+          <th scope="col">{table.rowHeader}</th>
+          {table.columns.map((column) => (
+            <th key={column} scope="col">
+              {column}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {table.rows.map((row) => (
+          <tr key={row.label}>
+            <th scope="row">{row.label}</th>
+            {row.values.map((value, index) => (
+              <td key={index} className="numeric">
+                {value}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
 
 function ChartFrame({
   children,
@@ -174,8 +227,13 @@ function ChartFrame({
   loading,
   error,
   onRetry,
-  summary,
-}: ChartStateProps & { children: ReactNode; empty?: boolean }) {
+  figures,
+  figuresTable,
+}: ChartStateProps & {
+  children: ReactNode;
+  empty?: boolean;
+  figuresTable: FiguresTable;
+}) {
   const t = useTranslations("charts");
   const tc = useTranslations("common");
 
@@ -215,10 +273,9 @@ function ChartFrame({
 
   return (
     <>
-      {/* The drawing itself is decorative: either the paired table carries the
-          same figures, or `summary` states them in a sentence. Exposing a few
-          hundred unlabelled SVG nodes would be worse than either. */}
-      {summary ? <p className="sr-only">{summary}</p> : null}
+      {figures === "adjacent" ? null : (
+        <ScreenReaderFigures table={figuresTable} />
+      )}
       {/* `dir="ltr"` on the drawing surface, deliberately, inside an RTL page.
           recharts positions every tick with an absolute `x` plus an SVG
           `text-anchor`, and `text-anchor: start` resolves to the *right* edge of
@@ -227,7 +284,15 @@ function ChartFrame({
           dates, which read LTR anyway; the legend and the tooltip carry their own
           `direction` so their Arabic labels are unaffected. Mirroring stays where
           it belongs: `orientation`, `reversed` and the margins below. */}
-      <div style={{ height }} dir="ltr" aria-hidden>
+      {/* `inert` as well as `aria-hidden`. recharts gives its own wrapper a
+          `tabindex`, so hiding the surface from the accessibility tree left a
+          tab stop that focused something a reader could not then describe —
+          the worst of both, and a real WCAG 4.1.2 failure rather than a
+          cosmetic one. `inert` removes the whole subtree from sequential focus
+          along with anything the library adds to it later; `aria-hidden` stays
+          because it is what states the intent. The figures table above is the
+          text alternative, and it is reachable. */}
+      <div style={{ height }} dir="ltr" aria-hidden inert>
         <ResponsiveContainer width="100%" height="100%">
           {children as never}
         </ResponsiveContainer>
@@ -236,25 +301,70 @@ function ChartFrame({
   );
 }
 
+/**
+ * The row labels for a cartesian chart: the same text the tooltip would show,
+ * so "day 3" reads as the date a hovering reader would have been given.
+ */
+function rowLabels<Row extends object>(
+  data: Row[],
+  xKey: Key<Row>,
+  tooltipLabel?: (value: unknown) => string,
+): string[] {
+  return data.map((row) => {
+    const value = row[xKey];
+    return tooltipLabel ? tooltipLabel(value) : String(value ?? "");
+  });
+}
+
+/**
+ * A field of the row type, by name. Every chart takes its keys this way, so a
+ * renamed field fails to compile at the call site instead of silently drawing
+ * an empty series — which is what the `as unknown as Record<string, unknown>[]`
+ * casts these props replaced used to allow.
+ */
+type Key<Row> = Extract<keyof Row, string>;
+
+export type Series<Row> = { key: Key<Row>; label: string; color: string };
+
 /** A value accumulating over time — one metric per chart. */
-export function TrendAreaChart({
-  data,
-  dataKey,
-  xKey = "date",
-  color,
-  tooltipLabel,
-  ...state
-}: ChartStateProps & {
-  data: Record<string, unknown>[];
-  dataKey: string;
-  xKey?: string;
+export type TrendAreaChartProps<Row> = ChartStateProps & {
+  data: Row[];
+  dataKey: Key<Row>;
+  xKey?: Key<Row>;
   color: string;
+  /** Names the series in the figures table; the card title names the chart. */
+  label: string;
   /** Turns the terse axis value into the full label shown on hover. */
   tooltipLabel?: (value: unknown) => string;
-}) {
+};
+
+export function TrendAreaChart<Row extends object>({
+  data,
+  dataKey,
+  xKey = "date" as Key<Row>,
+  color,
+  label,
+  tooltipLabel,
+  ...state
+}: TrendAreaChartProps<Row>) {
   const rtl = useRtl();
+  const t = useTranslations("charts");
+  const labels = rowLabels(data, xKey, tooltipLabel);
+
   return (
-    <ChartFrame {...state} empty={data.length === 0}>
+    <ChartFrame
+      {...state}
+      empty={data.length === 0}
+      figuresTable={{
+        caption: t("dataTableFallback"),
+        rowHeader: t("period"),
+        columns: [label],
+        rows: data.map((row, index) => ({
+          label: labels[index] ?? "",
+          values: [formatNumber(Number(row[dataKey] ?? 0), 0)],
+        })),
+      }}
+    >
       <AreaChart data={data} margin={chartMargin(rtl)}>
         <CartesianAxes xKey={xKey} rtl={rtl} minTickGap={24} />
         <Tooltip {...tooltipProps(rtl)} labelFormatter={tooltipLabel} />
@@ -277,21 +387,38 @@ export function TrendAreaChart({
  * Several metrics moving over the same period. Lines rather than stacked areas:
  * the question here is which series is higher, not what they sum to.
  */
-export function TrendLineChart({
+export type TrendLineChartProps<Row> = ChartStateProps & {
+  data: Row[];
+  xKey?: Key<Row>;
+  series: Series<Row>[];
+  tooltipLabel?: (value: unknown) => string;
+};
+
+export function TrendLineChart<Row extends object>({
   data,
-  xKey = "date",
+  xKey = "date" as Key<Row>,
   series,
   tooltipLabel,
   ...state
-}: ChartStateProps & {
-  data: Record<string, unknown>[];
-  xKey?: string;
-  series: { key: string; label: string; color: string }[];
-  tooltipLabel?: (value: unknown) => string;
-}) {
+}: TrendLineChartProps<Row>) {
   const rtl = useRtl();
+  const t = useTranslations("charts");
+  const labels = rowLabels(data, xKey, tooltipLabel);
+
   return (
-    <ChartFrame {...state} empty={data.length === 0}>
+    <ChartFrame
+      {...state}
+      empty={data.length === 0}
+      figuresTable={{
+        caption: t("dataTableFallback"),
+        rowHeader: t("period"),
+        columns: series.map((s) => s.label),
+        rows: data.map((row, index) => ({
+          label: labels[index] ?? "",
+          values: series.map((s) => formatNumber(Number(row[s.key] ?? 0), 0)),
+        })),
+      }}
+    >
       <LineChart data={data} margin={chartMargin(rtl)}>
         <CartesianAxes xKey={xKey} rtl={rtl} minTickGap={24} />
         <Tooltip {...tooltipProps(rtl)} labelFormatter={tooltipLabel} />
@@ -314,24 +441,27 @@ export function TrendLineChart({
 }
 
 /** Composition of a whole — always paired with the exact-figures table. */
-export function CompositionDonut({
+export type CompositionDonutProps<Row> = ChartStateProps & {
+  data: Row[];
+  nameKey: Key<Row>;
+  valueKey: Key<Row>;
+  /**
+   * `side` keeps the ring compact: a horizontal legend under a donut forces the
+   * card wide and squashes the ring once the labels wrap.
+   */
+  legend?: "bottom" | "side";
+};
+
+export function CompositionDonut<Row extends object>({
   data,
   nameKey,
   valueKey,
   height = 240,
   legend = "bottom",
   ...state
-}: ChartStateProps & {
-  data: Record<string, unknown>[];
-  nameKey: string;
-  valueKey: string;
-  /**
-   * `side` keeps the ring compact: a horizontal legend under a donut forces the
-   * card wide and squashes the ring once the labels wrap.
-   */
-  legend?: "bottom" | "side";
-}) {
+}: CompositionDonutProps<Row>) {
   const rtl = useRtl();
+  const t = useTranslations("charts");
   const total = useMemo(
     () => data.reduce((sum, row) => sum + Number(row[valueKey] ?? 0), 0),
     [data, valueKey],
@@ -346,6 +476,15 @@ export function CompositionDonut({
       {...state}
       height={height}
       empty={data.length === 0 || total === 0}
+      figuresTable={{
+        caption: t("dataTableFallback"),
+        rowHeader: t("category"),
+        columns: [t("value")],
+        rows: data.map((row) => ({
+          label: String(row[nameKey] ?? ""),
+          values: [formatNumber(Number(row[valueKey] ?? 0), 0)],
+        })),
+      }}
     >
       <PieChart>
         <Pie
@@ -385,19 +524,10 @@ export function CompositionDonut({
 }
 
 /** Comparing discrete categories — grouped bars for paired comparisons. */
-export function CategoryBarChart({
-  data,
-  xKey,
-  series,
-  stacked = false,
-  legend = true,
-  tooltipLabel,
-  minTickGap,
-  ...state
-}: ChartStateProps & {
-  data: Record<string, unknown>[];
-  xKey: string;
-  series: { key: string; label: string; color: string }[];
+export type CategoryBarChartProps<Row> = ChartStateProps & {
+  data: Row[];
+  xKey: Key<Row>;
+  series: Series<Row>[];
   /**
    * Stack when the series are parts of one total worth reading as a whole;
    * leave them grouped when the comparison is series against series.
@@ -408,11 +538,37 @@ export function CategoryBarChart({
   /** Turns the terse axis value into the full label shown on hover. */
   tooltipLabel?: (value: unknown) => string;
   minTickGap?: number;
-}) {
+};
+
+export function CategoryBarChart<Row extends object>({
+  data,
+  xKey,
+  series,
+  stacked = false,
+  legend = true,
+  tooltipLabel,
+  minTickGap,
+  ...state
+}: CategoryBarChartProps<Row>) {
   const rtl = useRtl();
+  const t = useTranslations("charts");
   const last = series.length - 1;
+  const labels = rowLabels(data, xKey, tooltipLabel);
+
   return (
-    <ChartFrame {...state} empty={data.length === 0}>
+    <ChartFrame
+      {...state}
+      empty={data.length === 0}
+      figuresTable={{
+        caption: t("dataTableFallback"),
+        rowHeader: t("category"),
+        columns: series.map((s) => s.label),
+        rows: data.map((row, index) => ({
+          label: labels[index] ?? "",
+          values: series.map((s) => formatNumber(Number(row[s.key] ?? 0), 0)),
+        })),
+      }}
+    >
       <BarChart data={data} margin={chartMargin(rtl)}>
         <CartesianAxes xKey={xKey} rtl={rtl} minTickGap={minTickGap} />
         <Tooltip

@@ -27,10 +27,18 @@
   --color-border: #e3e5e3;
   --color-border-strong: #c9ccc9;
 
-  /* Text is the brand near-black, lightened for secondary levels. */
+  /*
+   * Text is the brand near-black, lightened for secondary levels.
+   *
+   * Both secondary levels are carried to 4.5:1 against `--color-surface` *and*
+   * `--color-surface-muted`, not just against white. `subtle` is used at
+   * `text-xs` — timestamps, counts, row meta — which is never large text, so
+   * the 3:1 allowance does not apply to it anywhere it actually appears.
+   * Measured: subtle is 5.11:1 on surface and 4.76:1 on surface-muted.
+   */
   --color-fg: var(--brand-dark);
   --color-fg-muted: #5f635f;
-  --color-fg-subtle: #8b8f8b;
+  --color-fg-subtle: #6b6f6b;
 
   /* Brand blue, flat — never a gradient. */
   --color-accent: var(--brand-blue);
@@ -73,9 +81,11 @@
   --color-border: #383b37;
   --color-border-strong: #4c504b;
 
+  /* Same rule as the light palette, measured against the dark surfaces:
+     subtle is 5.17:1 on surface and 4.71:1 on surface-muted. */
   --color-fg: #f2f4f2;
   --color-fg-muted: #a8aca8;
-  --color-fg-subtle: #7d817d;
+  --color-fg-subtle: #939793;
 
   /* Brand blue lifted until it clears AA on the near-black base. */
   --color-accent: #4d88ff;

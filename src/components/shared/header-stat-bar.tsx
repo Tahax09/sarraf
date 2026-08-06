@@ -155,62 +155,77 @@ function StatCard({ stat }: { stat: HeaderStat }) {
   // card, named by the label the reader sees.
   const labelId = useId();
 
+  /*
+   * The group holds the term and the description and nothing else.
+   *
+   * A `<div>` inside a `<dl>` is only a name/value group if that is all it
+   * contains; this card also carries an icon, a chevron and the stretched link,
+   * and with those in the flow the markup was neither a definition list nor a
+   * plain one — axe read it as both `definition-list` and `dlitem` failing on
+   * every register page in the product. The decoration is therefore positioned
+   * out of the flow instead of being laid out as siblings, and the padding
+   * below reserves exactly the space the flex gaps used to occupy, so the card
+   * looks identical and finally parses as what it claims to be.
+   */
   return (
     <div
       className={cn(
-        "group flex items-start gap-3 rounded-card border border-border bg-surface p-4",
-        navigable && "relative transition-colors hover:border-accent",
+        "group relative rounded-card border border-border bg-surface p-4",
+        // 16 padding + 36 icon + 12 gap: where the text began when the icon was
+        // a flex sibling.
+        stat.icon && "ps-16",
+        // 16 padding + 16 chevron + 12 gap, so a long figure truncates at the
+        // same character it did before.
+        navigable && "pe-11 transition-colors hover:border-accent",
       )}
     >
-      {stat.icon ? (
-        <span
-          aria-hidden
-          className="flex size-9 shrink-0 items-center justify-center rounded-lg"
-          // The tint is the icon's own colour at low opacity, mixed rather
-          // than written down: one value per card stays right in both
-          // themes, and a flat wash keeps the no-gradients rule.
-          style={{
-            color: stat.color ?? TONE_COLORS[stat.tone ?? "default"],
-            backgroundColor: `color-mix(in srgb, ${
-              stat.color ?? TONE_COLORS[stat.tone ?? "default"]
-            } 14%, transparent)`,
-          }}
-        >
-          {stat.icon}
-        </span>
-      ) : null}
-      <div className="min-w-0 flex-1">
-        <dt id={labelId} className="text-xs text-fg-muted">
-          {stat.label}
-        </dt>
-        <dd
-          className={cn(
-            "mt-1 text-xl font-semibold",
-            stat.numeric && "numeric",
-            TONES[stat.tone ?? "default"],
-          )}
-        >
-          {/* Isolated: a figure carrying a Latin currency code must not be
-          re-ordered by the Arabic label above it. */}
-          <bdi className="block truncate">{stat.value}</bdi>
-          {stat.delta ? <DeltaIndicator delta={stat.delta} /> : null}
-        </dd>
-      </div>
-      {navigable ? (
-        <>
-          <ChevronRight
+      <dt id={labelId} className="text-xs text-fg-muted">
+        {stat.icon ? (
+          <span
             aria-hidden
-            // Points the way the page reads: right in English, mirrored to left
-            // in Arabic by `.rtl-flip`.
-            className="rtl-flip size-4 shrink-0 self-center text-fg-subtle transition-colors group-hover:text-accent"
-          />
-          <Link
-            href={stat.href!}
-            aria-labelledby={labelId}
-            className="absolute inset-0 rounded-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          />
-        </>
-      ) : null}
+            className="absolute start-4 top-4 flex size-9 items-center justify-center rounded-lg"
+            // The tint is the icon's own colour at low opacity, mixed rather
+            // than written down: one value per card stays right in both
+            // themes, and a flat wash keeps the no-gradients rule.
+            style={{
+              color: stat.color ?? TONE_COLORS[stat.tone ?? "default"],
+              backgroundColor: `color-mix(in srgb, ${
+                stat.color ?? TONE_COLORS[stat.tone ?? "default"]
+              } 14%, transparent)`,
+            }}
+          >
+            {stat.icon}
+          </span>
+        ) : null}
+        {stat.label}
+      </dt>
+      <dd
+        className={cn(
+          "mt-1 text-xl font-semibold",
+          stat.numeric && "numeric",
+          TONES[stat.tone ?? "default"],
+        )}
+      >
+        {/* Isolated: a figure carrying a Latin currency code must not be
+        re-ordered by the Arabic label above it. */}
+        <bdi className="block truncate">{stat.value}</bdi>
+        {stat.delta ? <DeltaIndicator delta={stat.delta} /> : null}
+        {navigable ? (
+          <>
+            <ChevronRight
+              aria-hidden
+              // Points the way the page reads: right in English, mirrored to
+              // left in Arabic by `.rtl-flip`.
+              className="rtl-flip absolute end-4 top-1/2 size-4 -translate-y-1/2 text-fg-subtle transition-colors group-hover:text-accent"
+            />
+            <Link
+              href={stat.href!}
+              aria-labelledby={labelId}
+              className="absolute inset-0 rounded-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            />
+          </>
+        ) : null}
+      </dd>
     </div>
   );
 }

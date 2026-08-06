@@ -98,7 +98,7 @@ function CurrencyMixCard({ mix }: { mix: ReportSnapshot["currencyMix"] }) {
       />
       <CardBody>
         <CompositionDonut
-          data={mix as unknown as Record<string, unknown>[]}
+          data={mix}
           nameKey="currency"
           valueKey="operations"
           legend="side"
@@ -135,6 +135,7 @@ function TrailingCard({ trailing }: { trailing: ReportSnapshot["trailing"] }) {
           data={points}
           xKey="day"
           dataKey="netFlow"
+          label={t("trailingNet")}
           color="var(--color-accent)"
           height={200}
           tooltipLabel={(value) => dateForDay.get(Number(value)) ?? String(value)}

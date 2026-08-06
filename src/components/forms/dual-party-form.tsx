@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
@@ -86,24 +86,38 @@ export function DualPartyForm({
 
   type Values = z.infer<typeof schema>;
 
+  /* One object for both readers below. Passing it to `useWatch` as well is
+     what makes the subscription return `Values` rather than a partial. */
+  const defaults: Values = {
+  senderClientId: "",
+  senderAccountId: "",
+  receiverClientId: "",
+  receiverAccountId: "",
+  amount: 0,
+  branchId: "",
+  feeEnabled: false,
+  feeType: "fixed",
+  feeValue: 0,
+  smsNotification: true,
+  };
+
   const form = useForm<Values>({
     resolver: zodResolver(schema),
     mode: "onBlur",
-    defaultValues: {
-      senderClientId: "",
-      senderAccountId: "",
-      receiverClientId: "",
-      receiverAccountId: "",
-      amount: 0,
-      branchId: "",
-      feeEnabled: false,
-      feeType: "fixed",
-      feeValue: 0,
-      smsNotification: true,
-    },
+    defaultValues: defaults,
   });
 
-  const values = form.watch();
+  /*
+   * `useWatch`, not `form.watch()`. The latter returns a fresh function on
+   * every render, which the React Compiler cannot memoize, so it bails out of
+   * optimising this component entirely — and a wizard re-rendering every field
+   * on every keystroke is exactly the component that needed it. `useWatch`
+   * subscribes through the control and returns a value.
+   */
+  // Untargeted, `useWatch` is typed as a deep partial — it cannot know which
+  // fields have been registered yet — so the defaults fill the gaps and the
+  // reads below stay total.
+  const values: Values = { ...defaults, ...useWatch({ control: form.control }) };
   const convertedAmount =
     conversion && rate.data ? values.amount * rate.data.rate : null;
 

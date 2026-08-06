@@ -34,8 +34,53 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           {
+            /*
+             * Every powerful feature is off, including the ones nothing here
+             * asks for. A back office that never needs the camera should say
+             * so, so that a dependency which starts asking is refused by the
+             * platform rather than by a review that may not happen.
+             *
+             * `geolocation` used to be `(self)` for a branch-picker idea that
+             * was never built.
+             */
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=(self)",
+            value: [
+              "accelerometer=()",
+              "autoplay=()",
+              "camera=()",
+              "display-capture=()",
+              "encrypted-media=()",
+              "fullscreen=(self)",
+              "geolocation=()",
+              "gyroscope=()",
+              "magnetometer=()",
+              "microphone=()",
+              "midi=()",
+              "payment=()",
+              "usb=()",
+              "xr-spatial-tracking=()",
+            ].join(", "),
+          },
+          {
+            /*
+             * Severs the window from anything it opens or is opened by, so a
+             * page that links out cannot be reached back through
+             * `window.opener`, and the browser can put this origin in its own
+             * process. `X-Frame-Options` and `frame-ancestors` already refuse
+             * framing; this covers the other direction.
+             */
+            key: "Cross-Origin-Opener-Policy",
+            value: "same-origin",
+          },
+          {
+            /*
+             * Nothing here may be embedded by another origin as a subresource.
+             * Not `same-origin`, which would also refuse the Turnstile iframe's
+             * own resources; `same-site` is the strongest value that leaves the
+             * challenge working.
+             */
+            key: "Cross-Origin-Resource-Policy",
+            value: "same-site",
           },
         ],
       },

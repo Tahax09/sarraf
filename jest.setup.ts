@@ -1,4 +1,19 @@
 import "@testing-library/jest-dom";
+import { configure } from "@testing-library/react";
+
+/*
+ * Testing Library's 1s default for `findBy`/`waitFor` is a wall-clock budget,
+ * not a work budget. The heavy integration suites — the two register forms, the
+ * approval queue, the countries admin — render a full page of providers, so on
+ * a machine running several Jest workers at once they lose the race and fail
+ * with "Unable to find role=table" while the render is still in flight. That
+ * reads as a logic regression and is not one: the same suites pass alone.
+ *
+ * The budget is raised rather than the worker count pinned, so the suite stays
+ * honest under whatever parallelism the runner picks. A real hang still fails,
+ * it just fails on Jest's own per-test timeout instead.
+ */
+configure({ asyncUtilTimeout: 15_000 });
 
 // jsdom implements neither of these, and the dialog-based modal/sheet and the
 // virtualized tables both reach for them.

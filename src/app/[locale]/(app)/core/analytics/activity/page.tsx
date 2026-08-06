@@ -131,7 +131,8 @@ export default function ActivityPage() {
         <CardHeader title={t("sevenDayBreakdown")} />
         <CardBody>
           <CategoryBarChart
-            data={breakdown as unknown as Record<string, unknown>[]}
+            data={breakdown}
+            figures="adjacent"
             xKey="label"
             series={[
               {

@@ -30,8 +30,30 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"] } },
-    { name: "mobile", use: { ...devices["Pixel 7"] } },
+    /*
+     * The axe sweep is its own project rather than a spec the two device
+     * projects both pick up. It visits every route in both catalogues, so
+     * running it twice would double the longest job in CI to certify the same
+     * markup: axe's rules are computed from the accessibility tree, and the
+     * only AA criteria that actually change with the viewport — reflow and
+     * target size — are the ones it cannot check mechanically. Those stay with
+     * `responsive.spec.ts` and with the reviewer.
+     */
+    {
+      name: "a11y",
+      testMatch: /a11y\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "desktop",
+      testIgnore: /a11y\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "mobile",
+      testIgnore: /a11y\.spec\.ts/,
+      use: { ...devices["Pixel 7"] },
+    },
   ],
   webServer: {
     command: `npx next dev --port ${PORT}`,

@@ -2,6 +2,49 @@ import { expect, type Locator, type Page } from "@playwright/test";
 import ar from "../messages/ar.json";
 
 /**
+ * Every route the app can reach, as `[name, path]`.
+ *
+ * One list, imported by the responsive, RTL and accessibility sweeps, so a new
+ * page is certified on all three axes the moment it is added here — and a page
+ * cannot be added to one sweep and forgotten by the other two.
+ */
+export const ROUTES: [string, string][] = [
+  ["dashboard", "/dashboard"],
+  ["clients", "/core/clients/list"],
+  ["client-profile", "/core/clients/cli_1000"],
+  ["accounts", "/core/accounts"],
+  ["account-profile", "/core/accounts/acc_0_0"],
+  ["withdrawal", "/core/withdrawal/list"],
+  ["authorized-withdrawal", "/core/authorized-withdrawal"],
+  ["external-transfer", "/core/external-transfer"],
+  ["fund-transfer", "/core/fund-transfer/list"],
+  ["ceft", "/core/currency-exchange-transfer/list"],
+  ["deposit", "/core/deposit/list"],
+  ["all-operations", "/core/analytics/all-operations"],
+  ["branch-cash-flow", "/core/analytics/branch-cash-flow"],
+  ["activity", "/core/analytics/activity"],
+  ["reports", "/core/reports"],
+  ["top-clients", "/core/top-clients"],
+  ["users", "/core/users"],
+  ["roles", "/core/roles"],
+  ["logs", "/core/logs"],
+  ["branches", "/branches"],
+  ["currencies", "/core/system/currencies"],
+  ["countries", "/settings/address-management/countries"],
+  ["system-info", "/settings/system-info"],
+  ["pricing", "/core/system/operations-pricing"],
+  ["profile", "/profile"],
+  ["withdrawal-register", "/core/withdrawal/register"],
+  ["external-register", "/core/external-transfer/register"],
+];
+
+/** Reachable without a session. Swept for accessibility in both locales. */
+export const PUBLIC_ROUTES: [string, string][] = [
+  ["login", "/login"],
+  ["forgot-password", "/forgot-password"],
+];
+
+/**
  * E2E asserts against the real Arabic catalogue, so a hardcoded string or a
  * missing key fails the suite instead of shipping.
  */

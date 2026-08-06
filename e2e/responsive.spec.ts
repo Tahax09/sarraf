@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { login } from "./helpers";
+import { login, ROUTES } from "./helpers";
 
 /**
  * Layout certification, measured rather than eyeballed.
@@ -9,37 +9,9 @@ import { login } from "./helpers";
  * introduce anywhere (one flex item without `min-w-0` took out all 27 routes at
  * once), and it is invisible on a laptop.
  */
-const ROUTES: [string, string][] = [
-  ["dashboard", "/dashboard"],
-  ["clients", "/core/clients/list"],
-  ["client-profile", "/core/clients/cli_1000"],
-  ["accounts", "/core/accounts"],
-  ["account-profile", "/core/accounts/acc_0_0"],
-  ["withdrawal", "/core/withdrawal/list"],
-  ["authorized-withdrawal", "/core/authorized-withdrawal"],
-  ["external-transfer", "/core/external-transfer"],
-  ["fund-transfer", "/core/fund-transfer/list"],
-  ["ceft", "/core/currency-exchange-transfer/list"],
-  ["deposit", "/core/deposit/list"],
-  ["all-operations", "/core/analytics/all-operations"],
-  ["branch-cash-flow", "/core/analytics/branch-cash-flow"],
-  ["activity", "/core/analytics/activity"],
-  ["reports", "/core/reports"],
-  ["top-clients", "/core/top-clients"],
-  ["users", "/core/users"],
-  ["roles", "/core/roles"],
-  ["logs", "/core/logs"],
-  ["branches", "/branches"],
-  ["currencies", "/core/system/currencies"],
-  ["countries", "/settings/address-management/countries"],
-  ["system-info", "/settings/system-info"],
-  ["pricing", "/core/system/operations-pricing"],
-  ["profile", "/profile"],
-  ["withdrawal-register", "/core/withdrawal/register"],
-  ["external-register", "/core/external-transfer/register"],
-];
-
-const WIDTHS = [320, 375, 390, 430, 768, 1024, 1280, 1440, 1920];
+// 2560 is the trading-desk monitor the shell had never been measured on: an
+// app that only ever centres content can leave a 1400px void beside a table.
+const WIDTHS = [320, 375, 390, 430, 768, 1024, 1280, 1440, 1920, 2560];
 
 type Overflow = {
   route: string;

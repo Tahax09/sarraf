@@ -660,7 +660,10 @@
   },
   "charts": {
     "dataTableFallback": "Chart data",
-    "noData": "No data to display"
+    "noData": "No data to display",
+    "category": "Category",
+    "value": "Value",
+    "period": "Period"
   },
   "enums": {
     "operationType": {

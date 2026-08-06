@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
@@ -291,7 +291,14 @@ function UserDialog({
     },
   });
 
-  const selectedRoles = form.watch("roleIds");
+  /*
+   * `useWatch`, not `form.watch()`. The latter returns a fresh function on
+   * every render, which the React Compiler cannot memoize, so it bails out of
+   * optimising this component entirely — and a wizard re-rendering every field
+   * on every keystroke is exactly the component that needed it. `useWatch`
+   * subscribes through the control and returns a value.
+   */
+  const selectedRoles = useWatch({ control: form.control, name: "roleIds" });
 
   return (
     <Dialog

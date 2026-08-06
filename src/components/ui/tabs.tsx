@@ -82,7 +82,14 @@ export function Tabs<T extends string>({
             role="tab"
             id={`tab-${item.value}`}
             aria-selected={selected}
-            aria-controls={`tabpanel-${item.value}`}
+            /*
+             * Only the selected tab points at a panel, because only the
+             * selected panel is mounted. An `aria-controls` naming an id that
+             * is not in the document is not a harmless hint — it is an invalid
+             * attribute value, and a reader that follows it lands nowhere. The
+             * pattern permits omitting it; it does not permit a dangling one.
+             */
+            aria-controls={selected ? `tabpanel-${item.value}` : undefined}
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(item.value)}
             className={cn(

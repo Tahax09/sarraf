@@ -660,7 +660,10 @@
   },
   "charts": {
     "dataTableFallback": "بيانات الرسم البياني",
-    "noData": "لا توجد بيانات لعرضها"
+    "noData": "لا توجد بيانات لعرضها",
+    "category": "الفئة",
+    "value": "القيمة",
+    "period": "الفترة"
   },
   "enums": {
     "operationType": {

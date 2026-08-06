@@ -291,7 +291,7 @@ export default function AllOperationsPage() {
           <CardHeader title={t("operationTypeMix")} description={chartScope} />
           <CardBody>
             <CompositionDonut
-              data={mix as unknown as Record<string, unknown>[]}
+              data={mix}
               nameKey="type"
               valueKey="count"
               // Side legend: the labels are long enough that a legend under
@@ -328,7 +328,7 @@ export default function AllOperationsPage() {
           />
           <CardBody>
             <CategoryBarChart
-              data={volume as unknown as Record<string, unknown>[]}
+              data={volume}
               xKey="type"
               series={[
                 {
