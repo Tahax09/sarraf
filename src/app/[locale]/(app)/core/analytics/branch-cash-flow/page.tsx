@@ -25,6 +25,7 @@ export default function BranchCashFlowPage() {
   const tf = useTranslations("fields");
   const tc = useTranslations("common");
   const tStats = useTranslations("stats");
+  const ts = useTranslations("sections");
   const tDashboard = useTranslations("dashboard");
 
   const query = useBranchFlow();
@@ -189,6 +190,13 @@ export default function BranchCashFlowPage() {
             onRetry={() => query.refetch()}
           />
         </CardBody>
+      </Card>
+
+      {/* The chart's own figures, in their own card. A table sharing the chart's
+          panel reads as part of the drawing; separated, it is what it is — the
+          exact numbers, for anyone the bars do not serve. */}
+      <Card>
+        <CardHeader title={ts("figures")} description={t("branchComparison")} />
         <DataTable
           columns={columns}
           rows={rows}

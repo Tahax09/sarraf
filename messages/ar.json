@@ -328,7 +328,9 @@
     "yesterday": "أمس",
     "netFlow": "صافي التدفق",
     "pageTotal": "إجمالي الصفحة",
-    "pageAccounts": "الحسابات في هذه الصفحة"
+    "pageAccounts": "الحسابات في هذه الصفحة",
+    "operations": "العمليات",
+    "lastActivity": "آخر نشاط"
   },
   "masked": {
     "revealLabel": "إظهار {field}",
@@ -594,7 +596,9 @@
     "outflow": "خارج",
     "currencyMix": "توزيع العملات",
     "trailingSeven": "سبعة أيام حتى {date}",
-    "trailingNet": "صافي التدفق اليومي"
+    "trailingNet": "صافي التدفق اليومي",
+    "cashFlowDescription": "الإيداعات مقابل السحوبات",
+    "currencyMixDescription": "حصة كل عملة من حجم اليوم"
   },
   "analytics": {
     "branchCashFlowTitle": "الفروع والتدفق النقدي",
@@ -711,5 +715,16 @@
       "oceania": "أوقيانوسيا",
       "antarctica": "القارة القطبية الجنوبية"
     }
+  },
+  "sections": {
+    "accountInformation": "معلومات الحساب",
+    "balanceInformation": "معلومات الرصيد",
+    "ownerInformation": "معلومات المالك",
+    "clientInformation": "معلومات العميل",
+    "contactInformation": "معلومات الاتصال",
+    "recentActivity": "النشاط الأخير",
+    "relatedRecords": "السجلات المرتبطة",
+    "recordInformation": "معلومات السجل",
+    "figures": "الأرقام التفصيلية"
   }
 }

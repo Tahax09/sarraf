@@ -43,7 +43,12 @@ function CashFlowCard({ totals }: { totals: BranchFlow }) {
 
   return (
     <Card>
-      <CardHeader title={t("cashFlow")} />
+      {/* Each card in this row says what it draws, not what day it draws: the
+          date is stated once, in the page header above them. */}
+      <CardHeader
+        title={t("cashFlow")}
+        description={t("cashFlowDescription")}
+      />
       <CardBody className="space-y-3">
         {sides.map((side) => (
           <div key={side.key} className="space-y-1">
@@ -87,7 +92,10 @@ function CurrencyMixCard({ mix }: { mix: ReportSnapshot["currencyMix"] }) {
   const t = useTranslations("reports");
   return (
     <Card>
-      <CardHeader title={t("currencyMix")} />
+      <CardHeader
+        title={t("currencyMix")}
+        description={t("currencyMixDescription")}
+      />
       <CardBody>
         <CompositionDonut
           data={mix as unknown as Record<string, unknown>[]}
@@ -255,7 +263,7 @@ export default function ReportsPage() {
       />
 
       <Card className="print:hidden">
-        <div className="p-3 sm:max-w-xs">
+        <CardBody className="sm:max-w-xs">
           <TextInput
             label={t("pickDate")}
             type="date"
@@ -264,7 +272,7 @@ export default function ReportsPage() {
             value={date}
             onChange={(event) => setDate(event.target.value)}
           />
-        </div>
+        </CardBody>
       </Card>
 
       <HeaderStatBar

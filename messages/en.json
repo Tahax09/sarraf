@@ -328,7 +328,9 @@
     "yesterday": "Yesterday",
     "netFlow": "Net flow",
     "pageTotal": "Page total",
-    "pageAccounts": "Accounts on this page"
+    "pageAccounts": "Accounts on this page",
+    "operations": "Operations",
+    "lastActivity": "Last activity"
   },
   "masked": {
     "revealLabel": "Reveal {field}",
@@ -594,7 +596,9 @@
     "outflow": "Out",
     "currencyMix": "Currency mix",
     "trailingSeven": "Seven days to {date}",
-    "trailingNet": "Daily net flow"
+    "trailingNet": "Daily net flow",
+    "cashFlowDescription": "Deposits against withdrawals",
+    "currencyMixDescription": "Share of the day's volume by currency"
   },
   "analytics": {
     "branchCashFlowTitle": "Branch & Cash Flow",
@@ -711,5 +715,16 @@
       "oceania": "Oceania",
       "antarctica": "Antarctica"
     }
+  },
+  "sections": {
+    "accountInformation": "Account information",
+    "balanceInformation": "Balance information",
+    "ownerInformation": "Owner information",
+    "clientInformation": "Client information",
+    "contactInformation": "Contact information",
+    "recentActivity": "Recent activity",
+    "relatedRecords": "Related records",
+    "recordInformation": "Record information",
+    "figures": "Exact figures"
   }
 }

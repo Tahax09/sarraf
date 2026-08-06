@@ -3,28 +3,48 @@
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { ArrowLeft, Coins, Pencil, Wallet } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarDays,
+  Coins,
+  Pencil,
+  User,
+  Wallet,
+} from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Button, buttonStyles } from "@/components/ui/button";
-import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { ErrorState, PageSkeleton } from "@/components/ui/states";
 import { PageHeader } from "@/components/shared/page-header";
 import { HeaderStatBar, STAT_COLORS } from "@/components/shared/header-stat-bar";
 import { DataTable, type Column } from "@/components/shared/data-table";
-import { DetailGrid, DetailItem } from "@/components/shared/detail-grid";
+import {
+  DetailGrid,
+  DetailItem,
+  RecordHeader,
+  RecordSection,
+} from "@/components/shared/detail-page";
 import { useClientNameText } from "@/components/shared/cells";
 import { MaskedField } from "@/components/shared/masked-field";
 import { ClientEditDialog } from "@/components/modules/client-edit-dialog";
 import { useAccounts, useClient } from "@/lib/api/hooks";
 import { useLabels } from "@/lib/labels";
 import { usePermission } from "@/lib/use-permission";
-import { formatAmount, formatCount, formatDateTime, formatPhone, isolate } from "@/lib/format";
+import {
+  formatAmount,
+  formatCount,
+  formatDate,
+  formatDateTime,
+  formatPhone,
+  isolate,
+} from "@/lib/format";
 import type { Account } from "@/lib/api/types";
 
 /**
- * One client, in full: the identity the register only summarises, every account
- * the client holds, and the way into an edit. Reached from the row drawer, and
- * linkable on its own — an operator can hand the URL to a colleague.
+ * One client, read top to bottom: who this is, the figures that describe the
+ * relationship, the identity record, how to reach them, and what they hold.
+ * Reached from the row drawer, and linkable on its own — an operator can hand
+ * the URL to a colleague.
  */
 export default function ClientProfilePage() {
   const params = useParams<{ id: string }>();
@@ -33,6 +53,7 @@ export default function ClientProfilePage() {
   const t = useTranslations("clients");
   const tf = useTranslations("fields");
   const tc = useTranslations("common");
+  const ts = useTranslations("sections");
   const tStats = useTranslations("stats");
   const tAccounts = useTranslations("accounts");
   const labels = useLabels();
@@ -98,7 +119,7 @@ export default function ClientProfilePage() {
     },
   ];
 
-  if (query.isLoading) return <PageSkeleton stats={2} />;
+  if (query.isLoading) return <PageSkeleton stats={3} />;
   if (query.isError || !query.data) {
     return (
       <div className="space-y-4">
@@ -113,10 +134,17 @@ export default function ClientProfilePage() {
   const client = query.data;
 
   return (
-    <div className="space-y-4">
-      <PageHeader
+    <div className="space-y-5">
+      <RecordHeader
+        icon={<User className="size-5" aria-hidden />}
+        eyebrow={t("profile")}
         title={clientName(client.name, client.nameEn)}
-        description={t("profile")}
+        meta={[
+          <span key="phone" className="numeric">
+            {formatPhone(client.phone)}
+          </span>,
+          client.email,
+        ]}
         actions={
           <>
             <Link
@@ -139,11 +167,21 @@ export default function ClientProfilePage() {
       <HeaderStatBar
         stats={[
           {
-            label: tStats("count"),
+            label: tAccounts("title"),
             value: formatCount(client.accountsCount),
             numeric: true,
             icon: <Wallet className="size-4" aria-hidden />,
+            // Not a link: every one of these accounts is listed further down
+            // the page, and the register cannot be pre-filtered to a client
+            // without putting the client's id in a query string.
             color: "var(--color-accent)",
+          },
+          {
+            label: tf("createdAt"),
+            value: formatDate(client.createdAt),
+            numeric: true,
+            icon: <CalendarDays className="size-4" aria-hidden />,
+            color: "var(--color-chart-deposit)",
           },
           ...totals.map(([currency, sum], index) => ({
             label: `${tStats("total")} — ${isolate(currency)}`,
@@ -155,36 +193,41 @@ export default function ClientProfilePage() {
         ]}
       />
 
-      <Card>
-        <CardHeader title={tc("details")} />
-        <CardBody>
-          <DetailGrid>
-            <DetailItem label={tf("entryId")} value={client.id} numeric />
-            <DetailItem label={tf("name")} value={client.name} />
-            <DetailItem
-              label={tf("nameEn")}
-              value={client.nameEn ?? tc("notAvailable")}
-            />
-            <DetailItem
-              label={tf("phone")}
-              value={formatPhone(client.phone)}
-              numeric
-            />
-            <DetailItem
-              label={tf("email")}
-              value={client.email ?? tc("notAvailable")}
-            />
-            <DetailItem
-              label={tf("createdAt")}
-              value={formatDateTime(client.createdAt)}
-              numeric
-            />
-          </DetailGrid>
-        </CardBody>
-      </Card>
+      <RecordSection title={ts("clientInformation")}>
+        <DetailGrid>
+          <DetailItem label={tf("name")} value={client.name} />
+          <DetailItem
+            label={tf("nameEn")}
+            value={client.nameEn ?? tc("notAvailable")}
+          />
+          <DetailItem label={tf("entryId")} value={client.id} numeric />
+          <DetailItem
+            label={tf("createdAt")}
+            value={formatDateTime(client.createdAt)}
+            numeric
+          />
+        </DetailGrid>
+      </RecordSection>
 
-      <Card>
-        <CardHeader title={tAccounts("heldAccounts")} />
+      <RecordSection title={ts("contactInformation")}>
+        <DetailGrid>
+          <DetailItem
+            label={tf("phone")}
+            value={formatPhone(client.phone)}
+            numeric
+          />
+          <DetailItem
+            label={tf("email")}
+            value={client.email ?? tc("notAvailable")}
+          />
+        </DetailGrid>
+      </RecordSection>
+
+      <RecordSection
+        title={ts("relatedRecords")}
+        description={tAccounts("heldAccounts")}
+        flush
+      >
         <DataTable
           columns={columns}
           rows={accounts}
@@ -192,7 +235,7 @@ export default function ClientProfilePage() {
           loading={accountsQuery.isLoading}
           error={accountsQuery.isError}
           onRetry={() => accountsQuery.refetch()}
-          caption={tf("account")}
+          caption={tAccounts("heldAccounts")}
           paginate={false}
           renderActions={(row) => (
             <Link
@@ -204,7 +247,7 @@ export default function ClientProfilePage() {
             </Link>
           )}
         />
-      </Card>
+      </RecordSection>
 
       <ClientEditDialog
         client={client}

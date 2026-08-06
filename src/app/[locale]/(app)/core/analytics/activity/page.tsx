@@ -24,6 +24,7 @@ export default function ActivityPage() {
   const t = useTranslations("analytics");
   const tf = useTranslations("fields");
   const tStats = useTranslations("stats");
+  const ts = useTranslations("sections");
   const labels = useLabels();
 
   const query = useActivity();
@@ -139,6 +140,15 @@ export default function ActivityPage() {
             onRetry={() => query.refetch()}
           />
         </CardBody>
+      </Card>
+
+      {/* The chart's exact figures, in a card of their own — see the same split
+          on Branch cash flow. */}
+      <Card>
+        <CardHeader
+          title={ts("figures")}
+          description={t("sevenDayBreakdown")}
+        />
         <DataTable
           columns={[
             {
