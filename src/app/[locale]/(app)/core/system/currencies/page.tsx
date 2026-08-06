@@ -160,6 +160,8 @@ export default function CurrenciesPage() {
           error={query.isError}
           onRetry={() => query.refetch()}
           caption={t("title")}
+          // A hundred and seventy currencies, delivered whole and paged here.
+          paging="client"
         />
       </Card>
 

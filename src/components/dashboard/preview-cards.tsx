@@ -82,7 +82,7 @@ export function TopClientsCard() {
         error={query.isError}
         onRetry={() => query.refetch()}
         caption={t("topClientsPreview")}
-        paginate={false}
+        paging="none"
       />
     </PreviewCard>
   );
@@ -146,7 +146,7 @@ export function RecentOperationsCard() {
         error={query.isError}
         onRetry={() => query.refetch()}
         caption={t("recentTransactions")}
-        paginate={false}
+        paging="none"
       />
     </PreviewCard>
   );

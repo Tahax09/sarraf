@@ -97,6 +97,9 @@ export default function OperationsPricingPage() {
           error={query.isError}
           onRetry={() => query.refetch()}
           caption={t("title")}
+          // One row per priced operation type — a list fixed by the contract.
+          paging="none"
+          numbered
         />
       </Card>
 

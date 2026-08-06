@@ -325,6 +325,9 @@ export default function ReportsPage() {
           onRetry={() => query.refetch()}
           emptyTitle={t("noData")}
           caption={t("perBranch")}
+          // One row per branch, on a document that is printed and exported whole.
+          paging="none"
+          numbered
         />
       </Card>
     </div>

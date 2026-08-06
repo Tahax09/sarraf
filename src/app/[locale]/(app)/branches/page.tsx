@@ -116,6 +116,9 @@ export default function BranchesPage() {
           error={query.isError}
           onRetry={() => query.refetch()}
           caption={t("title")}
+          // A branch network is a short, fixed list.
+          paging="none"
+          numbered
         />
       </Card>
 

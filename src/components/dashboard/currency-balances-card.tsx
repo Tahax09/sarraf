@@ -65,7 +65,7 @@ export function CurrencyBalancesCard() {
         error={query.isError}
         onRetry={() => query.refetch()}
         caption={t("currencyShare")}
-        paginate={false}
+        paging="none"
       />
     </Card>
   );

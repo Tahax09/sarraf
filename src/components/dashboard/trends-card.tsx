@@ -405,6 +405,8 @@ function TrendTable({ days }: { days: TrendRange }) {
       error={query.isError}
       onRetry={() => query.refetch()}
       caption={t("trendsRange", { days: formatCount(days) })}
+      // Up to ninety days of points behind the chart, delivered whole.
+      paging="client"
     />
   );
 }

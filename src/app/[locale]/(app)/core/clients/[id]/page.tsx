@@ -61,8 +61,15 @@ export default function ClientProfilePage() {
   const { can } = usePermission();
 
   const query = useClient(id);
-  // The client's own accounts, not the register: 50 is far above any real
-  // holding and keeps this to a single request.
+  /*
+   * The client's own accounts, not the register: 50 is far above any real
+   * holding and keeps this to a single request.
+   *
+   * Deliberately not paged, unlike the account panel next door. The balance
+   * cards below sum the whole holding per currency, and a paged table would
+   * hand them one page — a total that changes as the reader turns pages is
+   * worse than a table with no pager.
+   */
   const accountsQuery = useAccounts({ clientId: id, pageSize: 50 });
   const accounts = useMemo(
     () => accountsQuery.data?.items ?? [],
@@ -249,7 +256,8 @@ export default function ClientProfilePage() {
           error={accountsQuery.isError}
           onRetry={() => accountsQuery.refetch()}
           caption={tAccounts("heldAccounts")}
-          paginate={false}
+          // Bounded by the request above, and by what a client plausibly holds.
+          paging="none"
           renderActions={(row) => (
             <Link
               href={`/core/accounts/${row.id}`}

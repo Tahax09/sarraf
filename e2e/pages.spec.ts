@@ -75,3 +75,42 @@ test("the countries register shows both names and a single plus", async ({
   await expect(visible(page.getByText("+216")).first()).toBeVisible();
   await expect(page.getByText("++216")).toHaveCount(0);
 });
+
+/*
+ * The account panel used to ask for page 1 of ten movements and render them
+ * with no pager, under a stat bar announcing that the account had thirty-six —
+ * a number the reader could not reach. It pages on the server now, and the
+ * stat is taken from the first page and kept: "last activity" that walks
+ * backwards as the reader turns pages is worse than no stat at all.
+ */
+test("the account panel pages its movements without disturbing the stat bar", async ({
+  page,
+}) => {
+  await login(page);
+  await page.goto("/core/accounts/acc_0_0");
+
+  // The reference is the panel's primary column, so it is on screen in the
+  // desktop table and in the phone's card fallback alike.
+  const references = () =>
+    visible(page.getByText(/^LED-\d+$/)).allInnerTexts();
+  await expect(visible(page.getByText(/^LED-\d+$/)).first()).toBeVisible();
+
+  const stats = page.locator("dl").first();
+  const statsBefore = await stats.innerText();
+  const firstPage = await references();
+  expect(firstPage.length).toBeGreaterThan(0);
+
+  const pager = page.getByRole("navigation", { name: t("table.pagination") });
+  await pager.getByRole("button", { name: t("common.next") }).click();
+
+  // Every reference on the second page is one the first page did not hold, so
+  // the register really asked the server rather than re-slicing what it had.
+  await expect
+    .poll(async () => {
+      const next = await references();
+      return next.length > 0 && next.every((ref) => !firstPage.includes(ref));
+    })
+    .toBe(true);
+
+  expect(await stats.innerText()).toBe(statsBefore);
+});

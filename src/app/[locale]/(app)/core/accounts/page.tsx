@@ -177,7 +177,7 @@ export default function AccountsPage() {
           error={query.isError}
           onRetry={() => query.refetch()}
           caption={t("title")}
-          pagination={{
+          paging={{
             page: table.page,
             pageSize: table.pageSize,
             total,

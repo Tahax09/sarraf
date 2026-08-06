@@ -193,6 +193,8 @@ export default function UsersPage() {
           error={query.isError}
           onRetry={() => query.refetch()}
           caption={t("title")}
+          // `/users` returns every operator; the table pages them here.
+          paging="client"
         />
       </Card>
 

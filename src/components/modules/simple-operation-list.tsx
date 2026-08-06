@@ -216,7 +216,7 @@ export function SimpleOperationList({
           error={query.isError}
           onRetry={() => query.refetch()}
           caption={title}
-          pagination={{
+          paging={{
             page: table.page,
             pageSize: table.pageSize,
             total,

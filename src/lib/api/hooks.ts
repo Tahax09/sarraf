@@ -541,11 +541,15 @@ export const useBranchFlow = () =>
     queryFn: get<BranchFlow[]>(endpoints.analytics.branchFlow),
   });
 
-export const useAllOperations = (params: QueryParams) =>
+export const useAllOperations = (
+  params: QueryParams,
+  opts?: Opts<Paged<LedgerEntry>>,
+) =>
   usePagedQuery<LedgerEntry>(
     qk.analytics("ledger", params),
     endpoints.analytics.ledger,
     params,
+    opts,
   );
 
 export const useActivity = () =>

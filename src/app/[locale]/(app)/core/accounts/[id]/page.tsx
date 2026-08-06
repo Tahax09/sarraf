@@ -29,6 +29,7 @@ import { ClientNameText } from "@/components/shared/cells";
 import { MaskedField } from "@/components/shared/masked-field";
 import { AccountEditDialog } from "@/components/modules/account-edit-dialog";
 import { useAccount, useAllOperations } from "@/lib/api/hooks";
+import { useTableQuery } from "@/lib/use-table-query";
 import { useLabels } from "@/lib/labels";
 import { usePermission } from "@/lib/use-permission";
 import {
@@ -58,17 +59,35 @@ export default function AccountProfilePage() {
 
   const query = useAccount(id);
   const account = query.data;
-  // The account's own movements, pulled from the ledger the analytics register
-  // already serves — the account number is the search token, so no new endpoint
-  // is invented for this panel.
-  const operations = useAllOperations({
-    q: account?.number ?? "",
-    page: 1,
+  /*
+   * The account's own movements, pulled from the ledger the analytics register
+   * already serves — the account number is the search token, so no new endpoint
+   * is invented for this panel.
+   *
+   * Paged on the server like the register it borrows. It used to ask for page 1
+   * of ten rows and render them with no pager, beneath a stat bar announcing
+   * that the account had three hundred movements: the panel named a number the
+   * reader had no way to reach.
+   */
+  const table = useTableQuery({
     pageSize: 10,
+    filters: { q: account?.number ?? "" },
+    searchable: false,
+  });
+  const operations = useAllOperations(table.params, {
+    enabled: Boolean(account?.number),
   });
   const rows = operations.data?.items ?? [];
   const operationsTotal = operations.data?.total ?? 0;
-  const lastActivity = rows[0]?.createdAt ?? null;
+  /*
+   * The header stat describes the account, not the page in front of the reader:
+   * the first row of page 3 is an old movement, and "last activity" would walk
+   * backwards as the reader turned pages. Taken from page 1, where the newest
+   * movement is, and kept.
+   */
+  const [lastActivity, setLastActivity] = useState<string | null>(null);
+  const newest = table.page === 1 ? (rows[0]?.createdAt ?? null) : null;
+  if (newest !== null && newest !== lastActivity) setLastActivity(newest);
   const [editing, setEditing] = useState(false);
 
   const columns: Column<LedgerEntry>[] = [
@@ -277,7 +296,13 @@ export default function AccountProfilePage() {
           error={operations.isError}
           onRetry={() => operations.refetch()}
           caption={t("recentOperations")}
-          paginate={false}
+          paging={{
+            page: table.page,
+            pageSize: table.pageSize,
+            total: operationsTotal,
+            onPageChange: table.setPage,
+            onPageSizeChange: table.setPageSize,
+          }}
         />
       </RecordSection>
 

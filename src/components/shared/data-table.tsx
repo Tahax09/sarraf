@@ -49,7 +49,7 @@ export type Column<T> = {
  * count and puts the caller in charge of fetching — the table then renders the
  * rows it was given and never slices them.
  */
-export type ServerPagination = {
+export type ServerPaging = {
   page: number;
   pageSize: number;
   /** Every matching record, not just the ones on this page. */
@@ -57,6 +57,29 @@ export type ServerPagination = {
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
 };
+
+/**
+ * How a register pages. Every table states one of the three, and none of them
+ * is a default.
+ *
+ * This used to be two optional props, one of which defaulted to on, so a
+ * register's paging came from what its author had not written: nine tables
+ * paged in the browser because nobody had said otherwise, and nine opted out
+ * with `paginate={false}` — two spellings, one of them silent, for a decision
+ * that depends on which endpoint the rows came from. One required prop puts
+ * that decision in the diff, where a reviewer can disagree with it.
+ *
+ * - a `ServerPaging` object — the endpoint returns `Paged<T>`, so the register
+ *   holds one page and the pager asks for the next.
+ * - `"client"` — the endpoint returns the whole set and the table pages it
+ *   here. A property of the endpoint rather than a preference:
+ *   `docs/adr/0004-table-pagination.md` lists which endpoints are still
+ *   whole-set and what changes at a call site when one of them starts paging.
+ * - `"none"` — the set is bounded by the contract: a seven-day breakdown, a top
+ *   ten, the sessions of one account. Every row is on screen because every row
+ *   fits.
+ */
+export type Paging = ServerPaging | "client" | "none";
 
 export type DataTableProps<T> = {
   columns: Column<T>[];
@@ -79,17 +102,10 @@ export type DataTableProps<T> = {
   detailFooter?: (row: T, close: () => void) => ReactNode;
   /** Row-level actions, rendered in a trailing cell and on the mobile card. */
   renderActions?: (row: T) => ReactNode;
-  /**
-   * Client-side paging over a complete, small set (settings registers that
-   * arrive whole). Ignored when `pagination` is supplied, and off for embedded
-   * preview tables that show a fixed few.
-   */
-  paginate?: boolean;
-  /** Server-side paging. Takes precedence over `paginate`. */
-  pagination?: ServerPagination;
-  /** Initial rows per page in client mode; the reader picks from the options. */
+  /** Required: see `Paging`. Which of the three a register uses is a decision. */
+  paging: Paging;
+  /** Initial rows per page in `"client"` mode; the reader picks from `PAGE_SIZES`. */
   pageSize?: number;
-  pageSizeOptions?: number[];
   /** Leading row-number column. On whenever the table paginates. */
   numbered?: boolean;
   /**
@@ -313,10 +329,8 @@ export function DataTable<T>({
   detailTitle,
   detailFooter,
   renderActions,
-  paginate = true,
-  pagination,
+  paging,
   pageSize: initialPageSize = DEFAULT_PAGE_SIZES[0],
-  pageSizeOptions = DEFAULT_PAGE_SIZES,
   numbered,
   sort = null,
   onSortChange,
@@ -332,13 +346,13 @@ export function DataTable<T>({
   const [seenTotal, setSeenTotal] = useState(rows.length);
   const pageSizeId = useId();
 
-  const server = pagination ?? null;
+  const server = typeof paging === "object" ? paging : null;
   const [density, setDensity] = useDensity();
   const compact = density === "compact";
   const headCell = compact ? "px-3 py-1.5" : "px-3 py-2.5";
   const bodyCell = compact ? "px-3 py-1.5" : "px-3 py-3";
-  const paging = server !== null || paginate;
-  const showNumbers = numbered ?? paging;
+  const paged = server !== null || paging === "client";
+  const showNumbers = numbered ?? paged;
 
   const visibleColumns = useMemo(
     () => columns.filter((c) => !c.hidden),
@@ -380,14 +394,14 @@ export function DataTable<T>({
 
   const total = server ? server.total : rows.length;
   const pageSize = server ? server.pageSize : clientPageSize;
-  const pageCount = paging ? Math.max(1, Math.ceil(total / pageSize)) : 1;
+  const pageCount = paged ? Math.max(1, Math.ceil(total / pageSize)) : 1;
   const page = server ? server.page : Math.min(requestedPage, pageCount);
-  const offset = paging ? (page - 1) * pageSize : 0;
+  const offset = paged ? (page - 1) * pageSize : 0;
   // The server already sent exactly one page; only client mode slices.
   const pageRows =
-    server || !paginate
-      ? orderedRows
-      : orderedRows.slice(offset, offset + pageSize);
+    paging === "client"
+      ? orderedRows.slice(offset, offset + pageSize)
+      : orderedRows;
 
   const goToPage = (next: number) => {
     if (server) server.onPageChange(next);
@@ -620,7 +634,7 @@ export function DataTable<T>({
       {/* The pager appears whenever more records exist than the smallest page
           size — in server mode that is judged on `total`, so a second page can
           never hide behind a full first one. */}
-      {paging && total > pageSizeOptions[0] ? (
+      {paged && total > DEFAULT_PAGE_SIZES[0] ? (
         <nav
           aria-label={tt("pagination")}
           // Not sticky: with `scroll` the rows are bounded and the pager already
@@ -638,7 +652,7 @@ export function DataTable<T>({
               onChange={(event) => changePageSize(Number(event.target.value))}
               className="numeric rounded-md border border-border bg-surface px-2 py-1 text-xs text-fg"
             >
-              {pageSizeOptions.map((option) => (
+              {DEFAULT_PAGE_SIZES.map((option) => (
                 <option key={option} value={option}>
                   {formatCount(option)}
                 </option>

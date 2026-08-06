@@ -64,7 +64,7 @@ export function PricingSummaryCard() {
         error={query.isError}
         onRetry={() => query.refetch()}
         caption={t("pricingSummary")}
-        paginate={false}
+        paging="none"
       />
     </Card>
   );

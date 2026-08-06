@@ -181,7 +181,7 @@ export default function ActivityPage() {
           onRetry={() => query.refetch()}
           caption={t("sevenDayBreakdown")}
           // Fixed-length companion to the chart above — seven rows, always.
-          paginate={false}
+          paging="none"
         />
       </Card>
 
@@ -195,6 +195,8 @@ export default function ActivityPage() {
           error={query.isError}
           onRetry={() => query.refetch()}
           caption={t("recentActivity")}
+          // `/analytics/activity` returns the feed whole; the table pages it here.
+          paging="client"
         />
       </Card>
     </div>

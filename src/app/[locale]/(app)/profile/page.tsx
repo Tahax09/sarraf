@@ -357,7 +357,7 @@ function SessionsCard() {
           error={query.isError}
           onRetry={() => query.refetch()}
           caption={t("activeSessions")}
-          paginate={false}
+          paging="none"
         />
       </Card>
 

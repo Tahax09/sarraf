@@ -48,6 +48,7 @@ describe("DataTable", () => {
         rows={rows}
         getRowId={(row) => row.id}
         caption="t"
+        paging="client"
       />,
     );
 
@@ -74,6 +75,7 @@ describe("DataTable", () => {
         rows={rows}
         getRowId={(row) => row.id}
         caption="t"
+        paging="client"
       />,
     );
     expect(
@@ -88,6 +90,7 @@ describe("DataTable", () => {
         rows={[{ ...rows[0], fee: 5 }]}
         getRowId={(row) => row.id}
         caption="t"
+        paging="client"
       />,
     );
     expect(
@@ -103,6 +106,7 @@ describe("DataTable", () => {
         rows={rows}
         getRowId={(row) => row.id}
         caption="t"
+        paging="client"
         detailTitle={(row) => row.name}
         renderDetail={(row) => (
           <DetailSection title="d">
@@ -128,6 +132,7 @@ describe("DataTable", () => {
         rows={rows}
         getRowId={(row) => row.id}
         caption="t"
+        paging="client"
         detailTitle={(row) => row.name}
         renderDetail={(row) => (
           <DetailSection title="d">
@@ -147,7 +152,9 @@ describe("DataTable", () => {
 
     // The action opening a dialog of its own has to be able to dismiss the
     // drawer first, or two modals fight over the focus trap.
-    const action = await screen.findByRole("button", { name: "edit شركة النور" });
+    const action = await screen.findByRole("button", {
+      name: "edit شركة النور",
+    });
     await user.click(action);
     expect(screen.queryByText("8f2c9d1e4a")).not.toBeInTheDocument();
   });
@@ -161,15 +168,25 @@ describe("DataTable", () => {
       fee: null,
     }));
     renderWithProviders(
-      <DataTable columns={columns(false)} rows={many} getRowId={(row) => row.id} caption="t" />,
+      <DataTable
+        columns={columns(false)}
+        rows={many}
+        getRowId={(row) => row.id}
+        caption="t"
+
+        paging="client"
+      />,
     );
 
-    const body = () => within(screen.getByRole("table")).getAllByRole("row").slice(1);
+    const body = () =>
+      within(screen.getByRole("table")).getAllByRole("row").slice(1);
     expect(body()).toHaveLength(10);
     expect(within(body()[0]).getByText("1")).toBeInTheDocument();
 
     await user.click(
-      screen.getByRole("button", { name: message("table.page", { page: "2" }) }),
+      screen.getByRole("button", {
+        name: message("table.page", { page: "2" }),
+      }),
     );
 
     const second = body();
@@ -188,14 +205,23 @@ describe("DataTable", () => {
       fee: null,
     }));
     renderWithProviders(
-      <DataTable columns={columns(false)} rows={many} getRowId={(row) => row.id} caption="t" />,
+      <DataTable
+        columns={columns(false)}
+        rows={many}
+        getRowId={(row) => row.id}
+        caption="t"
+
+        paging="client"
+      />,
     );
 
     await user.selectOptions(
       screen.getByLabelText(message("table.rowsPerPage")),
       "25",
     );
-    expect(within(screen.getByRole("table")).getAllByRole("row").slice(1)).toHaveLength(23);
+    expect(
+      within(screen.getByRole("table")).getAllByRole("row").slice(1),
+    ).toHaveLength(23);
   });
 
   it("leaves preview tables unpaged and unnumbered", () => {
@@ -205,7 +231,7 @@ describe("DataTable", () => {
         rows={rows}
         getRowId={(row) => row.id}
         caption="t"
-        paginate={false}
+        paging="none"
       />,
     );
     expect(
@@ -220,6 +246,7 @@ describe("DataTable", () => {
         rows={[]}
         getRowId={(row) => row.id}
         caption="t"
+        paging="client"
       />,
     );
     expect(screen.getByText(message("common.empty"))).toBeInTheDocument();
@@ -232,7 +259,7 @@ describe("DataTable", () => {
         rows={rows}
         getRowId={(row) => row.id}
         caption="t"
-        pagination={{
+        paging={{
           page: 1,
           pageSize: 2,
           total: 137,
@@ -256,7 +283,7 @@ describe("DataTable", () => {
         rows={rows}
         getRowId={(row) => row.id}
         caption="t"
-        pagination={{
+        paging={{
           page: 3,
           pageSize: 10,
           total: 137,
@@ -282,7 +309,7 @@ describe("DataTable", () => {
         rows={rows}
         getRowId={(row) => row.id}
         caption="t"
-        pagination={{
+        paging={{
           page: 1,
           pageSize: 10,
           total: 137,
@@ -293,7 +320,9 @@ describe("DataTable", () => {
     );
 
     await user.click(
-      screen.getByRole("button", { name: message("table.page", { page: "2" }) }),
+      screen.getByRole("button", {
+        name: message("table.page", { page: "2" }),
+      }),
     );
     expect(onPageChange).toHaveBeenCalledWith(2);
 
@@ -311,7 +340,7 @@ describe("DataTable", () => {
         rows={rows}
         getRowId={(row) => row.id}
         caption="t"
-        pagination={{
+        paging={{
           page: 2,
           pageSize: 2,
           total: 9,
@@ -348,6 +377,7 @@ describe("DataTable", () => {
         caption="t"
         sort={null}
         onSortChange={onSortChange}
+        paging="client"
       />,
     );
 
@@ -368,6 +398,7 @@ describe("DataTable", () => {
         caption="t"
         sort={{ key: "amount", direction: "asc" }}
         onSortChange={onSortChange}
+        paging="client"
       />,
     );
     expect(header()).toHaveAttribute("aria-sort", "ascending");
@@ -388,6 +419,7 @@ describe("DataTable", () => {
         caption="t"
         sort={null}
         onSortChange={jest.fn()}
+        paging="client"
       />,
     );
 
@@ -411,7 +443,7 @@ describe("DataTable", () => {
         rows={many}
         getRowId={(row) => row.id}
         caption="t"
-        paginate
+        paging="client"
       />,
     );
 
@@ -430,7 +462,7 @@ describe("DataTable", () => {
         rows={many}
         getRowId={(row) => row.id}
         caption="t"
-        paginate
+        paging="client"
       />,
     );
     expect(
@@ -449,6 +481,7 @@ describe("DataTable", () => {
         onRetry={onRetry}
         getRowId={(row) => row.id}
         caption="t"
+        paging="client"
       />,
     );
     await user.click(

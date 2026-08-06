@@ -393,7 +393,7 @@ function QueueTable<T extends QueueOperation>({
         error={query.isError}
         onRetry={() => query.refetch()}
         caption={`${title} — ${enumLabels.status(status)}`}
-        pagination={{
+        paging={{
           page: table.page,
           pageSize: table.pageSize,
           total,

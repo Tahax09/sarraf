@@ -373,7 +373,7 @@ export default function AllOperationsPage() {
           error={query.isError}
           onRetry={() => query.refetch()}
           caption={t("allOperationsTitle")}
-          pagination={{
+          paging={{
             page: table.page,
             pageSize: table.pageSize,
             total,

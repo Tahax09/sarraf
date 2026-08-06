@@ -246,6 +246,8 @@ export default function CountriesPage() {
           error={query.isError}
           onRetry={() => query.refetch()}
           caption={t("title")}
+          // The whole register arrives in one response; the table pages it here.
+          paging="client"
         />
       </Card>
 

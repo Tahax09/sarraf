@@ -106,7 +106,7 @@ export default function TopClientsPage() {
           onRetry={() => query.refetch()}
           caption={t("title")}
           // Fixed-length ranking: no page-size control, but keep the rank number.
-          paginate={false}
+          paging="none"
           numbered
           detailTitle={(row) => clientName(row.name, row.nameEn)}
           renderDetail={(row) => (

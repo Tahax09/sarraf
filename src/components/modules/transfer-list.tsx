@@ -155,7 +155,7 @@ export function TransferList<T extends TransferOperation>({
           error={query.isError}
           onRetry={() => query.refetch()}
           caption={title}
-          pagination={{
+          paging={{
             page: table.page,
             pageSize: table.pageSize,
             total,

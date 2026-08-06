@@ -212,6 +212,9 @@ export default function BranchCashFlowPage() {
           error={query.isError}
           onRetry={() => query.refetch()}
           caption={t("branchComparison")}
+          // One row per branch, and the page is printed and exported whole.
+          paging="none"
+          numbered
         />
       </Card>
     </div>
