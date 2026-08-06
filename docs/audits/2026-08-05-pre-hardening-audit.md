@@ -1,5 +1,19 @@
 # Saraf Admin Panel — Frontend Architecture & Production Readiness Audit
 
+> **Historical snapshot — 2026-08-05. Superseded; do not read as current.**
+>
+> This is the audit that started the production-hardening work, kept because the
+> findings explain why the codebase changed. Most of what it reports as missing
+> now exists: CSP and the full header set, route-level authorization, error
+> boundaries, server paging, the skip link, linked field errors, named dialogs,
+> lazy charts, coverage thresholds, and the documentation whose absence it
+> scores 6.5.
+>
+> For the current state read [ARCHITECTURE](../ARCHITECTURE.md),
+> [SECURITY](../SECURITY.md), [ACCESSIBILITY](../ACCESSIBILITY.md),
+> [PERFORMANCE](../PERFORMANCE.md) and the [ADRs](../adr/README.md). Where this
+> file and those disagree, those are right.
+
 **Scope:** the entire front-end repository as it stands at the date of this document.
 **Method:** read-only inspection of every source file, plus a clean `next build`, `tsc --noEmit`,
 `next lint` and the full Jest suite. No code was modified to produce this report.

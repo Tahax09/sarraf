@@ -60,15 +60,25 @@ somewhere new by rendering the component, never by importing a file.
 
 ## Tables
 
-Every list view goes through `<DataTable>`, which pages client-side: 10 rows by
-default, switchable to 10 / 20 / 25 / 50, with a leading row-number column that
-keeps counting across pages (page 2 starts at 11). Two kinds of table opt out
-with `paginate={false}`: fixed-length rankings and chart companions (Top
-Clients, the 7-day activity breakdown, the dashboard previews) — Top Clients
-keeps `numbered` so the rank still shows. Paging replaced virtualization on the
-long lists — the ledger and the currency table now mount one page instead of
-3,700 rows — and `virtualize` remains only as the escape hatch for a long
-`paginate={false}` table.
+Every list view goes through `<DataTable>`. It takes a **required `paging`
+prop** with three possible values, because how a register pages depends on the
+endpoint behind it and that decision belongs in the diff rather than in a
+default:
+
+| Value | When | What the table does |
+| --- | --- | --- |
+| a `ServerPaging` object | the endpoint returns `Paged<T>` | renders the page it was given; the pager calls back for the next |
+| `"client"` | the endpoint returns the whole array | slices in the browser and pages the slices |
+| `"none"` | the set is bounded by the contract | renders every row, no pager |
+
+Page sizes are 10 / 20 / 25 / 50, defaulting to 10, and the leading row-number
+column keeps counting across pages (page 2 starts at 11). Which register uses
+which value, and the three-line change each `"client"` register needs when its
+endpoint starts paging, is [ADR-0004](docs/adr/0004-table-pagination.md).
+
+From the `md` breakpoint up the table is real `<table>` markup; below it, the
+same rows render as cards. The pager and the row-density preference live beside
+the table in `table-pager.tsx` and `table-density.tsx`.
 
 Raw translation keys must never reach the screen. `src/test/__tests__/i18n-keys.test.ts`
 walks every `useTranslations` binding in `src/` and fails the build if a key is
@@ -84,7 +94,11 @@ caught before QA.
 | `npm run typecheck` | `tsc --noEmit`, strict. |
 | `npm run lint` | ESLint, including the React Compiler rules. |
 | `npm test` | Jest + React Testing Library (unit + integration). |
+| `npm run test:coverage` | Jest with the coverage thresholds enforced. |
+| `npm run check:messages` | Fails if the `ar` and `en` catalogues disagree on a key or carry an empty value. |
 | `npm run test:e2e` | Playwright, money-movement flows, desktop **and** phone. |
+| `npm run test:e2e:a11y` | axe-core over every route, WCAG 2.1/2.2 AA tags. |
+| `npm run perf:budget` | Production build + per-route JavaScript budget. |
 
 ## Testing
 
@@ -102,10 +116,30 @@ caught before QA.
   authorized withdrawal (register + approve), external transfer (cancel with
   typed confirmation and mandatory reason), fund transfer, CEFT. Both a desktop
   and a Pixel-7 project run the same specs, since approvals happen on phones.
+- **Accessibility** (`e2e/a11y.spec.ts`) — axe-core over every route in the app,
+  at WCAG 2.1/2.2 AA tags. What that does and does not prove is
+  [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md).
+- **Performance** (`e2e/performance.spec.ts`) — per-route JavaScript budget,
+  measured in the browser on a production build. Skipped unless `E2E_PROD=1`;
+  `npm run perf:budget` sets it up. Numbers in
+  [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 Playwright reuses a dev server already listening on port 3000 and starts one
 otherwise. Use `http://localhost`, not `127.0.0.1`: the Next dev server treats
 the numeric host as cross-origin and refuses to serve its chunks.
+
+## Documentation
+
+| Document | What it answers |
+| --- | --- |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | how the pieces fit and which layer owns what |
+| [docs/SECURITY.md](docs/SECURITY.md) | what is defended, and what only the backend or the deployment can fix |
+| [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md) | the AA target, what is verified automatically, and the known gaps |
+| [docs/PERFORMANCE.md](docs/PERFORMANCE.md) | the JavaScript budget and how it is enforced |
+| [docs/API_CONTRACT.md](docs/API_CONTRACT.md) | what this frontend assumes of the backend |
+| [docs/adr/](docs/adr/README.md) | why the shape is the shape — the decisions and the rejected alternatives |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | the gates, the rules, and where code goes |
+| [CHANGELOG.md](CHANGELOG.md) | what changed |
 
 ## Open items
 
@@ -119,9 +153,11 @@ Flagged rather than guessed:
    complete country list or expects this table to be maintained by hand, and
    whether the codes are reference data or live.
 3. **Banking Services** — no specification was provided; not built.
-4. **API contract** — no contract document exists in the repo, so
-   `src/lib/api/types.ts` and `src/lib/api/endpoints.ts` are the single place to
-   reconcile with the backend.
+4. **API contract** — the backend's OpenAPI document was never supplied, so
+   [docs/API_CONTRACT.md](docs/API_CONTRACT.md) writes down what this frontend
+   assumes, and `src/lib/api/endpoints.ts` and `src/lib/api/types.ts` are its
+   machine-readable half. Its closing section lists the five questions still
+   open with the backend team.
 5. **Exports** — no export endpoint was specified, so CSV/PDF are produced
    client-side from what is already on screen (CSV with formula-injection
    neutralization; PDF via the browser's print pipeline and a print stylesheet,
