@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type ConsoleMessage } from "@playwright/test";
 import { login, t, visible } from "./helpers";
 
 /**
@@ -13,10 +13,25 @@ const pages = [
   "/settings/address-management/countries",
 ];
 
+/**
+ * The dev-only overlay injects its own `<style>` elements, which the CSP
+ * refuses — `style-src-elem`, sourced from `next-devtools`. Verified absent
+ * from a production build (`next build && next start`: zero violations), so the
+ * report is about the tooling around the app, not the app.
+ */
+function fromDevtools(message: ConsoleMessage): boolean {
+  return (
+    message.text().includes("Content Security Policy") &&
+    message.location().url.includes("next-devtools")
+  );
+}
+
 for (const path of pages) {
   test(`${path} renders without a console error`, async ({ page }) => {
     const errors: string[] = [];
-    page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+    page.on("console", (m) => {
+      if (m.type() === "error" && !fromDevtools(m)) errors.push(m.text());
+    });
     page.on("pageerror", (error) => errors.push(String(error)));
 
     await login(page);
