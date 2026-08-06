@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Card, CardHeader } from "@/components/ui/card";
+import { buttonStyles } from "@/components/ui/button";
 import { DataTable, type Column } from "@/components/shared/data-table";
 import { useClientNameText } from "@/components/shared/cells";
 import { useRecentOperations, useTopClients } from "@/lib/api/hooks";
@@ -34,7 +35,7 @@ function PreviewCard({
         action={
           <Link
             href={href}
-            className="text-xs font-medium text-accent hover:underline"
+            className={buttonStyles({ variant: "link", className: "-me-1 text-xs" })}
           >
             {t("viewAll")}
           </Link>

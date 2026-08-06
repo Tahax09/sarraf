@@ -37,7 +37,10 @@ export function CardHeader({
           <p className="mt-0.5 text-xs text-fg-muted">{description}</p>
         ) : null}
       </div>
-      {action ? <div className="shrink-0">{action}</div> : null}
+      {/* `shrink-0` keeps a long title from squeezing the action; `max-w-full`
+          stops the same rule from pushing a wide action (a row of legend
+          chips, say) past the card on a phone — capped, it wraps instead. */}
+      {action ? <div className="max-w-full shrink-0">{action}</div> : null}
     </div>
   );
 }

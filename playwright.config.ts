@@ -40,6 +40,10 @@ export default defineConfig({
     timeout: 120_000,
     env: {
       NEXT_PUBLIC_API_MODE: "fixtures",
+      // Cloudflare's always-passes test key. A real site key is bound to its
+      // domains, so one configured for a deployment would leave the sign-in
+      // button disabled here and fail every spec at the first step.
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA",
       NEXT_PUBLIC_API_BASE_URL:
         process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://api.example.invalid",
     },

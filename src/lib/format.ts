@@ -64,6 +64,29 @@ export function formatCount(value: number): string {
 }
 
 /**
+ * Axis ticks only: `18742951` → `18.7M`. A cash-flow axis runs into the tens of
+ * millions, and the full figure is wider than any axis gutter that leaves room
+ * for the plot — it clipped mid-digit. The exact numbers live in the table the
+ * chart sits above, never in a tick.
+ */
+export function formatCompact(value: number): string {
+  return new Intl.NumberFormat(LOCALE_FOR_NUMBERS, {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
+/**
+ * A year is a label, not a quantity: grouped it reads "2,026". Same digits as
+ * every other figure, no separator.
+ */
+export function formatYear(value: number): string {
+  return new Intl.NumberFormat(LOCALE_FOR_NUMBERS, {
+    useGrouping: false,
+  }).format(value);
+}
+
+/**
  * Signed percentage for a period-on-period change: `0.124` → `+12.4%`. The sign
  * is always written, because "12%" beside a figure reads as a share of it
  * rather than a movement. Whole percentages drop the decimal.

@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Card, CardHeader } from "@/components/ui/card";
+import { buttonStyles } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DataTable, type Column } from "@/components/shared/data-table";
 import { usePricing } from "@/lib/api/hooks";
@@ -49,7 +50,7 @@ export function PricingSummaryCard() {
         action={
           <Link
             href="/core/system/operations-pricing"
-            className="text-xs font-medium text-accent hover:underline"
+            className={buttonStyles({ variant: "link", className: "-me-1 text-xs" })}
           >
             {t("pricingManageLink")}
           </Link>

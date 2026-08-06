@@ -13,7 +13,10 @@ const VARIANTS: Record<Variant, string> = {
   ghost: "bg-transparent text-fg hover:bg-surface-muted",
   danger: "bg-danger text-white hover:opacity-90",
   success: "bg-success text-white hover:opacity-90",
-  link: "bg-transparent text-accent underline-offset-4 hover:underline p-0 h-auto",
+  // `min-h-6` and the sliver of inline padding are the WCAG 2.5.8 target: a
+  // link styled as text still has to be 24px tall to be tappable, and the
+  // negative margin at the call site keeps it optically flush.
+  link: "bg-transparent text-accent underline-offset-4 hover:underline min-h-6 px-1 h-auto",
 };
 
 const SIZES: Record<Size, string> = {

@@ -310,7 +310,7 @@ function TrendComparisonCard({
             {permission.can("analytics") ? (
               <Link
                 href={href}
-                className="rounded-md px-1 text-xs font-medium text-accent hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                className="inline-flex min-h-6 items-center rounded-md px-1 text-xs font-medium text-accent hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               >
                 {t("viewAll")}
               </Link>

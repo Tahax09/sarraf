@@ -437,7 +437,8 @@
     "title": "الحسابات",
     "profile": "ملف الحساب",
     "edit": "تعديل الحساب",
-    "recentOperations": "أحدث العمليات"
+    "recentOperations": "أحدث العمليات",
+    "heldAccounts": "الحسابات المملوكة"
   },
   "withdrawal": {
     "listTitle": "عمليات السحب",

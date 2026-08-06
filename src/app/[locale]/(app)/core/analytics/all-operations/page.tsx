@@ -274,9 +274,9 @@ export default function AllOperationsPage() {
           },
           {
             label: tc("showing", {
-              from: firstRow,
-              to: lastRow,
-              total,
+              from: formatCount(firstRow),
+              to: formatCount(lastRow),
+              total: formatCount(total),
             }),
             value: formatCount(rows.length),
             numeric: true,

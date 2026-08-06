@@ -102,7 +102,13 @@ function Shell({ children }: { children: ReactNode }) {
            * submitting a term to a URL — client names and account numbers must
            * not travel in query strings, history or referrers.
            */}
-          <div className="mx-auto w-full max-w-md">
+          {/*
+           * `min-w-0`: the trigger truncates its own label, but a flex item
+           * defaults to a min-width of its content — without this the header
+           * refuses to fall below ~525px and every page scrolls sideways on a
+           * phone.
+           */}
+          <div className="mx-auto w-full min-w-0 max-w-md">
             <GlobalSearchTrigger />
           </div>
 

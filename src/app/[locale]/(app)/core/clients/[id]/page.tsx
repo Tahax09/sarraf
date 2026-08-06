@@ -6,12 +6,12 @@ import { useTranslations } from "next-intl";
 import { ArrowLeft, Coins, Pencil, Wallet } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Button, buttonStyles } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { ErrorState, PageSkeleton } from "@/components/ui/states";
 import { PageHeader } from "@/components/shared/page-header";
 import { HeaderStatBar, STAT_COLORS } from "@/components/shared/header-stat-bar";
 import { DataTable, type Column } from "@/components/shared/data-table";
-import { DetailRow, DetailSection } from "@/components/shared/detail-drawer";
+import { DetailGrid, DetailItem } from "@/components/shared/detail-grid";
 import { useClientNameText } from "@/components/shared/cells";
 import { MaskedField } from "@/components/shared/masked-field";
 import { ClientEditDialog } from "@/components/modules/client-edit-dialog";
@@ -34,6 +34,7 @@ export default function ClientProfilePage() {
   const tf = useTranslations("fields");
   const tc = useTranslations("common");
   const tStats = useTranslations("stats");
+  const tAccounts = useTranslations("accounts");
   const labels = useLabels();
   const clientName = useClientNameText();
   const { can } = usePermission();
@@ -155,31 +156,35 @@ export default function ClientProfilePage() {
       />
 
       <Card>
-        <DetailSection title={tc("details")}>
-          <DetailRow label={tf("entryId")} value={client.id} numeric />
-          <DetailRow label={tf("name")} value={client.name} />
-          <DetailRow
-            label={tf("nameEn")}
-            value={client.nameEn ?? tc("notAvailable")}
-          />
-          <DetailRow
-            label={tf("phone")}
-            value={formatPhone(client.phone)}
-            numeric
-          />
-          <DetailRow
-            label={tf("email")}
-            value={client.email ?? tc("notAvailable")}
-          />
-          <DetailRow
-            label={tf("createdAt")}
-            value={formatDateTime(client.createdAt)}
-            numeric
-          />
-        </DetailSection>
+        <CardHeader title={tc("details")} />
+        <CardBody>
+          <DetailGrid>
+            <DetailItem label={tf("entryId")} value={client.id} numeric />
+            <DetailItem label={tf("name")} value={client.name} />
+            <DetailItem
+              label={tf("nameEn")}
+              value={client.nameEn ?? tc("notAvailable")}
+            />
+            <DetailItem
+              label={tf("phone")}
+              value={formatPhone(client.phone)}
+              numeric
+            />
+            <DetailItem
+              label={tf("email")}
+              value={client.email ?? tc("notAvailable")}
+            />
+            <DetailItem
+              label={tf("createdAt")}
+              value={formatDateTime(client.createdAt)}
+              numeric
+            />
+          </DetailGrid>
+        </CardBody>
       </Card>
 
       <Card>
+        <CardHeader title={tAccounts("heldAccounts")} />
         <DataTable
           columns={columns}
           rows={accounts}

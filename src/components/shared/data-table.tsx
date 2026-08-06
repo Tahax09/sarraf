@@ -511,7 +511,10 @@ export function DataTable<T>({
                 <button
                   type="button"
                   onClick={() => setSelected(row)}
-                  className="mt-3 text-xs font-medium text-accent"
+                  // `min-h-6` + padding: this is the card fallback's only tap
+                  // target, and 11px type alone leaves it under the 24px WCAG
+                  // 2.5.8 minimum.
+                  className="-mx-1 mt-2 inline-flex min-h-6 items-center rounded-md px-1 text-xs font-medium text-accent"
                 >
                   {t("expandRow")}
                 </button>
@@ -532,7 +535,7 @@ export function DataTable<T>({
           // viewport only covered the last row of every other register.
           className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-surface px-3 py-3"
         >
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <label htmlFor={pageSizeId} className="text-xs text-fg-muted">
               {tt("rowsPerPage")}
             </label>
@@ -552,7 +555,10 @@ export function DataTable<T>({
             <DensityToggle density={density} onChange={setDensity} />
           </div>
 
-          <div className="flex items-center gap-1">
+          {/* Wraps: at 320px a nine-page window plus both arrows is wider than
+              the screen, and a pager that scrolls sideways is a pager the
+              reader never finds. */}
+          <div className="flex flex-wrap items-center justify-end gap-1">
             <PageButton
               label={t("previous")}
               disabled={page === 1}

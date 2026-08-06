@@ -22,7 +22,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { localeDirection, type Locale } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/states";
-import { formatCount, formatNumber } from "@/lib/format";
+import { formatCompact, formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { SERIES_COLORS } from "./palette";
 
@@ -126,7 +126,7 @@ function legendProps(
 function CartesianAxes({
   xKey,
   rtl,
-  tickFormatter = (value: unknown) => formatCount(Number(value)),
+  tickFormatter = (value: unknown) => formatCompact(Number(value)),
   minTickGap,
 }: {
   xKey: string;

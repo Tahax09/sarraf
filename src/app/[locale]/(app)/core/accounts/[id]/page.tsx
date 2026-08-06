@@ -6,12 +6,12 @@ import { useTranslations } from "next-intl";
 import { ArrowLeft, Pencil, Scale, Tag } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Button, buttonStyles } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { ErrorState, PageSkeleton } from "@/components/ui/states";
 import { PageHeader } from "@/components/shared/page-header";
 import { HeaderStatBar } from "@/components/shared/header-stat-bar";
 import { DataTable, type Column } from "@/components/shared/data-table";
-import { DetailRow, DetailSection } from "@/components/shared/detail-drawer";
+import { DetailGrid, DetailItem } from "@/components/shared/detail-grid";
 import { ClientNameText } from "@/components/shared/cells";
 import { MaskedField } from "@/components/shared/masked-field";
 import { AccountEditDialog } from "@/components/modules/account-edit-dialog";
@@ -135,67 +135,80 @@ export default function AccountProfilePage() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
-          <DetailSection title={tc("details")}>
-            <DetailRow label={tf("entryId")} value={account.id} numeric />
-            <DetailRow
-              label={tf("accountNumber")}
-              value={account.number}
-              numeric
-            />
-            <DetailRow
-              label={tf("iban")}
-              value={
-                <MaskedField
-                  value={account.iban}
-                  fieldName={tf("iban")}
-                  subjectType="account"
-                  subjectId={account.id}
-                  format="iban"
-                />
-              }
-            />
-            <DetailRow
-              label={tf("accountType")}
-              value={labels.accountType(account.type)}
-            />
-            <DetailRow label={tf("currency")} value={account.currency} />
-            <DetailRow
-              label={tf("balance")}
-              value={formatAmount(account.balance, account.currency)}
-              numeric
-            />
-            <DetailRow label={tf("branch")} value={account.branchName} />
-          </DetailSection>
+          <CardHeader title={tc("details")} />
+          <CardBody>
+            {/* Two columns at most: this card shares the row with the client
+                card, so a third would put one field per line anyway. */}
+            <DetailGrid className="lg:grid-cols-2">
+              <DetailItem label={tf("entryId")} value={account.id} numeric />
+              <DetailItem
+                label={tf("accountNumber")}
+                value={account.number}
+                numeric
+              />
+              <DetailItem
+                label={tf("iban")}
+                wide
+                value={
+                  <MaskedField
+                    value={account.iban}
+                    fieldName={tf("iban")}
+                    subjectType="account"
+                    subjectId={account.id}
+                    format="iban"
+                  />
+                }
+              />
+              <DetailItem
+                label={tf("accountType")}
+                value={labels.accountType(account.type)}
+              />
+              <DetailItem label={tf("currency")} value={account.currency} />
+              <DetailItem
+                label={tf("balance")}
+                value={formatAmount(account.balance, account.currency)}
+                numeric
+              />
+              <DetailItem label={tf("branch")} value={account.branchName} />
+            </DetailGrid>
+          </CardBody>
         </Card>
 
         <Card>
-          <DetailSection title={tf("client")}>
-            <DetailRow
-              label={tf("clientName")}
-              value={
-                <ClientNameText
-                  name={account.clientName}
-                  nameEn={account.clientNameEn}
-                />
-              }
-            />
-            <DetailRow
-              label={tf("phone")}
-              value={formatPhone(account.clientPhone)}
-              numeric
-            />
-          </DetailSection>
-          <Link
-            href={`/core/clients/${account.clientId}`}
-            className={buttonStyles({ variant: "secondary", size: "sm" })}
-          >
-            {tc("viewFull")}
-          </Link>
+          <CardHeader
+            title={tf("client")}
+            action={
+              <Link
+                href={`/core/clients/${account.clientId}`}
+                className={buttonStyles({ variant: "secondary", size: "sm" })}
+              >
+                {tc("viewFull")}
+              </Link>
+            }
+          />
+          <CardBody>
+            <DetailGrid className="lg:grid-cols-2">
+              <DetailItem
+                label={tf("clientName")}
+                value={
+                  <ClientNameText
+                    name={account.clientName}
+                    nameEn={account.clientNameEn}
+                  />
+                }
+              />
+              <DetailItem
+                label={tf("phone")}
+                value={formatPhone(account.clientPhone)}
+                numeric
+              />
+            </DetailGrid>
+          </CardBody>
         </Card>
       </div>
 
       <Card>
-        <h2 className="mb-3 text-sm font-semibold text-fg">{t("recentOperations")}</h2>
+        <CardHeader title={t("recentOperations")} />
         <DataTable
           columns={columns}
           rows={rows}
