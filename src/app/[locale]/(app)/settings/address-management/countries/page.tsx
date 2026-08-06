@@ -123,7 +123,7 @@ export default function CountriesPage() {
     {
       key: "nameEn",
       header: t("nameEn"),
-      cell: (row) => <span dir="ltr">{row.nameEn}</span>,
+      cell: (row) => row.nameEn,
     },
     {
       key: "code",
@@ -290,7 +290,6 @@ export default function CountriesPage() {
           <TextInput
             label={t("nameEn")}
             required
-            dir="ltr"
             error={form.formState.errors.nameEn?.message}
             {...form.register("nameEn")}
           />

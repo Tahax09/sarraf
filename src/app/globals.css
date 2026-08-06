@@ -170,11 +170,59 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Numbers, money, dates, IBANs and IDs stay LTR even inside an RTL layout. */
+/*
+ * Numbers, money, dates, IBANs and IDs.
+ *
+ * No `direction` here, deliberately. The digits of `1,234.56` read left to
+ * right whatever this says — Unicode decides that, not CSS — so forcing
+ * `direction: ltr` changed nothing about the number itself and only pulled the
+ * value out of the page's flow: an Arabic page ended up with left-aligned
+ * amounts among right-aligned labels, and the `+` of a phone number or the
+ * currency code after an amount sat on the side the rest of the page was not
+ * reading from. The page's direction governs; `isolate` keeps the value's own
+ * edges from leaking into the text around it, which is a containment rule, not
+ * a direction one. Tabular figures keep columns of digits aligned.
+ */
 .numeric {
-  direction: ltr;
   unicode-bidi: isolate;
   font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Every cell of every register is its own bidi context.
+ *
+ * A row mixes an Arabic client name with a Latin bank name, an email, a
+ * reference ending in a digit, a branch written either way. Without isolation
+ * the neutral characters at a value's edges — a dot, a dash, a bracket, the
+ * space before a suffix — resolve against the *page's* direction and land at
+ * the wrong end of the value. Isolation fixes the boundaries without touching
+ * direction, so an Arabic cell still reads right-to-left and every column keeps
+ * the alignment it was given.
+ *
+ * Applied here rather than per column: a cell renderer is written once per page
+ * and there are hundreds of them, and forgetting one is invisible until an
+ * operator reads a mangled IBAN.
+ */
+th,
+td,
+dd {
+  unicode-bidi: isolate;
+}
+
+/*
+ * `<bdi>` is used throughout for that same isolation, but it carries an implied
+ * `dir="auto"`, which takes its direction from the value's first strong
+ * character. That is one decision too many: an Arabic client name inside the
+ * English panel turned its own cell right-to-left, and a Latin bank name inside
+ * the Arabic panel turned its cell left-to-right, so a single column alternated
+ * alignment row by row depending on how each record happened to be typed.
+ * `direction: inherit` hands the decision back to the page — an author rule
+ * outranks the attribute's presentational hint — and leaves the isolation,
+ * which is the only part that was ever wanted here.
+ */
+bdi {
+  direction: inherit;
+  unicode-bidi: isolate;
 }
 
 /* Icons whose meaning is directional (chevrons, arrows) mirror under RTL. */

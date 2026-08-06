@@ -95,8 +95,6 @@ export function ClientEditDialog({
         />
         <TextInput
           label={tf("nameEn")}
-          // Latin-script name: typed left to right whatever the page direction.
-          dir="ltr"
           error={form.formState.errors.nameEn?.message}
           {...form.register("nameEn")}
         />
@@ -105,7 +103,6 @@ export function ClientEditDialog({
           required
           type="tel"
           inputMode="tel"
-          dir="ltr"
           error={form.formState.errors.phone?.message}
           {...form.register("phone")}
         />
@@ -113,7 +110,6 @@ export function ClientEditDialog({
           label={tf("email")}
           type="email"
           inputMode="email"
-          dir="ltr"
           error={form.formState.errors.email?.message}
           {...form.register("email")}
         />
