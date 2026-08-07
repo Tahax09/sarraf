@@ -144,6 +144,7 @@ the numeric host as cross-origin and refuses to serve its chunks.
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | environment variables, build, and the headers the host must set |
 | [docs/CI_CD.md](docs/CI_CD.md) | the pipeline's jobs and the branch protection rules they expect |
 | [docs/adr/](docs/adr/README.md) | why the shape is the shape — the decisions and the rejected alternatives |
+| [docs/audits/](docs/audits/2026-08-07-enterprise-readiness-certification.md) | the measured state: standards alignment, quality score, debt register, remaining risks |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | the gates, the rules, and where code goes |
 | [CHANGELOG.md](CHANGELOG.md) | what changed |
 

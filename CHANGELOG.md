@@ -72,6 +72,13 @@ a release yet, so everything below is unreleased.
   through an Arabic synthesiser (SC 3.1.2).
 - `docs/TESTING.md`, `docs/OBSERVABILITY.md`, `docs/DESIGN_SYSTEM.md`, and
   ADRs 0006–0009.
+- `docs/audits/2026-08-07-enterprise-readiness-certification.md` — the measured
+  state at the end of the sprint: every gate's result, alignment against
+  ISO/IEC 25010, 25023 and 27034, OWASP ASVS, WCAG 2.2 AA and NIST SSDF, a
+  weighted quality score with the reason each category is capped where it is, a
+  technical debt register, the remaining risks, and a roadmap that separates
+  what this repository can fix from what it cannot. It claims alignment, never
+  compliance: no accredited assessment has taken place.
 - A manual validation script in `docs/ACCESSIBILITY.md`: the screen-reader
   journeys, zoom and reflow checks, keyboard-only pass and forced-colours pass
   that automated testing cannot cover — with the honest note that nobody has run
