@@ -191,7 +191,10 @@ function SortableHeader({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1 rounded-sm text-xs font-medium",
+        // WCAG 2.2 SC 2.5.8: the label is 16px of text, which is not a target.
+        // The negative margin lets the button grow into the cell's own padding,
+        // so the hit area clears 24px without the header row getting taller.
+        "-my-1.5 inline-flex items-center gap-1 rounded-sm py-1.5 text-xs font-medium",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
         active ? "text-fg" : "text-fg-muted hover:text-fg",
       )}

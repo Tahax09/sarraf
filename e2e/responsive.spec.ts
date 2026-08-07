@@ -9,9 +9,17 @@ import { login, ROUTES } from "./helpers";
  * introduce anywhere (one flex item without `min-w-0` took out all 27 routes at
  * once), and it is invisible on a laptop.
  */
-// 2560 is the trading-desk monitor the shell had never been measured on: an
-// app that only ever centres content can leave a 1400px void beside a table.
-const WIDTHS = [320, 375, 390, 430, 768, 1024, 1280, 1440, 1920, 2560];
+/*
+ * The certified set. 320 is the reflow floor (SC 1.4.10 — 400% zoom on a
+ * 1280px screen lands here), 375/390/414/430 are the phones in the field,
+ * 768/1024 are the tablet breakpoints either side of `md` and `lg`, and
+ * 1280/1366/1440/1920 are the laptops and desktops. 2560 is the trading-desk
+ * monitor the shell had never been measured on: an app that only ever centres
+ * content can leave a 1400px void beside a table.
+ */
+const WIDTHS = [
+  320, 375, 390, 414, 430, 768, 1024, 1280, 1366, 1440, 1920, 2560,
+];
 
 type Overflow = {
   route: string;
@@ -22,7 +30,11 @@ type Overflow = {
 
 async function settle(page: Page) {
   await page.waitForLoadState("domcontentloaded");
-  await page.locator("main").first().waitFor({ state: "visible" }).catch(() => {});
+  await page
+    .locator("main")
+    .first()
+    .waitFor({ state: "visible" })
+    .catch(() => {});
   await page.waitForTimeout(400);
 }
 
@@ -31,7 +43,9 @@ async function overflowing(page: Page, width: number) {
   return page.evaluate((viewport) => {
     const escapes = (el: Element) => {
       const r = el.getBoundingClientRect();
-      return r.width > 0 && r.height > 0 && (r.right > viewport + 1 || r.left < -1);
+      return (
+        r.width > 0 && r.height > 0 && (r.right > viewport + 1 || r.left < -1)
+      );
     };
     const scrolls = (el: Element) => {
       const style = getComputedStyle(el);
@@ -42,7 +56,10 @@ async function overflowing(page: Page, width: number) {
       if (!escapes(el)) continue;
       // A wide child inside a scroller is the design, not a defect: registers
       // put their table in an `overflow-x-auto` box on purpose.
-      if (el.parentElement && (escapes(el.parentElement) || scrolls(el.parentElement))) {
+      if (
+        el.parentElement &&
+        (escapes(el.parentElement) || scrolls(el.parentElement))
+      ) {
         continue;
       }
       const r = el.getBoundingClientRect();
@@ -89,41 +106,54 @@ test("no horizontal overflow at any breakpoint", async ({ page }) => {
   expect(failures).toEqual([]);
 });
 
-/** WCAG 2.2 AA 2.5.8 — every control at least 24×24 CSS px on a phone. */
-test("controls meet the minimum target size", async ({ page }) => {
-  test.setTimeout(600_000);
-  await login(page);
+/**
+ * WCAG 2.2 AA 2.5.8 — every control at least 24×24 CSS px.
+ *
+ * Measured at a phone width and at a table width, because the two render
+ * different markup: below `md` a register is a card list, and above it the
+ * table appears with its own controls. Checking only the phone certified half
+ * the application — the column sort buttons were 16px tall for exactly as long
+ * as that was the only width measured.
+ */
+for (const viewport of [375, 1024]) {
+  test(`controls meet the minimum target size at ${viewport}px`, async ({
+    page,
+  }) => {
+    test.setTimeout(600_000);
+    await login(page);
 
-  const failures: string[] = [];
-  for (const [name, path] of ROUTES) {
-    await page.setViewportSize({ width: 375, height: 800 });
-    await page.goto(path);
-    await settle(page);
-    const small = await page.evaluate(() => {
-      const out: string[] = [];
-      const selector =
-        "button, a[href], input, select, [role=button], [role=tab], summary";
-      for (const el of Array.from(document.querySelectorAll(selector))) {
-        // The skip link is 1×1 until it takes focus; it is measured at the size
-        // it is offered at, which is full size.
-        if (el.closest(".sr-only") || el.classList.contains("sr-only")) continue;
-        const r = el.getBoundingClientRect();
-        if (r.width === 0 || r.height === 0) continue;
-        if (r.width >= 24 && r.height >= 24) continue;
-        const label = (el.getAttribute("aria-label") ?? el.textContent ?? "")
-          .trim()
-          .slice(0, 32);
-        out.push(
-          `${el.tagName.toLowerCase()} ${Math.round(r.width)}×${Math.round(r.height)} "${label}"`,
-        );
-        if (out.length >= 8) break;
+    const failures: string[] = [];
+    for (const [name, path] of ROUTES) {
+      await page.setViewportSize({ width: viewport, height: 800 });
+      await page.goto(path);
+      await settle(page);
+      const small = await page.evaluate(() => {
+        const out: string[] = [];
+        const selector =
+          "button, a[href], input, select, [role=button], [role=tab], summary";
+        for (const el of Array.from(document.querySelectorAll(selector))) {
+          // The skip link is 1×1 until it takes focus; it is measured at the size
+          // it is offered at, which is full size.
+          if (el.closest(".sr-only") || el.classList.contains("sr-only"))
+            continue;
+          const r = el.getBoundingClientRect();
+          if (r.width === 0 || r.height === 0) continue;
+          if (r.width >= 24 && r.height >= 24) continue;
+          const label = (el.getAttribute("aria-label") ?? el.textContent ?? "")
+            .trim()
+            .slice(0, 32);
+          out.push(
+            `${el.tagName.toLowerCase()} ${Math.round(r.width)}×${Math.round(r.height)} "${label}"`,
+          );
+          if (out.length >= 8) break;
+        }
+        return out;
+      });
+      for (const entry of small) {
+        failures.push(`${name}: ${entry}`);
       }
-      return out;
-    });
-    for (const entry of small) {
-      failures.push(`${name}: ${entry}`);
     }
-  }
 
-  expect(failures).toEqual([]);
-});
+    expect(failures, failures.join("\n")).toEqual([]);
+  });
+}

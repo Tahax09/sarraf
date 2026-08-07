@@ -137,6 +137,7 @@ the numeric host as cross-origin and refuses to serve its chunks.
 | [docs/SECURITY.md](docs/SECURITY.md) | what is defended, and what only the backend or the deployment can fix |
 | [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md) | the AA target, what is verified automatically, and the known gaps |
 | [docs/PERFORMANCE.md](docs/PERFORMANCE.md) | the JavaScript budget and how it is enforced |
+| [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) | breakpoints, density, and what the responsive certification measures |
 | [docs/API_CONTRACT.md](docs/API_CONTRACT.md) | what this frontend assumes of the backend |
 | [docs/adr/](docs/adr/README.md) | why the shape is the shape — the decisions and the rejected alternatives |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | the gates, the rules, and where code goes |
