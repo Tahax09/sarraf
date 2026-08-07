@@ -9,6 +9,10 @@
 > lazy charts, coverage thresholds, and the documentation whose absence it
 > scores 6.5.
 >
+> Line references are to the tree as it stood on 2026-08-05 and have drifted;
+> `src/middleware.ts` in particular is now `src/proxy.ts`, and the links point at
+> the successor.
+>
 > For the current state read [ARCHITECTURE](../ARCHITECTURE.md),
 > [SECURITY](../SECURITY.md), [ACCESSIBILITY](../ACCESSIBILITY.md),
 > [PERFORMANCE](../PERFORMANCE.md) and the [ADRs](../adr/README.md). Where this
@@ -58,18 +62,18 @@ weeks.
 2. **Auth handling matches the specification exactly.** `src/middleware.ts` reads only an httpOnly
    cookie name from `process.env.AUTH_COOKIE_NAME`, and the redirect carries the path only —
    `/login?from=<path>` with the comment "never put tokens or PII in query strings"
-   ([src/middleware.ts](../src/middleware.ts)). There is no `localStorage`/`sessionStorage` use
+   ([src/middleware.ts](../../src/proxy.ts)). There is no `localStorage`/`sessionStorage` use
    anywhere in the repo.
-3. **CSRF is handled correctly.** `csrfHeader()` in [src/lib/api/client.ts](../src/lib/api/client.ts)
+3. **CSRF is handled correctly.** `csrfHeader()` in [src/lib/api/client.ts](../../src/lib/api/client.ts)
    reads the `XSRF-TOKEN` cookie and echoes it as `X-XSRF-TOKEN` on non-GET requests only, with
    `credentials: "include"`.
-4. **CSV injection is neutralized.** `escapeCell()` in [src/lib/export.ts:10](../src/lib/export.ts#L10)
+4. **CSV injection is neutralized.** `escapeCell()` in [src/lib/export.ts:10](../../src/lib/export.ts#L10)
    prefixes any cell starting with `= + - @ \t \r` with an apostrophe. Very few teams remember this.
    PDF export uses the browser print pipeline, so no PDF library ships to the client.
 5. **Fixture data does not leak into a production build — verified, not assumed.** A build with
    `NEXT_PUBLIC_API_MODE=live` contains no fixture strings; the dynamic import behind the
    `usingFixtures` constant is fully tree-shaken. The 501-line fixture dataset is a dev-only cost.
-6. **Design tokens are genuinely centralized.** [src/app/globals.css](../src/app/globals.css) defines
+6. **Design tokens are genuinely centralized.** [src/app/globals.css](../../src/app/globals.css) defines
    three brand primitives and derives every surface, accent, chart series and shadow from them, for
    both themes, with `@theme inline` exposing them to Tailwind. No gradients. Two deliberate
    deviations (light `--color-success` darkened, dark `--color-accent` lifted) are documented inline
@@ -150,7 +154,7 @@ one developer's head and in the README; a second contributor has nothing enforci
 - **Affected:** `src/app/**` (absence), `src/app/[locale]/layout.tsx`
 - **Evidence:** `find src/app -name "error.tsx" -o -name "global-error.tsx"` returns nothing.
   `grep -rn "ErrorBoundary\|componentDidCatch" src/` returns nothing. The only error handling is
-  per-query: `ErrorState` in [src/components/ui/states.tsx:56](../src/components/ui/states.tsx#L56),
+  per-query: `ErrorState` in [src/components/ui/states.tsx:56](../../src/components/ui/states.tsx#L56),
   which renders when a TanStack Query rejects.
 - **Explanation:** Query failures are handled well. Render failures are not handled at all. A single
   `undefined` reaching a chart accessor, a `toFixed` on a null amount, or a malformed date in a cell
@@ -168,9 +172,9 @@ one developer's head and in the README; a second contributor has nothing enforci
 
 **C-2 · Permissions gate navigation only; no route enforces them**
 
-- **Affected:** [src/lib/permissions.ts](../src/lib/permissions.ts),
-  [src/components/layout/sidebar.tsx:37](../src/components/layout/sidebar.tsx#L37),
-  [src/middleware.ts](../src/middleware.ts), all 37 pages
+- **Affected:** [src/lib/permissions.ts](../../src/lib/permissions.ts),
+  [src/components/layout/sidebar.tsx:37](../../src/components/layout/sidebar.tsx#L37),
+  [src/middleware.ts](../../src/proxy.ts), all 37 pages
 - **Evidence:** `grep -rn "\bcan(" src/` returns exactly one call site — the sidebar's item filter.
   `useCurrentUser` is consumed in only three components (`app-shell`, `users`, `profile`). The
   middleware checks for the presence of a session cookie and nothing else.
@@ -194,17 +198,17 @@ one developer's head and in the README; a second contributor has nothing enforci
 
 **C-3 · Tables paginate a truncated fetch; rows past the cap silently disappear**
 
-- **Affected:** [src/app/[locale]/(app)/core/analytics/all-operations/page.tsx:44](../src/app/[locale]/(app)/core/analytics/all-operations/page.tsx#L44)
-  (`pageSize: 500`), [core/logs/page.tsx:36](../src/app/[locale]/(app)/core/logs/page.tsx#L36) (200),
-  [core/accounts/page.tsx:31](../src/app/[locale]/(app)/core/accounts/page.tsx#L31) (200),
-  [core/clients/list/page.tsx:24](../src/app/[locale]/(app)/core/clients/list/page.tsx#L24) (100),
+- **Affected:** [src/app/[locale]/(app)/core/analytics/all-operations/page.tsx:44](../../src/app/[locale]/(app)/core/analytics/all-operations/page.tsx#L44)
+  (`pageSize: 500`), [core/logs/page.tsx:36](../../src/app/[locale]/(app)/core/logs/page.tsx#L36) (200),
+  [core/accounts/page.tsx:31](../../src/app/[locale]/(app)/core/accounts/page.tsx#L31) (200),
+  [core/clients/list/page.tsx:24](../../src/app/[locale]/(app)/core/clients/list/page.tsx#L24) (100),
   `simple-operation-list.tsx:57` (100), `transfer-list.tsx:54` (100), `approval-queue.tsx:245` (100),
   plus `useAccounts({ pageSize: 500 })` called three separate times for lookup data
 - **Evidence:** The API contract has a `Paged<T>` type with `total`, `page` and `pageSize`
-  ([src/lib/api/types.ts:16](../src/lib/api/types.ts#L16)), but no call site ever passes a `page`
+  ([src/lib/api/types.ts:16](../../src/lib/api/types.ts#L16)), but no call site ever passes a `page`
   parameter or reads `total`. `DataTable` slices the array it is handed:
   `const pageRows = paginate ? rows.slice(offset, offset + pageSize) : rows`
-  ([src/components/shared/data-table.tsx](../src/components/shared/data-table.tsx)).
+  ([src/components/shared/data-table.tsx](../../src/components/shared/data-table.tsx)).
 - **Explanation:** The pager reports "1–10 of 500" when the server holds 12,000 matching rows. There
   is no truncation notice, no "load more", nothing. For a ledger and an audit log this is a
   correctness defect, not a performance one: an operator searching for a transaction that exists can
@@ -227,7 +231,7 @@ one developer's head and in the README; a second contributor has nothing enforci
 
 **H-1 · No Content-Security-Policy and no Strict-Transport-Security header**
 
-- **Affected:** [next.config.ts](../next.config.ts)
+- **Affected:** [next.config.ts](../../next.config.ts)
 - **Evidence:** `headers()` sets `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`,
   `Referrer-Policy: strict-origin-when-cross-origin` and a `Permissions-Policy`. No `CSP`, no
   `Strict-Transport-Security`.
@@ -248,7 +252,7 @@ one developer's head and in the README; a second contributor has nothing enforci
 
 **H-2 · Field validation errors are not programmatically associated with their inputs**
 
-- **Affected:** [src/components/ui/field.tsx:46](../src/components/ui/field.tsx#L46) — therefore
+- **Affected:** [src/components/ui/field.tsx:46](../../src/components/ui/field.tsx#L46) — therefore
   every form in the application
 - **Evidence:** `Field` renders `<p role="alert">{error}</p>` as a sibling of the control. The
   control receives `aria-invalid` but never `aria-describedby`. The same applies to `hint`.
@@ -268,7 +272,7 @@ one developer's head and in the README; a second contributor has nothing enforci
 
 **H-3 · Dialogs have no accessible name**
 
-- **Affected:** [src/components/ui/dialog.tsx:59](../src/components/ui/dialog.tsx#L59) and every
+- **Affected:** [src/components/ui/dialog.tsx:59](../../src/components/ui/dialog.tsx#L59) and every
   caller
 - **Evidence:** The `<dialog>` sets `aria-labelledby={labelledBy}`, but the heading it renders
   (`<h2>{title}</h2>`, line 79) carries no `id`, and no call site in the repository passes
@@ -288,7 +292,7 @@ one developer's head and in the README; a second contributor has nothing enforci
 
 **H-4 · The mobile navigation drawer is a modal that behaves like a div**
 
-- **Affected:** [src/components/layout/app-shell.tsx:111-139](../src/components/layout/app-shell.tsx#L111-L139)
+- **Affected:** [src/components/layout/app-shell.tsx:111-139](../../src/components/layout/app-shell.tsx#L111-L139)
 - **Evidence:** A `fixed inset-0 z-50` container with a full-bleed `<button>` backdrop. No
   `role="dialog"`, no `aria-modal`, no focus move on open, no focus restore on close, no Escape
   handler, and the page behind remains in the tab order.
@@ -307,7 +311,7 @@ one developer's head and in the README; a second contributor has nothing enforci
 
 **H-5 · No skip link; keyboard users traverse the full navigation on every page**
 
-- **Affected:** [src/components/layout/app-shell.tsx](../src/components/layout/app-shell.tsx)
+- **Affected:** [src/components/layout/app-shell.tsx](../../src/components/layout/app-shell.tsx)
 - **Evidence:** `grep -rni "skip" src/ messages/` finds only unrelated code comments. `<main>` at
   line 105 has no `id` and no `tabIndex`.
 - **Explanation:** The sidebar renders up to 22 permission-filtered links plus group toggles, and it
@@ -349,9 +353,9 @@ one developer's head and in the README; a second contributor has nothing enforci
 
 **H-7 · Focus indicator is suppressed on every form control**
 
-- **Affected:** [src/components/ui/field.tsx:15](../src/components/ui/field.tsx#L15) (`CONTROL`),
-  [src/components/layout/app-shell.tsx:82](../src/components/layout/app-shell.tsx#L82),
-  [src/components/shared/masked-field.tsx:140](../src/components/shared/masked-field.tsx#L140)
+- **Affected:** [src/components/ui/field.tsx:15](../../src/components/ui/field.tsx#L15) (`CONTROL`),
+  [src/components/layout/app-shell.tsx:82](../../src/components/layout/app-shell.tsx#L82),
+  [src/components/shared/masked-field.tsx:140](../../src/components/shared/masked-field.tsx#L140)
 - **Evidence:** `CONTROL` includes `focus:border-accent focus:outline-none`. `globals.css` defines a
   global `:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px }`, but
   Tailwind's `.focus\:outline-none:focus` has higher specificity (0,2,0 vs 0,1,0) and wins.
@@ -447,7 +451,7 @@ button in a trailing cell — or keep the row click as a mouse convenience and d
 
 **M-6 · Global search places the query in a URL parameter**
 
-[src/components/layout/app-shell.tsx:40](../src/components/layout/app-shell.tsx#L40) navigates to
+[src/components/layout/app-shell.tsx:40](../../src/components/layout/app-shell.tsx#L40) navigates to
 `/core/analytics/all-operations?q=<term>`. The specification requires no sensitive data in query
 strings. A search term in this app is frequently a client name, an account number or a reference.
 Query strings persist in browser history, appear in `Referer` on outbound navigation, and are the
@@ -516,7 +520,7 @@ repository's only type-safety escape hatches.
 
 **M-12 · The fixture login writes a cookie with the production session name**
 
-[src/app/[locale]/(auth)/login/page.tsx](../src/app/[locale]/(auth)/login/page.tsx) sets
+[src/app/[locale]/(auth)/login/page.tsx](../../src/app/[locale]/(auth)/login/page.tsx) sets
 `document.cookie = "saraf_session=fixture; path=/; samesite=lax"` from client JavaScript, guarded by
 `if (usingFixtures)`. Verified: the guard is a build-time constant and the whole path is tree-shaken
 out of a `NEXT_PUBLIC_API_MODE=live` build. The residual risk is naming: the stand-in uses the same
@@ -531,7 +535,7 @@ README already, which is why this is Medium and not High.
 
 **M-13 · No `robots` directive and only static metadata**
 
-[src/app/[locale]/layout.tsx:21](../src/app/[locale]/layout.tsx#L21) exports a static
+[src/app/[locale]/layout.tsx:21](../../src/app/[locale]/layout.tsx#L21) exports a static
 `{ title: "Saraf", description: … }`. No route exports `generateMetadata`, so every one of 37 pages
 shares one browser-tab title — a real usability cost when an operator keeps six tabs open. And an
 internal admin panel should carry `robots: { index: false, follow: false }`.

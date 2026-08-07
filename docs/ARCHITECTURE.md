@@ -151,3 +151,12 @@ Two consequences are load-bearing:
 | What does the sidebar hold? | `src/lib/nav.ts` |
 | What may this operator do? | `src/lib/permissions.ts` |
 | How is money written? | `src/lib/format.ts` |
+| Did that action work? | `src/components/providers/feedback-provider.tsx` — one live region, one `useNotifiedAction` ([ADR-0008](adr/0008-one-answer-to-did-that-work.md)) |
+| Where does an error go? | `src/lib/report-error.ts` into a registered sink ([ADR-0006](adr/0006-telemetry-is-a-sink-not-a-vendor.md), [OBSERVABILITY.md](OBSERVABILITY.md)) |
+| May this module import that one? | `scripts/check-architecture.mjs` ([ADR-0007](adr/0007-structural-rules-are-a-build-step.md)) |
+
+Three documents carry what does not fit here: [OBSERVABILITY.md](OBSERVABILITY.md)
+for what the panel reports and how a deployment wires a sink,
+[TESTING.md](TESTING.md) for what is proved at which level, and
+[DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) for breakpoints, density and the widths the
+layout is certified at.

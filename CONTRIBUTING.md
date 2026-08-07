@@ -26,6 +26,8 @@ Run before opening a pull request. All of them, in this order:
 npm run typecheck                 # tsc --noEmit, strict
 npm run lint -- --max-warnings=0
 npm run check:messages            # ar/en catalogues must agree, key for key
+npm run check:architecture        # no cycles, layers point one way
+npm run check:secrets             # no credential-shaped literal in source
 npm test                          # jest
 npm run test:e2e                  # playwright
 npm run test:e2e:a11y             # axe-core over every route
@@ -39,6 +41,10 @@ you touched a dependency, a route, or anything in the shared graph.
 Coverage thresholds are in `jest.config.ts` and are described there as *a
 ratchet, not a target*: they are set just under where coverage currently sits, so
 they catch a drop without inviting tests written to move a number.
+
+What each level is for — and what is deliberately not tested — is in
+[docs/TESTING.md](docs/TESTING.md). The same jobs run in CI; the branch
+protection they expect is in [docs/CI_CD.md](docs/CI_CD.md).
 
 ## Rules that are not negotiable
 

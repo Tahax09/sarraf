@@ -47,6 +47,35 @@ a release yet, so everything below is unreleased.
   code".
 - `docs/CI_CD.md` — what each gate proves, and the branch protection the
   pipeline is advisory without.
+- Production observability that a deployment switches on rather than the
+  repository choosing for it (`src/lib/observability/`): typed events, a sink
+  registry, per-request/session/trace correlation headers, Web Vitals, build
+  identity in the footer, and a copyable diagnostics panel under
+  **Settings → System information**. No vendor SDK is imported anywhere in
+  `src/`, and nothing is emitted until a deployment registers a sink
+  ([docs/OBSERVABILITY.md](docs/OBSERVABILITY.md),
+  [ADR-0006](docs/adr/0006-telemetry-is-a-sink-not-a-vendor.md)).
+- `scripts/check-architecture.mjs` and `npm run check:architecture` — no import
+  cycles, layers point one way (`lib` → `components` → `app`), no reaching into
+  a sibling's `__tests__`. Two of the three rules were already being broken
+  ([ADR-0007](docs/adr/0007-structural-rules-are-a-build-step.md)).
+- WCAG 2.2 SC 2.4.11 is now measured, not assumed: `e2e/a11y.spec.ts` tabs
+  backwards through a scrolled page at desktop and phone widths and fails if the
+  sticky header or the phone's bottom bar paints over the focused control. It
+  found a focused input clipped by 6px, fixed with `scroll-padding` on the
+  scrolling root rather than a `scroll-margin` on every component.
+- Forced-colours support (`@media (forced-colors: active)`) for the four
+  semantic state attributes the panel already used, so selection survives
+  Windows High Contrast without any component change.
+- Names carry `lang` on each half (`<bdi lang="ar">` / `<bdi lang="en">`), so a
+  screen reader switches voice at the parenthesis instead of reading English
+  through an Arabic synthesiser (SC 3.1.2).
+- `docs/TESTING.md`, `docs/OBSERVABILITY.md`, `docs/DESIGN_SYSTEM.md`, and
+  ADRs 0006–0009.
+- A manual validation script in `docs/ACCESSIBILITY.md`: the screen-reader
+  journeys, zoom and reflow checks, keyboard-only pass and forced-colours pass
+  that automated testing cannot cover — with the honest note that nobody has run
+  it yet.
 
 **Changed**
 
@@ -67,6 +96,13 @@ a release yet, so everything below is unreleased.
 - CI builds with `build:release`, stamped with the commit and environment, so
   the footer and the diagnostics card do not report a CI artefact as
   `0.0.0-dev`.
+- `e2e/responsive.spec.ts` certifies twelve widths from 320 to 2560, and asserts
+  target size at **1024px as well as 375px**. Checking only the phone certified
+  half the application — below `md` a register is a card list — and the table's
+  column sort buttons had been 16px tall for exactly as long as that was the only
+  width measured. They now grow into the header cell's own padding
+  (`-my-1.5 py-1.5`), so the hit area clears 24px with no change to row height
+  ([docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md)).
 - `docs/SECURITY.md` gains a validation sweep: twenty attack classes walked
   against the source in OWASP ASVS terms, each with a verdict and the evidence
   behind it, plus the commands a reviewer can re-run. The CSV formula-injection

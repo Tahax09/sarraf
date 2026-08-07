@@ -138,7 +138,11 @@ the numeric host as cross-origin and refuses to serve its chunks.
 | [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md) | the AA target, what is verified automatically, and the known gaps |
 | [docs/PERFORMANCE.md](docs/PERFORMANCE.md) | the JavaScript budget and how it is enforced |
 | [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) | breakpoints, density, and what the responsive certification measures |
+| [docs/TESTING.md](docs/TESTING.md) | what is tested at which level, and what deliberately is not |
+| [docs/OBSERVABILITY.md](docs/OBSERVABILITY.md) | what the panel reports, how to wire a sink, and what must never be emitted |
 | [docs/API_CONTRACT.md](docs/API_CONTRACT.md) | what this frontend assumes of the backend |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | environment variables, build, and the headers the host must set |
+| [docs/CI_CD.md](docs/CI_CD.md) | the pipeline's jobs and the branch protection rules they expect |
 | [docs/adr/](docs/adr/README.md) | why the shape is the shape — the decisions and the rejected alternatives |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | the gates, the rules, and where code goes |
 | [CHANGELOG.md](CHANGELOG.md) | what changed |
