@@ -125,6 +125,18 @@ export function formatPercentDelta(ratio: number, precision = 1): string {
   return `${sign}${body}%`;
 }
 
+/**
+ * Unsigned share of a whole: `0.421` → `42.1%`. Distinct from
+ * `formatPercentDelta` on purpose — that one always writes a sign because a
+ * movement without one reads as a share, and this is the share it would be
+ * mistaken for.
+ */
+export function formatShare(ratio: number, precision = 1): string {
+  const percent = ratio * 100;
+  const rounded = Number(percent.toFixed(precision));
+  return `${formatNumber(rounded, Number.isInteger(rounded) ? 0 : precision)}%`;
+}
+
 export function formatRate(value: number): string {
   return formatNumber(value, 5).replace(/0+$/, "").replace(/\.$/, "");
 }

@@ -10,6 +10,16 @@ a release yet, so everything below is unreleased.
 
 **Added**
 
+- Top clients answers a second question: `src/lib/concentration.ts` and the
+  panel it feeds divide the ranked clients' balances by the same currency's
+  total from `currency-balances`, so the page says not only who the largest
+  clients are but how much of the book they hold — a list of large balances
+  reads identically whether those clients are three per cent of the money on
+  deposit or eighty, and only one of those is a liquidity question. A currency
+  the balances endpoint does not cover is dropped rather than divided by an
+  assumed total.
+- `docs/ARCHITECTURE.md` gains the analytics map: one row per surface, the
+  question it answers, and the data that is its own.
 - A feedback layer: `<FeedbackProvider>` and `useNotifiedAction()`
   (`src/components/providers/feedback-provider.tsx`). Until now a mutation that
   failed did nothing visible — the spinner stopped, the dialog closed or stayed
@@ -40,6 +50,11 @@ a release yet, so everything below is unreleased.
 
 **Changed**
 
+- Fixture `top-clients` rows denominate `balance` in `currency` — one currency's
+  accounts rather than a sum across all of them. The old total added LYD to USD
+  and labelled the result with whichever account came first, which the new share
+  of the book would have divided by the wrong denominator. `docs/API_CONTRACT.md`
+  now states the requirement the panel depends on.
 - `<ConfirmDialog>` and `<FormWizard>` await their callback and surface a
   rejection where the operator is already looking, instead of swallowing it.
   Both signatures now allow a promise (`onConfirm(input) => void | Promise`,

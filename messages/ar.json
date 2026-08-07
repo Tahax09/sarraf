@@ -452,7 +452,12 @@
     "title": "أفضل العملاء",
     "byBalance": "الأعلى رصيداً",
     "byActivity": "الأكثر نشاطاً",
-    "operationsCount": "عدد العمليات"
+    "operationsCount": "عدد العمليات",
+    "concentration": "حصة من إجمالي الأرصدة",
+    "concentrationDescription": "كم يملك العملاء أعلاه من الأموال المودعة، لكل عملة. الإجمالي يشمل كل الحسابات بتلك العملة، وليس المدرجة فقط.",
+    "shareOfBook": "الحصة المملوكة",
+    "largestHolder": "أكبر مالك منفرد",
+    "largestHolderShare": "{share} من العملة · {amount}"
   },
   "clients": {
     "title": "العملاء",

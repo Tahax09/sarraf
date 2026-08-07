@@ -432,10 +432,25 @@ export async function fixtureFetch<T>(
       const mode = params?.mode ?? "balance";
       const enriched = state.clients.map((c) => {
         const owned = state.accounts.filter((a) => a.clientId === c.id);
+        // `balance` is denominated in `currency`, so it sums one currency's
+        // accounts rather than every account the client holds. Adding LYD to
+        // USD and labelling the result LYD would make the figure a currency
+        // it is not — and Top clients now measures it against that currency's
+        // whole book, where such a total can exceed the book itself.
+        const byCurrency = new Map<string, number>();
+        for (const account of owned) {
+          byCurrency.set(
+            account.currency,
+            (byCurrency.get(account.currency) ?? 0) + account.balance,
+          );
+        }
+        const [currency, balance] = [...byCurrency.entries()].sort(
+          (a, b) => b[1] - a[1],
+        )[0] ?? ["LYD", 0];
         return {
           ...c,
-          balance: Number(owned.reduce((s, a) => s + a.balance, 0).toFixed(3)),
-          currency: owned[0]?.currency ?? "LYD",
+          balance: Number(balance.toFixed(3)),
+          currency,
           operations: db.ledger.filter((l) => l.clientName === c.name).length,
         };
       });

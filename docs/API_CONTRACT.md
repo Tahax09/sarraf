@@ -100,6 +100,14 @@ the login response asks for a second factor) · `POST /auth/logout` ·
 `/dashboard/recent-operations` (last eight). The last three are bounded by the
 contract, not by a parameter.
 
+`top-clients` rows carry `balance` **denominated in `currency`** — one
+currency's holdings, not a sum across a client's accounts. Top clients divides
+that balance by the same currency's total from `currency-balances` to show what
+share of the book the ranked clients hold, and a `balance` that mixed currencies
+would produce a share of a currency it is not (and can exceed the whole book).
+A currency missing from `currency-balances` is dropped from that panel rather
+than shown against an assumed total.
+
 **Registers** — `GET|POST /clients` · `GET|PATCH /clients/:id` ·
 `GET|POST /accounts` · `GET|PATCH /accounts/:id` ·
 `GET /accounts/:id/balance`.

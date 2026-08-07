@@ -452,7 +452,12 @@
     "title": "Top Clients",
     "byBalance": "Top by balance",
     "byActivity": "Top by activity",
-    "operationsCount": "Operations"
+    "operationsCount": "Operations",
+    "concentration": "Share of the book",
+    "concentrationDescription": "How much of the money on deposit the clients above hold, per currency. The total is every account in that currency, not only the ones listed.",
+    "shareOfBook": "Share held",
+    "largestHolder": "Largest single holder",
+    "largestHolderShare": "{share} of the currency · {amount}"
   },
   "clients": {
     "title": "Clients",

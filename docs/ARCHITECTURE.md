@@ -101,6 +101,32 @@ row-height preference).
 the nav filters itself from the same source. None of this is a security
 boundary — the backend is — and the code says so where it matters.
 
+### Analytics
+
+Six surfaces read the ledger, and each one exists to answer a question the other
+five do not. The rule is not "no repeated numbers" — a figure may appear twice
+if it is the answer to two different questions — but no surface may exist only
+to restate another.
+
+| Surface | The question it answers | Its own data |
+| --- | --- | --- |
+| Dashboard | Is anything waiting on me, and how has the week moved? | `/dashboard/summary`, `/dashboard/trends`, `/dashboard/currency-balances` |
+| Reports (`/core/reports`) | What happened on one specific day? | `/reports?date=` |
+| Branch cash flow | Which branch is moving the money? | `/analytics/branch-flow` |
+| All operations | Which records, exactly — and of what mix? | `/analytics/all-operations` (paged, filtered) |
+| Activity | Who did what, and when? | `/analytics/activity` |
+| Top clients | Who holds the money, and how much of the book is that? | `/dashboard/top-clients` + `/dashboard/currency-balances` |
+
+Two consequences are load-bearing:
+
+- The 30-day trend charts and the canonical currency balances live on the
+  Dashboard **only**. Other modules link there rather than redraw them.
+- Every aggregate says what it was computed from. All operations states its
+  sample size in the card subtitle because the backend exposes no aggregate
+  endpoint for the ledger, and Top clients drops a currency that
+  `currency-balances` does not cover rather than divide by an assumed total
+  (`src/lib/concentration.ts`).
+
 ## Conventions
 
 - **TypeScript strict.** No `any` in `src/`; `unknown` plus a narrow where a

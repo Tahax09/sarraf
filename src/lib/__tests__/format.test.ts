@@ -2,6 +2,7 @@ import {
   countryFlag,
   formatIban,
   formatPercentDelta,
+  formatShare,
   formatPhone,
   isolate,
   isValidIban,
@@ -78,6 +79,15 @@ describe("formatPercentDelta", () => {
 
   it("drops the decimal on whole percentages", () => {
     expect(formatPercentDelta(0.2)).toBe("+20%");
+  });
+});
+
+describe("formatShare", () => {
+  it("writes no sign, because a share is not a movement", () => {
+    expect(formatShare(0.421)).toBe("42.1%");
+    expect(formatShare(0.5)).toBe("50%");
+    expect(formatShare(0)).toBe("0%");
+    expect(formatShare(1)).toBe("100%");
   });
 });
 

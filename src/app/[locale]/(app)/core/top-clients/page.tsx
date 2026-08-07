@@ -10,6 +10,7 @@ import { HeaderStatBar } from "@/components/shared/header-stat-bar";
 import { DataTable, type Column } from "@/components/shared/data-table";
 import { DetailRow, DetailSection } from "@/components/shared/detail-drawer";
 import { ClientCell, useClientNameText } from "@/components/shared/cells";
+import { ClientConcentrationCard } from "@/components/modules/client-concentration";
 import { useTopClients, type TopClient } from "@/lib/api/hooks";
 import { formatAmount, formatCount, formatDate } from "@/lib/format";
 
@@ -130,6 +131,13 @@ export default function TopClientsPage() {
         />
         </TabPanel>
       </Card>
+
+      {/* Balance mode only. Ranked by activity the same table is a different
+          list — the busiest clients, who need not hold anything — and a share
+          of the book computed from it would answer a question nobody asked. */}
+      {mode === "balance" ? (
+        <ClientConcentrationCard clients={rows} loading={query.isLoading} />
+      ) : null}
     </div>
   );
 }
