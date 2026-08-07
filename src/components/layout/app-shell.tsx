@@ -182,6 +182,7 @@ function Shell({ children }: { children: ReactNode }) {
       {/* Phone bottom nav — approvals are a realistic on-the-go task. */}
       <nav
         data-print-hide
+        data-phone-nav
         aria-label={tNav("quickNavigation")}
         className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-border bg-surface lg:hidden"
       >

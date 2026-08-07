@@ -342,7 +342,7 @@ export function DataTable<T>({
       {/* Desktop / tablet: real table. */}
       <div
         className={cn(
-          "hidden overflow-x-auto md:block",
+          "table-scroll hidden overflow-x-auto md:block",
           // The sticky header only sticks against a scroll container; without a
           // bound it is the page that scrolls and the header leaves with it.
           scroll && "max-h-[65vh]",

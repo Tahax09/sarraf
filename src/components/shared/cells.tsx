@@ -19,11 +19,26 @@ import type { Fee } from "@/lib/api/types";
  * correspondent bank will show, and an operator matching a document against the
  * screen needs to see the form they are holding.
  */
+export type ClientNames = {
+  primary: string;
+  secondary: string | null;
+  /**
+   * WCAG 3.1.2, Language of Parts. A page is `lang="ar"` or `lang="en"`, but a
+   * client record carries both forms of the name at once, and a screen reader
+   * that reads "Ahmed Al-Sharif" with Arabic phonemes — or the Arabic form with
+   * English ones — is reading a different name than the one on the passport the
+   * operator is holding. Which field is which is known here structurally, so it
+   * is declared here rather than guessed from the characters.
+   */
+  primaryLang: "ar" | "en";
+  secondaryLang: "ar" | "en";
+};
+
 export function clientNames(
   name: string,
   nameEn: string | null | undefined,
   locale: string,
-): { primary: string; secondary: string | null } {
+): ClientNames {
   // Names are the one operator-visible field this application renders straight
   // from the record, and the one an attacker would put a directional override
   // in — see src/lib/text-safety.ts. Neutralised here, once, because every
@@ -32,11 +47,27 @@ export function clientNames(
   const primaryName = neutralizeBidi(name);
   // No Latin name on file — the Arabic one stands alone rather than leaving a
   // gap or an em dash where a name belongs.
-  if (!nameEn) return { primary: primaryName, secondary: null };
+  if (!nameEn)
+    return {
+      primary: primaryName,
+      secondary: null,
+      primaryLang: "ar",
+      secondaryLang: "en",
+    };
   const latinName = neutralizeBidi(nameEn);
   return locale === "ar"
-    ? { primary: primaryName, secondary: latinName }
-    : { primary: latinName, secondary: primaryName };
+    ? {
+        primary: primaryName,
+        secondary: latinName,
+        primaryLang: "ar",
+        secondaryLang: "en",
+      }
+    : {
+        primary: latinName,
+        secondary: primaryName,
+        primaryLang: "en",
+        secondaryLang: "ar",
+      };
 }
 
 /** Internal: the two cells below share it. Exported nothing — callers outside
@@ -75,9 +106,11 @@ export function ClientNameText({
   const names = useClientNames(name, nameEn);
   return (
     <span className="inline-flex flex-wrap items-baseline gap-1.5">
-      <bdi>{names.primary}</bdi>
+      <bdi lang={names.primaryLang}>{names.primary}</bdi>
       {names.secondary ? (
-        <bdi className="text-xs text-fg-muted">({names.secondary})</bdi>
+        <bdi lang={names.secondaryLang} className="text-xs text-fg-muted">
+          ({names.secondary})
+        </bdi>
       ) : null}
     </span>
   );
@@ -104,11 +137,15 @@ export function ClientCell({
   const names = useClientNames(name, nameEn);
   return (
     <span className="flex min-w-0 flex-col">
-      <bdi className="truncate text-sm text-fg">{names.primary}</bdi>
+      <bdi lang={names.primaryLang} className="truncate text-sm text-fg">
+        {names.primary}
+      </bdi>
       <span className="flex min-w-0 items-center gap-1.5 text-xs text-fg-muted">
         {names.secondary ? (
           <>
-            <bdi className="truncate">{names.secondary}</bdi>
+            <bdi lang={names.secondaryLang} className="truncate">
+              {names.secondary}
+            </bdi>
             <span aria-hidden>·</span>
           </>
         ) : null}

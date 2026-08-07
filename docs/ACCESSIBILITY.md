@@ -63,8 +63,14 @@ Everything is reachable and operable from the keyboard, in a visible order.
   move through them, `Enter` opens, `Escape` closes.
 - **2.5.8 Target Size (Minimum)** — interactive controls are at least 24×24 CSS
   pixels, and touch targets in the mobile card layout are larger.
-- **2.4.11 Focus Not Obscured** — sticky headers reserve space rather than
-  overlaying scrolled content.
+- **2.4.11 Focus Not Obscured (Minimum)** — the app shell puts a `sticky` header
+  over every page and a `fixed` quick-nav under every phone one, and the browser
+  scrolls a newly focused control flush against the viewport edge, which is
+  behind them. `scroll-padding` on the scrolling root (and on the table's own
+  scroll container, which has its own sticky header row) keeps the control
+  clear. This is geometry after a scroll rather than markup, so axe cannot see
+  it: a Shift+Tab sweep in `e2e/a11y.spec.ts` hit-tests every focused element at
+  desktop and phone widths and fails if anything else is painted over it.
 
 ## Announcements
 
@@ -145,13 +151,24 @@ a name so it resolves its own direction without disturbing the sentence around
 it. The reasoning is in
 [ADR-0002](adr/0002-arabic-first-and-direction-by-property.md).
 
+**3.1.2 Language of Parts.** A KYC record holds the client's name twice, Arabic
+and Latin, and both appear on the same line whichever locale is reading. The
+document `lang` cannot be right for both, so `clientNames()` returns the language
+of each form alongside it and every name renders as `<bdi lang="…">`. Without it
+a reader on an Arabic page pronounces "Ahmed Al-Sharif" with Arabic phonemes,
+and an operator matching a passport hears a name that is not the one in their
+hand. Which field carries which script is known structurally, so it is declared
+rather than sniffed from the characters.
+
 ## Known gaps
 
 Stated rather than rounded off:
 
 1. **No assistive-technology testing.** The panel has not been driven end to end
    with NVDA, JAWS or VoiceOver by someone who uses one daily. Everything above
-   is semantics plus axe, and semantics plus axe is not a user.
+   is semantics plus axe, and semantics plus axe is not a user. The script such
+   a pass would follow is written out under [Manual validation](#manual-validation)
+   — the gap is that nobody has run it, not that nobody knows what to run.
 2. **Turnstile is unaudited.** See the exclusion above.
 3. **Charts are not navigable point by point.** Every chart carries an
    accessible name and a text alternative: `<ScreenReaderFigures>` renders the
@@ -164,6 +181,79 @@ Stated rather than rounded off:
    out of scope, and even at AA the wording of errors and confirmations has not
    been tested with users.
 5. **Print output is not audited.** The print stylesheet is checked visually.
+6. **Forced colours are reasoned about, not observed.** Selected, current and
+   pressed states carry a `Highlight` outline under `forced-colors: active` so
+   they survive Windows High Contrast, but no one has read the panel in that
+   mode on Windows. The rest of the palette is the OS's to replace.
+
+## Manual validation
+
+Automation covers the criteria a machine can see. The rest is a person, and the
+script below is what that person runs, so the result is repeatable rather than
+an impression. Record the date, the versions, and the outcome per row; a run
+older than the last release of the shell or the design tokens is stale.
+
+### Screen readers
+
+Three combinations, because the bugs differ by pairing rather than by product.
+Arabic first — the panel is Arabic-first, and a reader that mishandles RTL
+mishandles the primary locale.
+
+| Reader + browser | Locale | Journey |
+| --- | --- | --- |
+| NVDA + Firefox | ar, en | Sign in → Dashboard → Clients → open a client → Withdrawal register → submit |
+| JAWS + Chrome | ar | Approval queue → approve one → read the outcome announcement |
+| VoiceOver + Safari (macOS) | en | Reports → change the date range → export → read the table |
+| VoiceOver + Safari (iOS) | ar | Phone quick-nav → Approvals → confirm dialog → dismiss |
+
+Each journey checks the same five things:
+
+1. The page title and the `<h1>` announce on navigation, and they say where you
+   are — not "Saraf" four times.
+2. Every form field announces its label, its required state, and its error, and
+   the error is reachable from the field rather than only at the top.
+3. A confirm dialog announces its name and its body on open, traps focus, and
+   returns focus to the control that opened it.
+4. The result of a save is announced — success or failure with its reference —
+   without the reader losing its place.
+5. A table announces its caption, its column headers per cell, and its sort
+   state, and the mobile card list carries the same names as the desktop rows.
+
+### Zoom and reflow
+
+| Check | Expected |
+| --- | --- |
+| 200% browser zoom, 1280×720 | No loss of content or function (SC 1.4.4) |
+| 400% zoom, 1280×720 → 320 CSS px wide | Single column, no two-dimensional scrolling except tables (SC 1.4.10) |
+| Text spacing bookmarklet (line 1.5×, letter 0.12em, word 0.16em, paragraph 2×) | No clipping or overlap (SC 1.4.12) |
+| Text-only zoom to 200% in Firefox | Layout holds; nothing truncates |
+
+### Keyboard only
+
+Unplug the mouse for the whole pass.
+
+- Every route in `e2e/helpers.ts` `ROUTES` is reachable and operable.
+- The skip link is the first stop and lands on `#main-content`.
+- No keyboard trap anywhere, including the search overlay, dialogs, the date
+  range picker and the export menu.
+- Focus order matches reading order in both directions, in both locales.
+- `Escape` closes every overlay, and focus returns to the opener.
+
+### Windows High Contrast / forced colours
+
+- Every control keeps a visible border in forced-colours mode — an outline
+  drawn only with `background-color` disappears there.
+- Focus indication survives.
+- Icon-only buttons remain distinguishable from their background.
+- Charts remain readable, or their figures table is the fallback.
+
+### Pointer and motion
+
+- `prefers-reduced-motion: reduce` and the Accessibility Center's reduced-motion
+  setting both stop animation.
+- Every drag interaction has a click alternative (SC 2.5.7) — currently only the
+  logo dropzone, which has a file-picker button.
+- Nothing depends on hover alone to reveal content (SC 1.4.13).
 
 ## Working on this
 

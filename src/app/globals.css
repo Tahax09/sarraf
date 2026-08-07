@@ -268,6 +268,62 @@ bdi {
   border-radius: 2px;
 }
 
+/*
+ * WCAG 2.2 SC 2.4.11, Focus Not Obscured.
+ *
+ * The app header is sticky and 3.5rem tall. Without this the browser scrolls a
+ * newly focused element flush against the top of the viewport — which is
+ * underneath the header — and a keyboard user tabbing backwards up a long
+ * register lands on a field whose top edge is cut off. `scroll-padding` costs
+ * nothing at runtime and is applied to the scrolling root, so it covers every
+ * page rather than every component remembering a `scroll-margin`.
+ *
+ * The bottom value is for the phone quick-nav, which is `fixed` at the bottom
+ * below `lg` and covers the last row of a page the same way.
+ */
+html {
+  scroll-padding-top: 4rem;
+  scroll-padding-bottom: 4.5rem;
+}
+
+@media (min-width: 1024px) {
+  html {
+    scroll-padding-bottom: 1rem;
+  }
+}
+
+/* The table's own scroll container has its own sticky header row. */
+.table-scroll {
+  scroll-padding-top: 2.75rem;
+}
+
+/*
+ * Windows High Contrast (forced colours).
+ *
+ * The OS replaces every colour we set, so any state told only by a background —
+ * the current nav item, the selected tab, a pressed toggle — collapses into
+ * looking like every other item. The semantics survive (`aria-current`,
+ * `aria-selected`, `aria-pressed`, `aria-checked` are on all of them, which is
+ * why a screen-reader user is unaffected), but a sighted high-contrast user
+ * reads the screen, not the tree. A border in the system's own highlight colour
+ * is the one thing forced colours will not repaint away.
+ */
+@media (forced-colors: active) {
+  [aria-current="page"],
+  [aria-selected="true"],
+  [aria-pressed="true"],
+  [aria-checked="true"] {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+
+  /* Focus must still win over the state outline above. */
+  :focus-visible {
+    outline: 3px solid Highlight;
+    outline-offset: 2px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
