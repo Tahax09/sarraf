@@ -14,6 +14,8 @@
     "typecheck": "tsc --noEmit",
     "check:messages": "node scripts/check-messages.mjs",
     "check:architecture": "node scripts/check-architecture.mjs",
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "bundle:report": "node scripts/bundle-report.mjs",
     "test:coverage": "jest --coverage",
     "test:e2e:a11y": "playwright test --project=a11y",
     "perf:budget": "node scripts/perf-budget.mjs"

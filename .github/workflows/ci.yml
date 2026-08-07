@@ -36,10 +36,24 @@ jobs:
 
       - run: npm ci
 
-      # Five gates, each run even if an earlier one failed, so one push gives
-      # the whole picture instead of one error at a time.
+      # Every gate runs even if an earlier one failed, so one push gives the
+      # whole picture instead of one error at a time.
+      #
+      # Secrets first: it is the cheapest check and the only one whose failure
+      # means "stop and rotate a credential" rather than "fix the code".
+      - name: Secret scan
+        run: npm run check:secrets
+
       - name: TypeScript
+        if: ${{ !cancelled() }}
         run: npm run typecheck
+
+      # Cycles, layering, and production code importing tests. None of these
+      # are visible in a diff, which is why they are a build step and not a
+      # review convention.
+      - name: Architecture rules
+        if: ${{ !cancelled() }}
+        run: npm run check:architecture
 
       # Zero, not four. The allowance existed because five React Compiler
       # bail-outs were already in the tree; they were fixed at the source
@@ -54,13 +68,44 @@ jobs:
         if: ${{ !cancelled() }}
         run: npm run test:coverage -- --ci
 
+      # Coverage HTML is what a reviewer wants when the ratchet fails, and it
+      # is useless after the runner is torn down.
+      - name: Coverage report
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 7
+
+      # `build:release` rather than `build`: it stamps the version, commit and
+      # build time the footer and the diagnostics card read. A CI build that
+      # reported itself as 0.0.0-dev would make the whole mechanism a lie.
       - name: Production build
         if: ${{ !cancelled() }}
-        run: npm run build
+        run: npm run build:release
+        env:
+          NEXT_PUBLIC_BUILD_SHA: ${{ github.sha }}
+          NEXT_PUBLIC_ENVIRONMENT: ci
 
       - name: Translation catalogues agree
         if: ${{ !cancelled() }}
         run: npm run check:messages
+
+      # Composition, not per-route weight — that is the `performance` job
+      # below. Published on every run, not only failures: the value of a size
+      # table is the comparison with last week's.
+      - name: Bundle report
+        if: ${{ !cancelled() }}
+        run: npm run bundle:report -- --json bundle-report.json
+
+      - name: Bundle report artifact
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-report
+          path: bundle-report.json
+          retention-days: 30
 
   e2e:
     name: Playwright (desktop + mobile)
@@ -113,6 +158,33 @@ jobs:
         if: ${{ failure() }}
         with:
           name: playwright-report-a11y
+          path: playwright-report/
+          retention-days: 7
+
+  performance:
+    name: JavaScript budget
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+
+      # Builds, serves the build, drives a real browser, and fails if a route
+      # transfers more JavaScript than its ceiling. Measured on a production
+      # build because a dev-server number is a number about the dev server.
+      - run: npm run perf:budget
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        with:
+          name: playwright-report-performance
           path: playwright-report/
           retention-days: 7
 
