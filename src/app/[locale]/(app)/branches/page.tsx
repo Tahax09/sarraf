@@ -17,6 +17,7 @@ import { useBranches, useSaveBranch } from "@/lib/api/hooks";
 import { formatCount } from "@/lib/format";
 import type { Branch } from "@/lib/api/types";
 import { directionSafe } from "@/lib/text-safety";
+import { useNotifiedAction } from "@/components/providers/feedback-provider";
 
 export default function BranchesPage() {
   const t = useTranslations("branches");
@@ -27,6 +28,7 @@ export default function BranchesPage() {
 
   const query = useBranches();
   const save = useSaveBranch();
+  const runAction = useNotifiedAction();
   const [editing, setEditing] = useState<Branch | "new" | null>(null);
 
   const schema = z.object({
@@ -135,11 +137,13 @@ export default function BranchesPage() {
             <Button
               loading={save.isPending}
               onClick={form.handleSubmit(async (values) => {
-                await save.mutateAsync({
-                  id: editing && editing !== "new" ? editing.id : undefined,
-                  ...values,
-                });
-                setEditing(null);
+                const ok = await runAction(() =>
+                  save.mutateAsync({
+                    id: editing && editing !== "new" ? editing.id : undefined,
+                    ...values,
+                  }),
+                );
+                if (ok) setEditing(null);
               })}
             >
               {tc("save")}

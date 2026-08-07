@@ -23,6 +23,7 @@ import {
 import { formatCount } from "@/lib/format";
 import type { Currency } from "@/lib/api/types";
 import { directionSafe } from "@/lib/text-safety";
+import { useNotifiedAction } from "@/components/providers/feedback-provider";
 
 export default function CurrenciesPage() {
   const t = useTranslations("currencies");
@@ -33,6 +34,7 @@ export default function CurrenciesPage() {
 
   const query = useCurrencies();
   const create = useCreateCurrency();
+  const runAction = useNotifiedAction();
 
   const [adding, setAdding] = useState(false);
   const [deleting, setDeleting] = useState<Currency | null>(null);
@@ -178,13 +180,16 @@ export default function CurrenciesPage() {
             <Button
               loading={create.isPending}
               onClick={form.handleSubmit(async (values) => {
-                await create.mutateAsync({
-                  name: values.name,
-                  alphabeticCode: values.alphabeticCode.toUpperCase(),
-                  numericCode: values.numericCode,
-                  precision: Number(values.precision),
-                  country: values.country || null,
-                });
+                const ok = await runAction(() =>
+                  create.mutateAsync({
+                    name: values.name,
+                    alphabeticCode: values.alphabeticCode.toUpperCase(),
+                    numericCode: values.numericCode,
+                    precision: Number(values.precision),
+                    country: values.country || null,
+                  }),
+                );
+                if (!ok) return;
                 form.reset();
                 setAdding(false);
               })}

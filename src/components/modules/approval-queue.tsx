@@ -35,6 +35,7 @@ import {
 } from "@/lib/format";
 import { useTableQuery } from "@/lib/use-table-query";
 import type { QueryParams } from "@/lib/api/client";
+import { useFeedback } from "@/components/providers/feedback-provider";
 import type {
   Beneficiary,
   OperationBase,
@@ -182,6 +183,8 @@ function QueueConfirmDialog<T extends QueueOperation>({
 }) {
   const tc = useTranslations("common");
   const tAuth = useTranslations("authorizedWithdrawal");
+  const tFeedback = useTranslations("feedback");
+  const { notify } = useFeedback();
   const approve = useApproveOperation(kind);
   const cancel = useCancelOperation(kind);
   const cancelling = pending?.action === "cancel";
@@ -210,10 +213,14 @@ function QueueConfirmDialog<T extends QueueOperation>({
       }
       onConfirm={async ({ reason }) => {
         if (!pending) return;
+        // A rejection propagates: ConfirmDialog keeps itself open and shows the
+        // reference rather than closing on a change that did not happen.
         if (pending.action === "approve") {
           await approve.mutateAsync(pending.row.id);
+          notify({ tone: "success", message: tFeedback("approved") });
         } else {
           await cancel.mutateAsync({ id: pending.row.id, reason });
+          notify({ tone: "success", message: tFeedback("cancelled") });
         }
         onClose();
       }}

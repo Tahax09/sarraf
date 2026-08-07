@@ -11,6 +11,7 @@ import { TextInput } from "@/components/ui/field";
 import { PageHeader } from "@/components/shared/page-header";
 import { ErrorState, Skeleton } from "@/components/ui/states";
 import { useOperationRules, useSaveOperationRules } from "@/lib/api/hooks";
+import { useNotifiedAction } from "@/components/providers/feedback-provider";
 
 export default function OperationRulesPage() {
   const t = useTranslations("operationRules");
@@ -19,6 +20,7 @@ export default function OperationRulesPage() {
 
   const query = useOperationRules();
   const save = useSaveOperationRules();
+  const runAction = useNotifiedAction();
   const [saved, setSaved] = useState(false);
 
   const schema = z.object({
@@ -59,8 +61,7 @@ export default function OperationRulesPage() {
         ) : (
           <form
             onSubmit={form.handleSubmit(async (values) => {
-              await save.mutateAsync(values);
-              setSaved(true);
+              if (await runAction(() => save.mutateAsync(values))) setSaved(true);
             })}
           >
             <CardBody className="grid gap-4 sm:grid-cols-2">

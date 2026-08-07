@@ -25,6 +25,7 @@ import { useLabels } from "@/lib/labels";
 import { countryFlag, formatCount } from "@/lib/format";
 import { CONTINENTS, type Continent, type Country } from "@/lib/api/types";
 import { directionSafe } from "@/lib/text-safety";
+import { useNotifiedAction } from "@/components/providers/feedback-provider";
 
 export default function CountriesPage() {
   const t = useTranslations("countries");
@@ -36,6 +37,7 @@ export default function CountriesPage() {
   const query = useCountries();
   const create = useCreateCountry();
   const update = useUpdateCountry();
+  const runAction = useNotifiedAction();
 
   const [editing, setEditing] = useState<Country | null>(null);
   const [adding, setAdding] = useState(false);
@@ -272,15 +274,14 @@ export default function CountriesPage() {
                   phoneCode: values.phoneCode || null,
                   continent: values.continent as Continent,
                 };
-                if (editing) {
-                  await update.mutateAsync(payload);
-                } else {
-                  if ((query.data ?? []).some((c) => c.code === code)) {
-                    form.setError("code", { message: t("codeTaken") });
-                    return;
-                  }
-                  await create.mutateAsync(payload);
+                if (!editing && (query.data ?? []).some((c) => c.code === code)) {
+                  form.setError("code", { message: t("codeTaken") });
+                  return;
                 }
+                const ok = await runAction(() =>
+                  editing ? update.mutateAsync(payload) : create.mutateAsync(payload),
+                );
+                if (!ok) return;
                 setAdding(false);
                 setEditing(null);
               })}

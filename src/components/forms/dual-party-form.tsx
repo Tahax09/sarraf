@@ -20,6 +20,7 @@ import {
 } from "@/lib/api/hooks";
 import type { Account } from "@/lib/api/types";
 import { formatAmount, formatRate, isolate } from "@/lib/format";
+import { useFeedback } from "@/components/providers/feedback-provider";
 
 /**
  * Sender/receiver register template.
@@ -38,6 +39,8 @@ export function DualPartyForm({
   conversion?: boolean;
 }) {
   const t = useTranslations("fields");
+  const tFeedback = useTranslations("feedback");
+  const { notify } = useFeedback();
   const clientName = useClientNameText();
   const tv = useTranslations("validation");
   const tSteps = useTranslations("steps");
@@ -393,7 +396,8 @@ export function DualPartyForm({
             ...(conversion ? { exchangeRate: rate.data?.rate ?? null } : {}),
           });
           setConfirmOpen(false);
-          router.push(redirectTo);
+          notify({ tone: "success", message: tFeedback("registered") });
+        router.push(redirectTo);
         }}
       />
     </>

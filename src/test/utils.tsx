@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { A11yProvider } from "@/components/providers/a11y-provider";
 import { defaultTheme } from "@/lib/theme";
 import { defaultA11yPreferences } from "@/lib/a11y-preferences";
+import { FeedbackProvider } from "@/components/providers/feedback-provider";
 import ar from "../../messages/ar.json";
 import en from "../../messages/en.json";
 
@@ -54,8 +55,12 @@ export function Providers({
             that reads either should not have to be rendered specially here. */}
         <ThemeProvider initialTheme={defaultTheme}>
           <A11yProvider initial={defaultA11yPreferences}>
-            {/* Anything claiming a keyboard chord needs the registry above it. */}
-            {shortcuts ? <ShortcutProvider>{children}</ShortcutProvider> : children}
+            {/* Anything reporting the outcome of a mutation needs this, which
+                after the feedback layer landed is most of the app. */}
+            <FeedbackProvider>
+              {/* Anything claiming a keyboard chord needs the registry above it. */}
+              {shortcuts ? <ShortcutProvider>{children}</ShortcutProvider> : children}
+            </FeedbackProvider>
           </A11yProvider>
         </ThemeProvider>
       </QueryClientProvider>

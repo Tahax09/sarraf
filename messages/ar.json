@@ -64,7 +64,9 @@
     "notAvailable": "—",
     "expandRow": "عرض التفاصيل",
     "collapseRow": "إخفاء التفاصيل",
-    "exportPage": "تصدير الصفحة"
+    "exportPage": "تصدير الصفحة",
+    "submitFailed": "تعذّر الإرسال. لم يُحفظ أي شيء.",
+    "submitFailedReference": "المرجع: {reference}"
   },
   "search": {
     "title": "بحث",
@@ -346,7 +348,18 @@
     "defaultTitle": "تأكيد الإجراء",
     "typeToConfirm": "اكتب \"{word}\" للتأكيد",
     "word": "تأكيد",
-    "irreversible": "لا يمكن التراجع عن هذا الإجراء."
+    "irreversible": "لا يمكن التراجع عن هذا الإجراء.",
+    "failed": "لم يكتمل الإجراء. لم يتغيّر أي شيء.",
+    "failedReference": "المرجع: {reference}"
+  },
+  "feedback": {
+    "reference": "المرجع: {reference}",
+    "dismiss": "إغلاق",
+    "approved": "تمت الموافقة على العملية",
+    "cancelled": "تم إلغاء العملية",
+    "registered": "تم تسجيل العملية",
+    "saved": "تم حفظ التغييرات",
+    "failed": "لم تكتمل هذه العملية. لم يتغيّر شيء."
   },
   "expiry": {
     "expiresIn": "ينتهي خلال {value}",

@@ -20,6 +20,7 @@ import { useBranches, useRegisterOperation } from "@/lib/api/hooks";
 import { endpoints } from "@/lib/api/endpoints";
 import type { Account } from "@/lib/api/types";
 import { directionSafe } from "@/lib/text-safety";
+import { useFeedback } from "@/components/providers/feedback-provider";
 import {
   formatAmount,
   formatIban,
@@ -35,6 +36,8 @@ import {
  */
 export function ExternalTransferForm() {
   const t = useTranslations("fields");
+  const tFeedback = useTranslations("feedback");
+  const { notify } = useFeedback();
   const clientName = useClientNameText();
   const tv = useTranslations("validation");
   const tSteps = useTranslations("steps");
@@ -376,6 +379,7 @@ export function ExternalTransferForm() {
           },
           smsNotification: data.smsNotification,
         });
+        notify({ tone: "success", message: tFeedback("registered") });
         router.push("/core/external-transfer");
       })}
     />

@@ -17,6 +17,7 @@ import { CountryPicker } from "@/components/shared/country-picker";
 import { useSaveClient } from "@/lib/api/hooks";
 import type { Client } from "@/lib/api/types";
 import { directionSafe } from "@/lib/text-safety";
+import { useNotifiedAction } from "@/components/providers/feedback-provider";
 
 /**
  * Edits the fields the panel legitimately owns on a client record: the two
@@ -38,6 +39,7 @@ export function ClientEditDialog({
   const tc = useTranslations("common");
   const tv = useTranslations("validation");
   const save = useSaveClient();
+  const runAction = useNotifiedAction();
 
   const schema = z.object({
     name: z.string().min(2, tv("required")).refine(directionSafe, tv("noDirectionalMarks")),
@@ -105,16 +107,18 @@ export function ClientEditDialog({
             loading={save.isPending}
             onClick={form.handleSubmit(async (values) => {
               if (!client) return;
-              await save.mutateAsync({
-                id: client.id,
-                name: values.name,
-                nameEn: values.nameEn.trim() || null,
-                phone: normalizePhone(values.phone) ?? values.phone,
-                email: values.email.trim() || null,
-                nationalityCode: values.nationalityCode || null,
-                address: values.address.trim() || null,
-              });
-              onClose();
+              const ok = await runAction(() =>
+                save.mutateAsync({
+                  id: client.id,
+                  name: values.name,
+                  nameEn: values.nameEn.trim() || null,
+                  phone: normalizePhone(values.phone) ?? values.phone,
+                  email: values.email.trim() || null,
+                  nationalityCode: values.nationalityCode || null,
+                  address: values.address.trim() || null,
+                }),
+              );
+              if (ok) onClose();
             })}
           >
             {tc("save")}

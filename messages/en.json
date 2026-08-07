@@ -64,7 +64,9 @@
     "notAvailable": "—",
     "expandRow": "Show details",
     "collapseRow": "Hide details",
-    "exportPage": "Export page"
+    "exportPage": "Export page",
+    "submitFailed": "This could not be submitted. Nothing was saved.",
+    "submitFailedReference": "Reference: {reference}"
   },
   "search": {
     "title": "Search",
@@ -346,7 +348,18 @@
     "defaultTitle": "Confirm action",
     "typeToConfirm": "Type \"{word}\" to confirm",
     "word": "CONFIRM",
-    "irreversible": "This action cannot be undone."
+    "irreversible": "This action cannot be undone.",
+    "failed": "This action did not complete. Nothing was changed.",
+    "failedReference": "Reference: {reference}"
+  },
+  "feedback": {
+    "reference": "Reference: {reference}",
+    "dismiss": "Dismiss",
+    "approved": "Operation approved",
+    "cancelled": "Operation cancelled",
+    "registered": "Operation registered",
+    "saved": "Changes saved",
+    "failed": "This action did not complete. Nothing was changed."
   },
   "expiry": {
     "expiresIn": "Expires in {value}",

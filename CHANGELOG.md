@@ -10,6 +10,14 @@ a release yet, so everything below is unreleased.
 
 **Added**
 
+- A feedback layer: `<FeedbackProvider>` and `useNotifiedAction()`
+  (`src/components/providers/feedback-provider.tsx`). Until now a mutation that
+  failed did nothing visible — the spinner stopped, the dialog closed or stayed
+  open, and silence looked exactly like success, which is the state most likely
+  to be clicked through a second time. Success is transient and auto-dismisses;
+  a failure persists and carries the quotable reference support asks for. The
+  message is always one this application wrote: a backend error string can carry
+  internals, is not translated, and is not something an operator can act on.
 - `src/lib/text-safety.ts` — directional-override handling, both halves.
   `neutralizeBidi()` strips U+202A–U+202E and U+2066–U+2069 from values on their
   way to a screen or a workbook; `directionSafe` is a zod refinement that
@@ -32,6 +40,15 @@ a release yet, so everything below is unreleased.
 
 **Changed**
 
+- `<ConfirmDialog>` and `<FormWizard>` await their callback and surface a
+  rejection where the operator is already looking, instead of swallowing it.
+  Both signatures now allow a promise (`onConfirm(input) => void | Promise`,
+  `onSubmit() => void | Promise`); a rejected one keeps the dialog or the wizard
+  open with a reference rather than closing over a transfer that never happened.
+- Every remaining save path — branches, users, clients, accounts, currencies,
+  countries, operation rules, operations pricing, system info — goes through
+  `useNotifiedAction()`, so each one confirms what it did and closes only when
+  the write actually landed.
 - CI builds with `build:release`, stamped with the commit and environment, so
   the footer and the diagnostics card do not report a CI artefact as
   `0.0.0-dev`.

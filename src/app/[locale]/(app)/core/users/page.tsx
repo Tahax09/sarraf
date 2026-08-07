@@ -39,6 +39,7 @@ import {
 } from "@/lib/format";
 import type { User } from "@/lib/api/types";
 import { directionSafe } from "@/lib/text-safety";
+import { useNotifiedAction } from "@/components/providers/feedback-provider";
 
 /** Backend user-type codes; the visible labels come from the dictionary. */
 const USER_TYPES = ["systemAdmin", "branchManager", "teller", "auditor"];
@@ -271,6 +272,7 @@ function UserDialog({
   const tc = useTranslations("common");
   const tv = useTranslations("validation");
   const save = useSaveUser();
+  const runAction = useNotifiedAction();
 
   const schema = z.object({
     name: z.string().min(2, tv("required")).refine(directionSafe, tv("noDirectionalMarks")),
@@ -316,14 +318,16 @@ function UserDialog({
           <Button
             loading={save.isPending}
             onClick={form.handleSubmit(async (values) => {
-              await save.mutateAsync({
-                id: user?.id,
-                ...values,
-                // The field takes the national part; the register stores the
-                // full number.
-                phone: normalizePhone(values.phone) ?? values.phone,
-              });
-              onClose();
+              const ok = await runAction(() =>
+                save.mutateAsync({
+                  id: user?.id,
+                  ...values,
+                  // The field takes the national part; the register stores the
+                  // full number.
+                  phone: normalizePhone(values.phone) ?? values.phone,
+                }),
+              );
+              if (ok) onClose();
             })}
           >
             {tc("save")}

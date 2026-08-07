@@ -11,6 +11,7 @@ import { SelectInput } from "@/components/ui/field";
 import { useBranches, useSaveAccount } from "@/lib/api/hooks";
 import { useLabels } from "@/lib/labels";
 import type { Account } from "@/lib/api/types";
+import { useNotifiedAction } from "@/components/providers/feedback-provider";
 
 /** The account classes the panel may move a record between. */
 const ACCOUNT_TYPES = ["current", "savings", "operational", "income"] as const;
@@ -36,6 +37,7 @@ export function AccountEditDialog({
   const labels = useLabels();
   const branches = useBranches();
   const save = useSaveAccount();
+  const runAction = useNotifiedAction();
 
   const schema = z.object({
     type: z.string().min(1, tv("required")),
@@ -68,8 +70,10 @@ export function AccountEditDialog({
             loading={save.isPending}
             onClick={form.handleSubmit(async (values) => {
               if (!account) return;
-              await save.mutateAsync({ id: account.id, ...values });
-              onClose();
+              const ok = await runAction(() =>
+                save.mutateAsync({ id: account.id, ...values }),
+              );
+              if (ok) onClose();
             })}
           >
             {tc("save")}

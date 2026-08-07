@@ -13,6 +13,7 @@ import { usePricing, useSavePricing, useCurrencies } from "@/lib/api/hooks";
 import { useLabels } from "@/lib/labels";
 import { formatAmount } from "@/lib/format";
 import type { FeeType, OperationPricing } from "@/lib/api/types";
+import { useNotifiedAction } from "@/components/providers/feedback-provider";
 
 export default function OperationsPricingPage() {
   const t = useTranslations("pricing");
@@ -23,6 +24,7 @@ export default function OperationsPricingPage() {
   const query = usePricing();
   const currencies = useCurrencies();
   const save = useSavePricing();
+  const runAction = useNotifiedAction();
   const [editing, setEditing] = useState<OperationPricing | null>(null);
 
   const columns: Column<OperationPricing>[] = [
@@ -111,8 +113,7 @@ export default function OperationsPricingPage() {
           saving={save.isPending}
           onClose={() => setEditing(null)}
           onSave={async (next) => {
-            await save.mutateAsync(next);
-            setEditing(null);
+            if (await runAction(() => save.mutateAsync(next))) setEditing(null);
           }}
         />
       ) : null}

@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardFooter } from "@/components/ui/card";
 import { useSaveShortcut } from "@/lib/shortcuts";
+import { errorReference, reportError } from "@/lib/report-error";
 import { cn } from "@/lib/utils";
 
 export type WizardStep = {
@@ -19,6 +20,12 @@ export type WizardStep = {
 /**
  * Step shell shared by every register form. One column on mobile, the step
  * rail moves above the content below the tablet breakpoint.
+ *
+ * `onSubmit` may return a promise. If it rejects, the failure is shown on the
+ * step the operator is already looking at rather than swallowed: a money
+ * movement that did not happen must not look like one that did, and the
+ * register these forms redirect to on success is several seconds away from
+ * telling anyone otherwise.
  */
 export function FormWizard({
   steps,
@@ -27,14 +34,17 @@ export function FormWizard({
   submitLabel,
 }: {
   steps: WizardStep[];
-  onSubmit: () => void;
+  onSubmit: () => void | Promise<unknown>;
   submitting?: boolean;
   submitLabel?: string;
 }) {
   const t = useTranslations("common");
   const tSteps = useTranslations("steps");
   const [index, setIndex] = useState(0);
+  const [failure, setFailure] = useState<string | null>(null);
+  const [running, setRunning] = useState(false);
 
+  const busy = submitting || running;
   const step = steps[index];
   const isLast = index === steps.length - 1;
 
@@ -47,7 +57,20 @@ export function FormWizard({
   // the form is complete, and a chord that half-saves a money movement would be
   // worse than no chord. Disabled while a submit is in flight so a held key
   // cannot fire the same mutation twice.
-  useSaveShortcut(onSubmit, { disabled: !isLast || submitting });
+  async function submit() {
+    setFailure(null);
+    setRunning(true);
+    try {
+      await onSubmit();
+    } catch (error) {
+      reportError(error, { boundary: "form-wizard" });
+      setFailure(errorReference(error as { digest?: string }));
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  useSaveShortcut(submit, { disabled: !isLast || busy });
 
   return (
     <div className="grid gap-4 lg:grid-cols-[16rem_1fr]">
@@ -96,18 +119,29 @@ export function FormWizard({
             {tSteps("stepOf", { current: index + 1, total: steps.length })}
           </p>
           {step.content}
+          {failure ? (
+            <p
+              role="alert"
+              className="mt-4 rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger"
+            >
+              {t("submitFailed")}{" "}
+              <span className="numeric">
+                {t("submitFailedReference", { reference: failure })}
+              </span>
+            </p>
+          ) : null}
         </CardBody>
         <CardFooter className="justify-between">
           <Button
             variant="secondary"
             onClick={() => setIndex((i) => Math.max(0, i - 1))}
-            disabled={index === 0 || submitting}
+            disabled={index === 0 || busy}
           >
             <ChevronRight className="rtl-flip size-4 rotate-180" aria-hidden />
             {t("previous")}
           </Button>
           {isLast ? (
-            <Button onClick={onSubmit} loading={submitting}>
+            <Button onClick={submit} loading={busy}>
               {submitLabel ?? t("submit")}
             </Button>
           ) : (

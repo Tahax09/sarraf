@@ -15,6 +15,7 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { A11yProvider } from "@/components/providers/a11y-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { TelemetryProvider } from "@/components/providers/telemetry-provider";
+import { FeedbackProvider } from "@/components/providers/feedback-provider";
 import "../globals.css";
 
 // One family covering Arabic and Latin keeps bilingual pages visually even.
@@ -74,7 +75,9 @@ export default async function LocaleLayout({
                     signed-out pages too — the sign-in screen is the first
                     paint every operator pays for. */}
                 <TelemetryProvider />
-                {children}
+                {/* Outside the app shell for the same reason: a failed sign-in
+                    needs an answer as much as a failed transfer does. */}
+                <FeedbackProvider>{children}</FeedbackProvider>
               </QueryProvider>
             </A11yProvider>
           </ThemeProvider>

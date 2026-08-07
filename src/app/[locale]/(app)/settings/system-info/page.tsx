@@ -14,6 +14,7 @@ import { useSaveSystemInfo, useSystemInfo } from "@/lib/api/hooks";
 import { formatNumber } from "@/lib/format";
 import type { SystemInfo } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
+import { useNotifiedAction } from "@/components/providers/feedback-provider";
 
 export default function SystemInfoPage() {
   const t = useTranslations("systemInfo");
@@ -54,6 +55,7 @@ function SystemInfoForm({ initial }: { initial: SystemInfo }) {
   const tc = useTranslations("common");
 
   const save = useSaveSystemInfo();
+  const runAction = useNotifiedAction();
   const [draft, setDraft] = useState<SystemInfo>(initial);
 
   const update = (patch: Partial<SystemInfo>) =>
@@ -112,7 +114,7 @@ function SystemInfoForm({ initial }: { initial: SystemInfo }) {
         <CardFooter>
           <Button
             loading={save.isPending}
-            onClick={() => save.mutate(draft)}
+            onClick={() => runAction(() => save.mutateAsync(draft))}
           >
             {tc("save")}
           </Button>
