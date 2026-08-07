@@ -308,7 +308,8 @@
     "maxLength": "الحد الأقصى {max} أحرف",
     "numberPositive": "يجب إدخال رقم أكبر من صفر",
     "selectOne": "اختر عنصراً واحداً على الأقل",
-    "passwordMismatch": "كلمتا المرور غير متطابقتين"
+    "passwordMismatch": "كلمتا المرور غير متطابقتين",
+    "noDirectionalMarks": "أزل محارف اتجاه النص المخفية من هذا النص"
   },
   "table": {
     "sortAsc": "ترتيب تصاعدي",

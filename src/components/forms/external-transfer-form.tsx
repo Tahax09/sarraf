@@ -19,6 +19,7 @@ import { SelectInput, TextInput, Toggle } from "@/components/ui/field";
 import { useBranches, useRegisterOperation } from "@/lib/api/hooks";
 import { endpoints } from "@/lib/api/endpoints";
 import type { Account } from "@/lib/api/types";
+import { directionSafe } from "@/lib/text-safety";
 import {
   formatAmount,
   formatIban,
@@ -59,8 +60,14 @@ export function ExternalTransferForm() {
           ),
         branchId: z.string().min(1, tv("required")),
         countryCode: z.string().min(2, tv("required")),
-        bankName: z.string().min(2, tv("required")),
-        beneficiaryName: z.string().min(2, tv("required")),
+        bankName: z
+          .string()
+          .min(2, tv("required"))
+          .refine(directionSafe, tv("noDirectionalMarks")),
+        beneficiaryName: z
+          .string()
+          .min(2, tv("required"))
+          .refine(directionSafe, tv("noDirectionalMarks")),
         beneficiaryPhone: z
           .string()
           .optional()

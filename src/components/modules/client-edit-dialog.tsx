@@ -16,6 +16,7 @@ import {
 import { CountryPicker } from "@/components/shared/country-picker";
 import { useSaveClient } from "@/lib/api/hooks";
 import type { Client } from "@/lib/api/types";
+import { directionSafe } from "@/lib/text-safety";
 
 /**
  * Edits the fields the panel legitimately owns on a client record: the two
@@ -39,8 +40,8 @@ export function ClientEditDialog({
   const save = useSaveClient();
 
   const schema = z.object({
-    name: z.string().min(2, tv("required")),
-    nameEn: z.string(),
+    name: z.string().min(2, tv("required")).refine(directionSafe, tv("noDirectionalMarks")),
+    nameEn: z.string().refine(directionSafe, tv("noDirectionalMarks")),
     // Validated on the normalised number, not the typed one: the field shows a
     // `+218` prefix and takes the national part, so what the operator types is
     // only part of what gets stored.
@@ -49,7 +50,7 @@ export function ClientEditDialog({
     // Optional on purpose: the two fields postdate the register, and a client
     // onboarded before them must still be editable without inventing a value.
     nationalityCode: z.string(),
-    address: z.string(),
+    address: z.string().refine(directionSafe, tv("noDirectionalMarks")),
   });
   type Values = z.infer<typeof schema>;
 

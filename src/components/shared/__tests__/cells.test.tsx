@@ -23,6 +23,18 @@ describe("clientNames", () => {
       secondary: null,
     });
   });
+
+  /**
+   * Every register cell, drawer title, search result and export cell comes
+   * through this function, which is why the directional-override defence lives
+   * here rather than at each call site.
+   */
+  it("neutralises a directional override in either name", () => {
+    expect(clientNames(`${AR}‮`, `${EN}‮`, "ar")).toEqual({
+      primary: AR,
+      secondary: EN,
+    });
+  });
 });
 
 describe("ClientCell", () => {

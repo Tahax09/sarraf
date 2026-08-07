@@ -308,7 +308,8 @@
     "maxLength": "Maximum {max} characters",
     "numberPositive": "Enter a number greater than zero",
     "selectOne": "Select at least one item",
-    "passwordMismatch": "Passwords do not match"
+    "passwordMismatch": "Passwords do not match",
+    "noDirectionalMarks": "Remove the hidden text-direction characters from this text"
   },
   "table": {
     "sortAsc": "Sort ascending",

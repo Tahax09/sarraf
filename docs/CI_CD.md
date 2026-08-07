@@ -51,9 +51,14 @@ the reader a log dive.
   What axe does and does not certify is stated in
   [ACCESSIBILITY.md](ACCESSIBILITY.md); roughly a third of WCAG AA is
   mechanically testable, and the rest is in the manual checklist.
-- **`performance`** — `npm run perf:budget`: builds, serves, and drives a real
-  browser to measure transferred JavaScript per route against the ceilings in
-  [PERFORMANCE.md](PERFORMANCE.md).
+- **`performance`** — `npm run check:prod`: builds once, serves the build, and
+  runs the two specs whose assertions are only true of a production artefact.
+  `performance.spec.ts` measures transferred JavaScript per route against the
+  ceilings in [PERFORMANCE.md](PERFORMANCE.md); `security.spec.ts` reads the
+  headers off a served response and asserts that `script-src` carries neither
+  `'unsafe-inline'` nor `'unsafe-eval'` — a negative that a dev server, which
+  relaxes the policy deliberately, cannot prove. The other seven assertions in
+  that spec run in `e2e` too, where they are cheap.
 
 ## `audit` and `codeql`
 
@@ -83,7 +88,7 @@ to date*: **on**. Required checks, by job name:
 Types, lint, unit tests, build
 Playwright (desktop + mobile)
 Accessibility (axe, WCAG 2.2 AA)
-JavaScript budget
+Production build checks (budget, CSP)
 Dependency audit
 Analyze (javascript-typescript)
 ```
@@ -120,9 +125,9 @@ npm run check:messages
 npm run test:coverage
 npm run test:e2e           # needs a dev server, or E2E_PORT against a build
 npm run test:e2e:a11y
-npm run perf:budget        # builds and serves on its own port
+npm run check:prod         # builds and serves on its own port
 ```
 
-`perf:budget` and `test:e2e` both want a port. If a dev server is already
+`check:prod` and `test:e2e` both want a port. If a dev server is already
 running, point the suite at a production build instead:
 `E2E_PORT=3200 npx playwright test`.

@@ -71,8 +71,16 @@ export function visible(locator: Locator): Locator {
   return locator.locator("visible=true");
 }
 
-export async function login(page: Page) {
-  await page.goto("/login");
+export async function login(page: Page, options: { from?: string } = {}) {
+  // `from` is what the proxy adds when a session expires on a protected page,
+  // and it is also attacker-controlled input — `security.spec.ts` signs in with
+  // hostile values through this same helper, so the landing URL is deliberately
+  // not asserted here.
+  await page.goto(
+    options.from
+      ? `/login?from=${encodeURIComponent(options.from)}`
+      : "/login",
+  );
   // Guards against a stray dev server from another project holding the port.
   await expect(
     page.getByRole("heading", { name: t("auth.welcomeTitle") }),
@@ -80,7 +88,9 @@ export async function login(page: Page) {
   await page.getByLabel(labelRe("auth.username")).fill("admin");
   await page.getByLabel(labelRe("auth.password")).fill("admin");
   await page.getByRole("button", { name: t("auth.signInCta") }).click();
-  await page.waitForURL(/\/dashboard/);
+  await page.waitForURL(
+    options.from ? (url) => !url.pathname.endsWith("/login") : /\/dashboard/,
+  );
 }
 
 /** Picks the nth client in a `<ClientAccountPicker>`, then waits for its account. */

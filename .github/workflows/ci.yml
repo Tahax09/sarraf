@@ -162,7 +162,7 @@ jobs:
           retention-days: 7
 
   performance:
-    name: JavaScript budget
+    name: Production build checks (budget, CSP)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -176,10 +176,11 @@ jobs:
 
       - run: npx playwright install --with-deps chromium
 
-      # Builds, serves the build, drives a real browser, and fails if a route
-      # transfers more JavaScript than its ceiling. Measured on a production
-      # build because a dev-server number is a number about the dev server.
-      - run: npm run perf:budget
+      # Both specs here assert things that are only true of a production build:
+      # the JavaScript a route transfers, and the *absence* of 'unsafe-inline'
+      # and 'unsafe-eval' from script-src, which `next dev` relaxes on purpose.
+      # One build serves both rather than paying for it twice.
+      - run: npm run check:prod
 
       - uses: actions/upload-artifact@v4
         if: ${{ failure() }}

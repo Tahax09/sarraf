@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { statusTone, useLabels } from "@/lib/labels";
 import { countryFlag, formatAmount, formatDateTime, formatPhone } from "@/lib/format";
 import { useCountries } from "@/lib/api/hooks";
+import { neutralizeBidi } from "@/lib/text-safety";
 import type { Fee } from "@/lib/api/types";
 
 /**
@@ -23,12 +24,19 @@ export function clientNames(
   nameEn: string | null | undefined,
   locale: string,
 ): { primary: string; secondary: string | null } {
+  // Names are the one operator-visible field this application renders straight
+  // from the record, and the one an attacker would put a directional override
+  // in — see src/lib/text-safety.ts. Neutralised here, once, because every
+  // register cell, drawer title, search result and export cell comes through
+  // this function.
+  const primaryName = neutralizeBidi(name);
   // No Latin name on file — the Arabic one stands alone rather than leaving a
   // gap or an em dash where a name belongs.
-  if (!nameEn) return { primary: name, secondary: null };
+  if (!nameEn) return { primary: primaryName, secondary: null };
+  const latinName = neutralizeBidi(nameEn);
   return locale === "ar"
-    ? { primary: name, secondary: nameEn }
-    : { primary: nameEn, secondary: name };
+    ? { primary: primaryName, secondary: latinName }
+    : { primary: latinName, secondary: primaryName };
 }
 
 /** Internal: the two cells below share it. Exported nothing — callers outside

@@ -99,6 +99,7 @@ caught before QA.
 | `npm run test:e2e` | Playwright, money-movement flows, desktop **and** phone. |
 | `npm run test:e2e:a11y` | axe-core over every route, WCAG 2.1/2.2 AA tags. |
 | `npm run perf:budget` | Production build + per-route JavaScript budget. |
+| `npm run check:prod` | The same build, plus the CSP assertions that only hold on one. |
 
 ## Testing
 

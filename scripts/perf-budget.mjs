@@ -11,6 +11,16 @@
 import { spawn } from "node:child_process";
 import { setTimeout as sleep } from "node:timers/promises";
 
+/**
+ * Which specs to run against the server this script stands up. Some assertions
+ * are only meaningful on a production build — the JavaScript budget, and the
+ * CSP's *absence* of `unsafe-inline` and `unsafe-eval`, which `next dev`
+ * relaxes on purpose — and they all want the same expensive build. Passing
+ * them as arguments keeps one build serving all of them.
+ */
+const specs = process.argv.slice(2).filter((arg) => !arg.startsWith("-"));
+if (specs.length === 0) specs.push("performance");
+
 const PORT = Number(process.env.PERF_PORT ?? 3200);
 const BASE = `http://localhost:${PORT}`;
 
@@ -60,8 +70,8 @@ const server = spawn("npx", ["next", "start", "--port", String(PORT)], {
 let failure = null;
 try {
   await waitForServer();
-  console.log("› measuring");
-  await run("npx", ["playwright", "test", "--project=desktop", "performance"], {
+  console.log(`› running ${specs.join(", ")}`);
+  await run("npx", ["playwright", "test", "--project=desktop", ...specs], {
     env: { ...env, E2E_PORT: String(PORT), E2E_PROD: "1" },
   });
 } catch (error) {

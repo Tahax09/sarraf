@@ -120,6 +120,22 @@ describe("buildWorkbook", () => {
     }
   });
 
+  /**
+   * A directional override survives a round trip through a spreadsheet and is
+   * re-obeyed by Excel, so an export handed to a regulator would show a
+   * different beneficiary than the register it was taken from.
+   */
+  it("strips directional overrides from every cell", () => {
+    const xml = sheet({
+      ...BASE,
+      title: `Report‮`,
+      rows: [[`Ahmed‮ LYD 5.000`, 1, 2]],
+    });
+
+    expect(xml).not.toContain("‮");
+    expect(xml).toContain('<t xml:space="preserve">Ahmed LYD 5.000</t>');
+  });
+
   it("escapes markup rather than letting a value close a tag", () => {
     const xml = sheet({ ...BASE, rows: [['</t></is></c><f>1</f>', 1, 2]] });
     expect(xml).not.toContain("<f>1</f>");

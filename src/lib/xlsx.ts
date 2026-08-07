@@ -22,6 +22,8 @@
  * the better place for it to live.
  */
 
+import { neutralizeBidi } from "@/lib/text-safety";
+
 /* ---------------------------------------------------------------- types --- */
 
 export type CellValue = string | number | null | undefined;
@@ -158,7 +160,12 @@ function zip(entries: Entry[]): Uint8Array {
 /* ------------------------------------------------------------------ xml --- */
 
 function esc(value: string): string {
-  return value
+  // Directional overrides survive a round trip through a spreadsheet and are
+  // re-obeyed by Excel, so a workbook exported for a regulator would show a
+  // different beneficiary than the register it was taken from. Stripped here
+  // rather than at the call sites: every cell, header and title goes through
+  // this function, and one that did not would be the one that mattered.
+  return neutralizeBidi(value)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")

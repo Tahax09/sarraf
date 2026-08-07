@@ -22,6 +22,7 @@ import {
 } from "@/lib/api/hooks";
 import { formatCount } from "@/lib/format";
 import type { Currency } from "@/lib/api/types";
+import { directionSafe } from "@/lib/text-safety";
 
 export default function CurrenciesPage() {
   const t = useTranslations("currencies");
@@ -50,7 +51,7 @@ export default function CurrenciesPage() {
   }, [query.data, search]);
 
   const schema = z.object({
-    name: z.string().min(2, tv("required")),
+    name: z.string().min(2, tv("required")).refine(directionSafe, tv("noDirectionalMarks")),
     alphabeticCode: z
       .string()
       .regex(/^[A-Za-z]{3}$/, tv("required"))

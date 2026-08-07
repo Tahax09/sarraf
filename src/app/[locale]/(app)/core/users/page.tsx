@@ -38,6 +38,7 @@ import {
   normalizePhone,
 } from "@/lib/format";
 import type { User } from "@/lib/api/types";
+import { directionSafe } from "@/lib/text-safety";
 
 /** Backend user-type codes; the visible labels come from the dictionary. */
 const USER_TYPES = ["systemAdmin", "branchManager", "teller", "auditor"];
@@ -272,8 +273,8 @@ function UserDialog({
   const save = useSaveUser();
 
   const schema = z.object({
-    name: z.string().min(2, tv("required")),
-    username: z.string().min(3, tv("required")),
+    name: z.string().min(2, tv("required")).refine(directionSafe, tv("noDirectionalMarks")),
+    username: z.string().min(3, tv("required")).refine(directionSafe, tv("noDirectionalMarks")),
     phone: z.string().refine(isValidPhone, tv("invalidPhone")),
     userType: z.string().min(1, tv("required")),
     roleIds: z.array(z.string()).min(1, tv("selectOne")),

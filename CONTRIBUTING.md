@@ -30,6 +30,7 @@ npm test                          # jest
 npm run test:e2e                  # playwright
 npm run test:e2e:a11y             # axe-core over every route
 npm run perf:budget               # production build + JS budget
+npm run check:prod                # the same build, plus the production CSP
 ```
 
 `perf:budget` builds and serves on port 3200, so it is the slow one; run it when

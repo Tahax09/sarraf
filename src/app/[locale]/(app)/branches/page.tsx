@@ -16,6 +16,7 @@ import { DataTable, type Column } from "@/components/shared/data-table";
 import { useBranches, useSaveBranch } from "@/lib/api/hooks";
 import { formatCount } from "@/lib/format";
 import type { Branch } from "@/lib/api/types";
+import { directionSafe } from "@/lib/text-safety";
 
 export default function BranchesPage() {
   const t = useTranslations("branches");
@@ -29,9 +30,9 @@ export default function BranchesPage() {
   const [editing, setEditing] = useState<Branch | "new" | null>(null);
 
   const schema = z.object({
-    name: z.string().min(2, tv("required")),
-    city: z.string().min(2, tv("required")),
-    region: z.string().min(2, tv("required")),
+    name: z.string().min(2, tv("required")).refine(directionSafe, tv("noDirectionalMarks")),
+    city: z.string().min(2, tv("required")).refine(directionSafe, tv("noDirectionalMarks")),
+    region: z.string().min(2, tv("required")).refine(directionSafe, tv("noDirectionalMarks")),
   });
   type Values = z.infer<typeof schema>;
 

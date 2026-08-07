@@ -24,6 +24,7 @@ import {
 import { useLabels } from "@/lib/labels";
 import { countryFlag, formatCount } from "@/lib/format";
 import { CONTINENTS, type Continent, type Country } from "@/lib/api/types";
+import { directionSafe } from "@/lib/text-safety";
 
 export default function CountriesPage() {
   const t = useTranslations("countries");
@@ -65,8 +66,8 @@ export default function CountriesPage() {
       .string()
       .regex(/^[A-Za-z]{2}$/, tv("required"))
       .transform((value) => value.toUpperCase()),
-    name: z.string().min(2, tv("required")),
-    nameEn: z.string().min(2, tv("required")),
+    name: z.string().min(2, tv("required")).refine(directionSafe, tv("noDirectionalMarks")),
+    nameEn: z.string().min(2, tv("required")).refine(directionSafe, tv("noDirectionalMarks")),
     // Digits only: the `+` is added at render, never stored (that produced the
     // `++216` double prefix).
     phoneCode: z

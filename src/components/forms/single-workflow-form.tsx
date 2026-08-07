@@ -14,6 +14,7 @@ import { SelectInput, TextInput, Toggle } from "@/components/ui/field";
 import { useBranches, useRegisterOperation } from "@/lib/api/hooks";
 import type { Account } from "@/lib/api/types";
 import { formatAmount, formatPhone, isolate, isValidPhone } from "@/lib/format";
+import { directionSafe } from "@/lib/text-safety";
 
 /**
  * Single-party register template (Withdrawal, Deposit — and Authorized
@@ -59,7 +60,10 @@ export function SingleWorkflowForm({
           ),
         branchId: z.string().min(1, tv("required")),
         beneficiaryName: withBeneficiary
-          ? z.string().min(2, tv("required"))
+          ? z
+              .string()
+              .min(2, tv("required"))
+              .refine(directionSafe, tv("noDirectionalMarks"))
           : z.string().optional(),
         beneficiaryPhone: withBeneficiary
           ? z.string().refine(isValidPhone, tv("invalidPhone"))

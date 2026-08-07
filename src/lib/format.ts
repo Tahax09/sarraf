@@ -7,6 +7,8 @@
  * globals.css), including inside the Arabic RTL layout.
  */
 
+import { neutralizeBidi } from "@/lib/text-safety";
+
 /**
  * The country every number in this panel belongs to. Exported so a phone field
  * can show the prefix it is going to store rather than restating it.
@@ -214,8 +216,11 @@ export function countryFlag(code: string): string {
  * accessible name or in a copy-paste.
  */
 export function isolate(value: string | number): string {
-  // U+2068 FIRST STRONG ISOLATE … U+2069 POP DIRECTIONAL ISOLATE.
-  return `⁨${value}⁩`;
+  // U+2068 FIRST STRONG ISOLATE … U+2069 POP DIRECTIONAL ISOLATE. The value is
+  // stripped of directional controls first: an unmatched PDI inside it would
+  // close this wrapper early and put the remainder back into the sentence,
+  // which is the one thing the wrapper exists to prevent.
+  return `⁨${neutralizeBidi(String(value))}⁩`;
 }
 
 /** Keeps the last `visible` characters, masking everything before them. */

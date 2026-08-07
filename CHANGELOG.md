@@ -6,6 +6,41 @@ a release yet, so everything below is unreleased.
 
 ## [Unreleased]
 
+### Enterprise readiness sprint — 2026-08-07
+
+**Added**
+
+- `src/lib/text-safety.ts` — directional-override handling, both halves.
+  `neutralizeBidi()` strips U+202A–U+202E and U+2066–U+2069 from values on their
+  way to a screen or a workbook; `directionSafe` is a zod refinement that
+  rejects them on the way in. A stored string carrying an override reorders what
+  is rendered, which on an approval screen means the operator releasing funds
+  reads a different name than the one the backend holds and the audit record
+  keeps. LRM and RLM are deliberately kept — marks cannot reorder a run, and
+  they occur in ordinary Arabic text.
+- `e2e/security.spec.ts` — the security headers and the CSP, read off a served
+  response rather than off the config file that claims to set them. Includes the
+  two negatives that only a production build can prove: no `'unsafe-inline'` and
+  no `'unsafe-eval'` in `script-src`.
+- `npm run check:prod` — one production build serving both specs that need one.
+- `scripts/check-secrets.mjs`, `scripts/bundle-report.mjs`, and the CI steps that
+  run them. Secret scanning is the first gate in `quality`: it is the cheapest
+  check and the only one whose failure means "rotate a key" rather than "fix the
+  code".
+- `docs/CI_CD.md` — what each gate proves, and the branch protection the
+  pipeline is advisory without.
+
+**Changed**
+
+- CI builds with `build:release`, stamped with the commit and environment, so
+  the footer and the diagnostics card do not report a CI artefact as
+  `0.0.0-dev`.
+- `docs/SECURITY.md` gains a validation sweep: twenty attack classes walked
+  against the source in OWASP ASVS terms, each with a verdict and the evidence
+  behind it, plus the commands a reviewer can re-run. The CSV formula-injection
+  section was stale — there is no CSV export — and now describes why an `.xlsx`
+  cell cannot carry a formula at all.
+
 ### Signed-out pages — 2026-08-06
 
 **Added**
